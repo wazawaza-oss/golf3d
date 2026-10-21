@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#1d6638">
+<title>ゴルフ3Dマップ</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+:root{
+  --ink:#14223a; --muted:#5a6672; --panel:rgba(255,255,255,.96); --line:#d9dfd4;
+  --accent:#1d6638; --pin:#d6402b; --me:#1a73e8; --meas:#ffc400; --tee:#2f6fd1;
+}
+html,body{height:100%;margin:0}
+[hidden]{display:none!important}
+body{font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;color:var(--ink);background:#dfe6da;overflow:hidden;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+#map{position:fixed;inset:0}
+button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
+
+/* top: hole + distance */
+.hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translateX(-50%);width:min(440px,calc(100% - 20px));background:var(--panel);border-radius:16px;box-shadow:0 4px 18px rgba(0,0,0,.18);padding:8px 12px 10px;z-index:5}
+.holebar{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.holebar .ic{width:40px;height:36px;border-radius:10px;font-size:26px;line-height:1;background:#eef2ea}
+.holename{font-weight:700;font-size:17px;display:flex;align-items:baseline;gap:6px}
+.holename b{font-size:24px}
+.holename .par{font-weight:500;color:var(--muted);font-size:14px}
+.dist{display:flex;align-items:baseline;justify-content:center;gap:4px;margin-top:2px}
+.dist .num{font-size:54px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.dist .unit{font-size:22px;font-weight:700}
+.dist .lab{font-size:13px;color:var(--muted);margin-left:8px}
+.sub{text-align:center;font-size:13.5px;color:var(--ink);min-height:1.4em;font-variant-numeric:tabular-nums}
+.sub .up{color:#b3261e;font-weight:700}.sub .down{color:#0b6bcb;font-weight:700}
+
+/* right side */
+.side{position:fixed;right:max(10px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);display:grid;gap:10px;z-index:4}
+.fab{width:54px;height:54px;border-radius:14px;background:var(--panel);box-shadow:0 3px 12px rgba(0,0,0,.2);font-weight:800;font-size:15px}
+.fab small{display:block;font-size:10px;font-weight:600;color:var(--muted)}
+.fab[aria-pressed="true"]{background:var(--accent);color:#fff}
+.fab[aria-pressed="true"] small{color:#d8eedd}
+
+/* bottom bar */
+.bottom{position:fixed;left:0;right:0;bottom:0;padding:8px max(10px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 8px) max(10px,env(safe-area-inset-left,0px));display:grid;grid-template-columns:repeat(4,1fr);gap:8px;z-index:5;pointer-events:none}
+.bottom button{pointer-events:auto;height:56px;border-radius:14px;background:var(--panel);box-shadow:0 3px 12px rgba(0,0,0,.2);font-weight:700;font-size:13.5px;line-height:1.2}
+.bottom button small{display:block;font-size:10.5px;color:var(--muted);font-weight:600}
+.bottom button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.bottom button[aria-pressed="true"] small{color:#d8eedd}
+
+/* floating cards */
+.card,.banner{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 78px);width:min(440px,calc(100% - 20px));border-radius:14px;z-index:6;box-shadow:0 4px 18px rgba(0,0,0,.22)}
+.card{background:var(--panel);padding:10px 14px;display:grid;grid-template-columns:1fr 1fr auto;gap:4px 12px;align-items:center}
+.card .k{font-size:12px;color:var(--muted)}
+.card .v{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+.card .v small{font-size:14px;font-weight:700}
+.card .e{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.card .x{grid-row:1/4;grid-column:3;width:36px;height:36px;border-radius:10px;background:#eef2ea;font-size:18px}
+.banner{background:#14223a;color:#fff;padding:12px 14px;display:flex;gap:10px;align-items:center;justify-content:space-between;font-weight:700;font-size:15px}
+.banner button{background:#fff;color:var(--ink);border-radius:10px;padding:8px 12px;font-size:13px;flex:none}
+
+/* sheets */
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:78vh;overflow:auto;background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.25);z-index:8;padding:14px max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 18px) max(16px,env(safe-area-inset-left,0px));-webkit-user-select:text;user-select:text}
+.sheet .inner{max-width:560px;margin:0 auto;display:grid;gap:14px}
+.sheet h2{margin:0;font-size:18px;display:flex;justify-content:space-between;align-items:center}
+.sheet h2 button{font-size:14px;font-weight:600;color:var(--muted);padding:6px 8px}
+.sheet h3{margin:0;font-size:13px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.sheet p{margin:0;font-size:13.5px;line-height:1.6;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border-radius:10px;padding:10px 14px;background:#eef2ea;font-weight:700;font-size:14px}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.danger{color:#b3261e}
+.btn:disabled{opacity:.45;cursor:default}
+input[type=text],select{font:inherit;font-size:15px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);min-width:0}
+input[type=text]{flex:1 1 200px}
+.chips{display:grid;grid-template-columns:repeat(9,1fr);gap:6px}
+.chips button{height:38px;border-radius:10px;background:#eef2ea;font-weight:700;font-variant-numeric:tabular-nums;position:relative}
+.chips button.done{background:#cfe8d5;color:#0f4a26}
+.chips button.half{background:#fff3c4}
+.chips button[aria-current="true"]{outline:3px solid var(--ink);outline-offset:-1px}
+@media (max-width:420px){.chips{grid-template-columns:repeat(6,1fr)}}
+.progress{height:8px;border-radius:4px;background:#eef2ea;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 150px);transform:translateX(-50%);background:rgba(20,34,58,.92);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;z-index:9;max-width:calc(100% - 40px);text-align:center}
+.onboard{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(380px,calc(100% - 40px));background:#fff;border-radius:16px;padding:18px;z-index:7;box-shadow:0 8px 30px rgba(0,0,0,.3);display:grid;gap:12px}
+.onboard h2{margin:0;font-size:18px}
+.onboard p{margin:0;font-size:14px;line-height:1.65;color:var(--muted)}
+
+/* map markers */
+.mk{pointer-events:none}
+.mk.tee{width:24px;height:24px;border-radius:50%;background:var(--tee);color:#fff;font:700 12px/24px system-ui,sans-serif;text-align:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.mk.pin{width:3px;height:36px;background:#fff;box-shadow:0 0 2px rgba(0,0,0,.7);position:relative}
+.mk.pin::after{content:"";position:absolute;left:3px;top:0;border-left:17px solid var(--pin);border-top:7px solid transparent;border-bottom:7px solid transparent}
+.mk.gc{width:10px;height:10px;border-radius:50%;background:#7ad86a;border:2px solid #fff;box-shadow:0 0 3px rgba(0,0,0,.5)}
+.mk.me{width:18px;height:18px;border-radius:50%;background:var(--me);border:3px solid #fff;box-shadow:0 0 0 7px rgba(26,115,232,.28),0 1px 4px rgba(0,0,0,.4)}
+.mk.me.sim{background:#8a5cf6;box-shadow:0 0 0 7px rgba(138,92,246,.28),0 1px 4px rgba(0,0,0,.4)}
+.mk.tap{width:18px;height:18px;border-radius:50%;background:var(--meas);border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.5)}
+.mk.num{font:700 11px/1 system-ui,sans-serif;background:rgba(20,34,58,.88);color:#fff;border-radius:10px;padding:4px 7px}
+.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{bottom:calc(env(safe-area-inset-bottom,0px) + 72px)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="map" role="application" aria-label="コースマップ"></div>
+
+<div class="hud">
+  <div class="holebar">
+    <button class="ic" id="prevHole" aria-label="前のホール">‹</button>
+    <div class="holename"><b id="hNo">1</b>H <span class="par" id="hPar">Par 4</span></div>
+    <button class="ic" id="nextHole" aria-label="次のホール">›</button>
+  </div>
+  <div class="dist"><span class="num" id="dNum">—</span><span class="unit">Y</span><span class="lab" id="dLab">ピンまで</span></div>
+  <div class="sub" id="dSub"></div>
+</div>
+
+<div class="side">
+  <button class="fab" id="b3d" aria-pressed="false">3D<small>立体</small></button>
+  <button class="fab" id="bView">視点<small id="viewName">ティー</small></button>
+  <button class="fab" id="bMe" aria-label="現在地を中心に表示">◎<small>現在地</small></button>
+</div>
+
+<div class="banner" id="banner" hidden><span id="bannerText"></span><button id="bannerCancel">やめる</button></div>
+
+<div class="card" id="mCard" hidden>
+  <div><div class="k">ピンから</div><div class="v" id="mPin">—<small>Y</small></div><div class="e" id="mPinE"></div></div>
+  <div><div class="k">現在地から</div><div class="v" id="mMe">—<small>Y</small></div><div class="e" id="mMeE"></div></div>
+  <button class="x" id="mClose" aria-label="計測を消す">✕</button>
+</div>
+
+<div class="bottom">
+  <button id="bGps" aria-pressed="false">GPS<small>オフ</small></button>
+  <button id="bPin">ピン<small>位置を置く</small></button>
+  <button id="bElev" aria-pressed="true">高低差<small>オン</small></button>
+  <button id="bMenu">メニュー<small>登録・保存</small></button>
+</div>
+
+<div class="sheet" id="menu" hidden>
+  <div class="inner">
+    <h2><span id="menuTitle">メニュー</span><button id="menuClose">閉じる</button></h2>
+    <div class="row"><input type="text" id="courseName" maxlength="40" aria-label="コース名"></div>
+    <div class="row">
+      <button class="btn primary" id="goSetup">コース登録（ティー・グリーン）</button>
+      <button class="btn" id="goSim">現在地をタップで置く（テスト）</button>
+    </div>
+    <h3>電波がなくても使えるようにする</h3>
+    <p id="offInfo">登録したホールの周りの航空写真と標高データを、この端末に保存します。ラウンド前に電波のある場所で実行してください。</p>
+    <div class="progress" hidden id="offBar"><i></i></div>
+    <div class="row"><button class="btn primary" id="offSave">このコースを端末に保存</button><span id="offMsg" style="font-size:13px;color:var(--muted)"></span></div>
+    <h3>場所を移動</h3>
+    <p>地理院地図のURLを貼り付けると、その場所へ移動します。</p>
+    <div class="row"><input type="text" id="jumpUrl" placeholder="https://maps.gsi.go.jp/#16/35.22/139.10/…" aria-label="地理院地図のURL"><button class="btn" id="jumpGo">移動</button></div>
+    <h3>ラウンド</h3>
+    <div class="row"><button class="btn" id="pinReset">今日のピン位置をすべて消す</button></div>
+    <h3>コースデータ</h3>
+    <div class="row">
+      <button class="btn" id="exportBtn">書き出す（ファイル）</button>
+      <button class="btn" id="importBtn">読み込む</button>
+      <button class="btn danger" id="wipeBtn">登録を消す</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+    <p>出典：地理院タイル（航空写真・標高）国土地理院</p>
+  </div>
+</div>
+
+<div class="sheet" id="setup" hidden>
+  <div class="inner">
+    <h2><span>コース登録</span><button id="setupDone">登録を終える</button></h2>
+    <p id="setupHint"></p>
+    <div class="row">
+      <strong id="sHole" style="font-size:20px">1番ホール</strong>
+      <select id="sPar" aria-label="パー"><option value="3">Par 3</option><option value="4">Par 4</option><option value="5">Par 5</option></select>
+      <button class="btn" id="sTee">ティーを置く</button>
+      <button class="btn" id="sGreen">グリーンを置く</button>
+    </div>
+    <div class="chips" id="chips"></div>
+    <p>緑：登録済み　黄：途中まで。番号を押すとそのホールを登録し直せます。地図は自由に動かせます。</p>
+  </div>
+</div>
+
+<div class="onboard" id="onboard" hidden>
+  <h2>はじめにコースを登録します</h2>
+  <p>1番ホールから順に、ティーの位置とグリーンの中心を地図上でタップしていきます。1コース10分ほどで、一度登録すれば次から使えます。</p>
+  <div class="row"><button class="btn primary" id="obStart">登録を始める</button><button class="btn" id="obLater">あとで</button></div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const GSI = 'https://cyberjapandata.gsi.go.jp/xyz/';
+const CACHE_NAME = 'golf3d-tiles-v1';
+const YD = 0.9144;
+const DEFAULT_CENTER = [139.101508, 35.223713];
+
+/* ================= geo math ================= */
+const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
+function distM(a, b) {
+  const R = 6371008.8, p1 = rad(a[1]), p2 = rad(b[1]), dp = p2 - p1, dl = rad(b[0] - a[0]);
+  const h = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+const yards = (a, b) => distM(a, b) / YD;
+function bearing(a, b) {
+  const p1 = rad(a[1]), p2 = rad(b[1]), dl = rad(b[0] - a[0]);
+  const y = Math.sin(dl) * Math.cos(p2), x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
+  return (deg(Math.atan2(y, x)) + 360) % 360;
+}
+const lerpLL = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+const lng2x = (lng, z) => (lng + 180) / 360 * 2 ** z;
+const lat2y = (lat, z) => { const r = rad(lat); return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z; };
+
+/* ================= tiles + cache ================= */
+let cachePromise = null;
+function openCache() {
+  if (!cachePromise) cachePromise = ('caches' in window ? caches.open(CACHE_NAME) : Promise.reject()).catch(() => null);
+  return cachePromise;
+}
+async function tileBlob(url, signal) {
+  const cache = await openCache();
+  if (cache) { try { const hit = await cache.match(url); if (hit) return await hit.blob(); } catch (e) {} }
+  let res;
+  try { res = await fetch(url, { signal, mode: 'cors' }); } catch (e) { return null; }
+  if (!res.ok) return null;
+  if (cache) { try { await cache.put(url, res.clone()); } catch (e) {} }
+  return await res.blob();
+}
+
+/* GSI elevation PNG -> heights (m). (128,0,0) = no data */
+function decodeGsi(px) {
+  const out = new Float32Array(256 * 256);
+  for (let i = 0, j = 0; i < out.length; i++, j += 4) {
+    const r = px[j], g = px[j + 1], b = px[j + 2];
+    if (r === 128 && g === 0 && b === 0) { out[i] = NaN; continue; }
+    let x = r * 65536 + g * 256 + b; if (x > 8388608) x -= 16777216;
+    out[i] = x * 0.01;
+  }
+  // fill no-data holes from neighbours, else 0
+  for (let i = 0; i < out.length; i++) if (Number.isNaN(out[i])) {
+    const x = i % 256, y = (i / 256) | 0; let s = 0, c = 0;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx > 255 || yy > 255) continue; const v = out[yy * 256 + xx]; if (!Number.isNaN(v)) { s += v; c++; } }
+    out[i] = c ? s / c : 0;
+  }
+  return out;
+}
+/* heights -> Mapbox Terrain-RGB pixels */
+function encodeRgb(h, px) {
+  for (let i = 0, j = 0; i < h.length; i++, j += 4) {
+    const v = Math.max(0, Math.round((h[i] + 10000) * 10));
+    px[j] = (v >> 16) & 255; px[j + 1] = (v >> 8) & 255; px[j + 2] = v & 255; px[j + 3] = 255;
+  }
+  return px;
+}
+function upsample(parent, qx, qy) {
+  const out = new Float32Array(256 * 256);
+  for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) {
+    const fx = qx * 128 + x / 2, fy = qy * 128 + y / 2;
+    const x0 = Math.min(255, Math.floor(fx)), y0 = Math.min(255, Math.floor(fy)), x1 = Math.min(255, x0 + 1), y1 = Math.min(255, y0 + 1), tx = fx - x0, ty = fy - y0;
+    const a = parent[y0 * 256 + x0], b = parent[y0 * 256 + x1], c = parent[y1 * 256 + x0], d = parent[y1 * 256 + x1];
+    out[y * 256 + x] = (a * (1 - tx) + b * tx) * (1 - ty) + (c * (1 - tx) + d * tx) * ty;
+  }
+  return out;
+}
+let scratch = null;
+function canvas256() {
+  if (!scratch) {
+    if (typeof OffscreenCanvas !== 'undefined') scratch = new OffscreenCanvas(256, 256);
+    else { scratch = document.createElement('canvas'); scratch.width = scratch.height = 256; }
+  }
+  return scratch;
+}
+async function blobToPixels(blob) {
+  const bmp = await createImageBitmap(blob);
+  const c = canvas256(), ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.clearRect(0, 0, 256, 256); ctx.drawImage(bmp, 0, 0, 256, 256); bmp.close && bmp.close();
+  return ctx.getImageData(0, 0, 256, 256).data;
+}
+async function pixelsToPng(px) {
+  const c = canvas256(), ctx = c.getContext('2d');
+  ctx.putImageData(new ImageData(px, 256, 256), 0, 0);
+  const blob = c.convertToBlob ? await c.convertToBlob({ type: 'image/png' }) : await new Promise(r => c.toBlob(r, 'image/png'));
+  return await blob.arrayBuffer();
+}
+const hCache = new Map();
+async function demRaw(name, z, x, y) {
+  const b = await tileBlob(`${GSI}${name}/${z}/${x}/${y}.png`);
+  if (!b) return null;
+  try { return decodeGsi(await blobToPixels(b)); } catch (e) { return null; }
+}
+/* heights for a tile: z15 = 5m mesh (laser), falls back to 10m mesh */
+function heights(z, x, y) {
+  const key = `${z}/${x}/${y}`;
+  if (hCache.has(key)) return hCache.get(key);
+  const p = (async () => {
+    if (z >= 15) {
+      const h = await demRaw('dem5a_png', 15, x, y); if (h) return h;
+      const par = await heights(14, x >> 1, y >> 1); return par ? upsample(par, x & 1, y & 1) : null;
+    }
+    return await demRaw('dem_png', z, x, y);
+  })();
+  hCache.set(key, p);
+  if (hCache.size > 400) hCache.delete(hCache.keys().next().value);
+  return p;
+}
+async function elevAt(ll) {
+  if (!ll) return null;
+  const z = 15, fx = lng2x(ll[0], z), fy = lat2y(ll[1], z), x = Math.floor(fx), y = Math.floor(fy);
+  const h = await heights(z, x, y); if (!h) return null;
+  const px = Math.min(254.999, (fx - x) * 256 - .5 < 0 ? 0 : (fx - x) * 256 - .5), py = Math.min(254.999, (fy - y) * 256 - .5 < 0 ? 0 : (fy - y) * 256 - .5);
+  const x0 = Math.floor(px), y0 = Math.floor(py), tx = px - x0, ty = py - y0;
+  const a = h[y0 * 256 + x0], b = h[y0 * 256 + x0 + 1], c = h[(y0 + 1) * 256 + x0], d = h[(y0 + 1) * 256 + x0 + 1];
+  return (a * (1 - tx) + b * tx) * (1 - ty) + (c * (1 - tx) + d * tx) * ty;
+}
+const parseZXY = url => url.replace(/^[a-z]+:\/\//, '').split('/').map(Number);
+maplibregl.addProtocol('gsiphoto', async (params, ac) => {
+  const [z, x, y] = parseZXY(params.url);
+  const b = await tileBlob(`${GSI}seamlessphoto/${z}/${x}/${y}.jpg`, ac && ac.signal);
+  if (!b) throw new Error('photo tile unavailable');
+  return { data: await b.arrayBuffer() };
+});
+maplibregl.addProtocol('gsidem', async (params) => {
+  const [z, x, y] = parseZXY(params.url);
+  const h = (await heights(z, x, y)) || new Float32Array(256 * 256);
+  return { data: await pixelsToPng(encodeRgb(h, new Uint8ClampedArray(256 * 256 * 4))) };
+});
+
+/* ================= state ================= */
+const blankHoles = () => Array.from({ length: 18 }, (_, i) => ({ n: i + 1, par: 4, tee: null, green: null }));
+function loadJSON(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
+function saveJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+const S = {
+  course: (() => { const c = loadJSON('golf3d.course'); return c && Array.isArray(c.holes) && c.holes.length === 18 ? c : { name: 'テストコース', center: DEFAULT_CENTER, holes: blankHoles() }; })(),
+  round: loadJSON('golf3d.round') || { pins: {} },
+  prefs: Object.assign({ elev: true, gps: false, n: 1 }, loadJSON('golf3d.prefs') || {}),
+  is3D: false, view: 'tee', mode: null, me: null, tap: null, watch: null, wake: null
+};
+let N = clampHole(S.prefs.n);
+function clampHole(n) { return Math.min(18, Math.max(1, n | 0 || 1)); }
+const hole = () => S.course.holes[N - 1];
+const pinLL = () => S.round.pins[N] || hole().green;
+const saveCourse = () => saveJSON('golf3d.course', S.course);
+const saveRound = () => saveJSON('golf3d.round', S.round);
+const savePrefs = () => { S.prefs.n = N; saveJSON('golf3d.prefs', S.prefs); };
+const registered = h => !!(h.tee && h.green);
+
+/* ================= map ================= */
+const map = new maplibregl.Map({
+  container: 'map',
+  center: S.course.center || DEFAULT_CENTER, zoom: 16, maxZoom: 19.5, maxPitch: 80,
+  attributionControl: false,
+  style: {
+    version: 8,
+    sources: {
+      photo: { type: 'raster', tiles: ['gsiphoto://{z}/{x}/{y}'], tileSize: 256, minzoom: 2, maxzoom: 18,
+        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">地理院タイル</a>' },
+      dem: { type: 'raster-dem', tiles: ['gsidem://{z}/{x}/{y}'], tileSize: 256, minzoom: 2, maxzoom: 15, encoding: 'mapbox' }
+    },
+    layers: [
+      { id: 'bg', type: 'background', paint: { 'background-color': '#cfd8c8' } },
+      { id: 'photo', type: 'raster', source: 'photo', paint: { 'raster-fade-duration': 0 } }
+    ]
+  }
+});
+map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
+map.touchZoomRotate.enableRotation();
+
+const mkEl = (cls, html) => { const d = document.createElement('div'); d.className = 'mk ' + cls; if (html) d.textContent = html; return d; };
+const M = {
+  tee: new maplibregl.Marker({ element: mkEl('tee', 'T') }),
+  gc: new maplibregl.Marker({ element: mkEl('gc') }),
+  pin: new maplibregl.Marker({ element: mkEl('pin'), anchor: 'bottom' }),
+  me: new maplibregl.Marker({ element: mkEl('me') }),
+  tap: new maplibregl.Marker({ element: mkEl('tap') })
+};
+let numMarkers = [];
+function place(m, ll) { if (ll) { m.setLngLat(ll); if (!m._shown) { m.addTo(map); m._shown = true; } } else if (m._shown) { m.remove(); m._shown = false; } }
+
+const fc = f => ({ type: 'FeatureCollection', features: f });
+const ln = (a, b, kind) => ({ type: 'Feature', properties: { kind }, geometry: { type: 'LineString', coordinates: [a, b] } });
+let mapReady = false;
+map.on('load', () => {
+  map.addSource('lines', { type: 'geojson', data: fc([]) });
+  map.addLayer({ id: 'lines-dash', type: 'line', source: 'lines', filter: ['in', ['get', 'kind'], ['literal', ['hole', 'setup']]],
+    layout: { 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 2, 'line-opacity': .8, 'line-dasharray': [2, 2] } });
+  map.addLayer({ id: 'lines-me', type: 'line', source: 'lines', filter: ['==', ['get', 'kind'], 'me'],
+    layout: { 'line-cap': 'round' }, paint: { 'line-color': '#ffc400', 'line-width': 3.5 } });
+  map.addLayer({ id: 'lines-pin', type: 'line', source: 'lines', filter: ['==', ['get', 'kind'], 'pin'],
+    layout: { 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 3.5 } });
+  mapReady = true;
+  refresh();
+  if (registered(hole())) camera(S.view, 0);
+  else if (!S.course.holes.some(registered)) $('onboard').hidden = false;
+});
+
+/* camera presets per hole */
+function camera(view, duration = 900) {
+  const h = hole(); if (!registered(h)) return;
+  const len = Math.max(60, distM(h.tee, h.green)), brg = bearing(h.tee, h.green);
+  const el = map.getContainer(), H = el.clientHeight || 700;
+  const lat = (h.tee[1] + h.green[1]) / 2;
+  const base = Math.log2(156543.03 * Math.cos(rad(lat)) * (H * .5) / len);
+  const pitch3 = S.is3D;
+  let opt;
+  if (view === 'top') opt = { center: lerpLL(h.tee, h.green, .5), bearing: brg, pitch: 0, zoom: base };
+  else if (view === 'green') opt = { center: lerpLL(h.tee, h.green, pitch3 ? .45 : .5), bearing: (brg + 180) % 360, pitch: pitch3 ? 62 : 0, zoom: base + (pitch3 ? .35 : 0) };
+  else opt = { center: lerpLL(h.tee, h.green, pitch3 ? .6 : .5), bearing: brg, pitch: pitch3 ? 62 : 0, zoom: base + (pitch3 ? .35 : 0) };
+  map.easeTo(Object.assign(opt, { duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : duration }));
+}
+
+/* ================= rendering ================= */
+function refresh() {
+  const h = hole(), setup = S.mode && S.mode.startsWith('setup');
+  $('hNo').textContent = N; $('hPar').textContent = 'Par ' + h.par;
+  place(M.tee, h.tee);
+  place(M.gc, S.round.pins[N] && h.green ? h.green : null);
+  place(M.pin, pinLL());
+  place(M.me, S.me && S.me.ll);
+  M.me.getElement().classList.toggle('sim', !!(S.me && S.me.src === 'sim'));
+  place(M.tap, S.tap);
+  numMarkers.forEach(m => m.remove()); numMarkers = [];
+  if (setup) S.course.holes.forEach(x => { if (x.tee && x.n !== N) numMarkers.push(new maplibregl.Marker({ element: mkEl('num', String(x.n)) }).setLngLat(x.tee).addTo(map)); });
+  if (mapReady) {
+    const f = [], pin = pinLL();
+    if (setup) S.course.holes.forEach(x => { if (registered(x)) f.push(ln(x.tee, x.green, 'setup')); });
+    else if (registered(h) && !S.me && !S.tap) f.push(ln(h.tee, h.green, 'hole'));
+    if (pin && S.tap) { f.push(ln(S.tap, pin, 'pin')); if (S.me) f.push(ln(S.me.ll, S.tap, 'me')); }
+    else if (pin && S.me) f.push(ln(S.me.ll, pin, 'me'));
+    map.getSource('lines').setData(fc(f));
+  }
+  // banners
+  const BAN = { 'setup-tee': `${N}番のティーをタップ`, 'setup-green': `${N}番のグリーン中心をタップ`, pin: `${N}番のピン位置をタップ`, me: 'テスト用の現在地をタップ' };
+  $('banner').hidden = !S.mode; if (S.mode) $('bannerText').textContent = BAN[S.mode];
+  $('bElev').setAttribute('aria-pressed', S.prefs.elev); $('bElev').querySelector('small').textContent = S.prefs.elev ? 'オン' : 'オフ';
+  $('bGps').setAttribute('aria-pressed', !!S.watch); $('bGps').querySelector('small').textContent = S.watch ? 'オン' : 'オフ';
+  $('b3d').setAttribute('aria-pressed', S.is3D);
+  $('viewName').textContent = { tee: 'ティー', top: '真上', green: 'グリーン' }[S.view];
+  if (!$('setup').hidden) renderSetup();
+  readout(); measureCard();
+}
+const fmtElev = (d, y) => {
+  const cls = d >= 0 ? 'up' : 'down', word = d >= 0 ? '打ち上げ' : '打ち下ろし';
+  const span = document.createElement('span'); span.className = cls; span.textContent = `${d >= 0 ? '↑' : '↓'}${Math.abs(d).toFixed(0)}m ${word}`;
+  return [span, ` ・ 実質 ${Math.round(y + d / YD)}Y`];
+};
+let rdTok = 0;
+async function readout() {
+  const tok = ++rdTok, h = hole(), pin = pinLL(), sub = $('dSub');
+  sub.textContent = '';
+  if (!registered(h)) { $('dNum').textContent = '—'; $('dLab').textContent = '未登録のホール'; sub.textContent = 'メニュー →「コース登録」で登録できます'; return; }
+  if (!S.me) {
+    $('dNum').textContent = Math.round(yards(h.tee, pin)); $('dLab').textContent = 'ティーからピン';
+    sub.textContent = S.watch ? '現在地を取得中…' : 'GPSをオンにすると現在地からの距離が出ます'; return;
+  }
+  const y = yards(S.me.ll, pin);
+  $('dNum').textContent = Math.round(y); $('dLab').textContent = 'ピンまで';
+  const acc = S.me.src === 'sim' ? 'テスト位置' : `GPS誤差 ±${Math.round(S.me.acc || 0)}m`;
+  sub.textContent = acc;
+  if (S.prefs.elev) {
+    const [a, b] = await Promise.all([elevAt(S.me.ll), elevAt(pin)]);
+    if (tok !== rdTok || a == null || b == null) return;
+    sub.textContent = ''; sub.append(...fmtElev(b - a, y), ` ・ ${acc}`);
+  }
+}
+let mcTok = 0;
+async function measureCard() {
+  const tok = ++mcTok, card = $('mCard');
+  if (!S.tap) { card.hidden = true; return; }
+  card.hidden = false;
+  const pin = pinLL();
+  const setV = (id, v) => { const el = $(id); el.textContent = v == null ? '—' : Math.round(v); const s = document.createElement('small'); s.textContent = 'Y'; el.append(s); };
+  setV('mPin', pin ? yards(pin, S.tap) : null); setV('mMe', S.me ? yards(S.me.ll, S.tap) : null);
+  $('mPinE').textContent = ''; $('mMeE').textContent = S.me ? '' : 'GPSオフ';
+  if (!S.prefs.elev) return;
+  const [et, ep, em] = await Promise.all([elevAt(S.tap), elevAt(pin), S.me ? elevAt(S.me.ll) : null]);
+  if (tok !== mcTok) return;
+  if (et != null && ep != null) { const d = ep - et; $('mPinE').textContent = `そこからピンは${d >= 0 ? '↑' : '↓'}${Math.abs(d).toFixed(0)}m`; }
+  if (S.me && et != null && em != null) { const d = et - em; $('mMeE').textContent = `${d >= 0 ? '↑' : '↓'}${Math.abs(d).toFixed(0)}m ・ 実質${Math.round(yards(S.me.ll, S.tap) + d / YD)}Y`; }
+}
+let toastT = null;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
+
+/* ================= interactions ================= */
+map.on('click', e => {
+  const ll = [e.lngLat.lng, e.lngLat.lat], h = hole();
+  switch (S.mode) {
+    case 'setup-tee': h.tee = ll; S.mode = 'setup-green'; saveCourse(); break;
+    case 'setup-green':
+      h.green = ll; saveCourse();
+      if (N < 18) { N++; const nx = hole(); S.mode = registered(nx) ? null : nx.tee ? 'setup-green' : 'setup-tee'; }
+      else { S.mode = null; closeSetup(); toast('18ホールの登録が終わりました'); }
+      savePrefs(); break;
+    case 'pin': S.round.pins[N] = ll; saveRound(); S.mode = null; toast(`${N}番のピンを置きました`); break;
+    case 'me': S.me = { ll, acc: null, src: 'sim' }; S.mode = null; break;
+    default: S.tap = ll;
+  }
+  refresh();
+});
+function goHole(n) {
+  N = ((n - 1 + 18) % 18) + 1; S.tap = null; savePrefs();
+  if (S.mode === 'pin') S.mode = null;
+  if (S.mode && S.mode.startsWith('setup')) S.mode = 'setup-tee';
+  refresh();
+  if (!(S.mode && S.mode.startsWith('setup'))) camera(S.view);
+}
+$('prevHole').onclick = () => goHole(N - 1);
+$('nextHole').onclick = () => goHole(N + 1);
+$('bannerCancel').onclick = () => { if (S.mode && S.mode.startsWith('setup')) closeSetup(); S.mode = null; refresh(); };
+$('mClose').onclick = () => { S.tap = null; refresh(); };
+
+$('b3d').onclick = () => {
+  S.is3D = !S.is3D;
+  map.setTerrain(S.is3D ? { source: 'dem', exaggeration: 1 } : null);
+  if (registered(hole()) && !(S.mode && S.mode.startsWith('setup'))) camera(S.view);
+  else map.easeTo({ pitch: S.is3D ? 60 : 0, duration: 700 });
+  refresh();
+};
+$('bView').onclick = () => {
+  S.view = { tee: 'top', top: 'green', green: 'tee' }[S.view];
+  if (!registered(hole())) toast('このホールはまだ登録されていません'); else camera(S.view);
+  refresh();
+};
+$('bMe').onclick = () => {
+  if (!S.me) { toast('現在地がありません。GPSをオンにしてください'); return; }
+  map.easeTo({ center: S.me.ll, zoom: Math.max(map.getZoom(), 17), duration: 700 });
+};
+$('bPin').onclick = () => {
+  if (!hole().green) { toast('先にこのホールを登録してください'); return; }
+  S.mode = S.mode === 'pin' ? null : 'pin'; S.tap = null;
+  if (S.mode === 'pin') map.easeTo({ center: hole().green, zoom: Math.max(map.getZoom(), 18.3), duration: 700 });
+  refresh();
+};
+$('bElev').onclick = () => { S.prefs.elev = !S.prefs.elev; savePrefs(); refresh(); toast(S.prefs.elev ? '高低差を表示します' : '高低差を隠しました（公式競技向け）'); };
+
+/* GPS */
+async function wakeOn() { try { if ('wakeLock' in navigator) S.wake = await navigator.wakeLock.request('screen'); } catch (e) {} }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.watch) wakeOn(); });
+function gpsStart() {
+  if (!('geolocation' in navigator)) { toast('この端末では位置情報を使えません'); return; }
+  S.watch = navigator.geolocation.watchPosition(p => {
+    S.me = { ll: [p.coords.longitude, p.coords.latitude], acc: p.coords.accuracy, src: 'gps' };
+    refresh();
+  }, err => {
+    toast(err.code === 1 ? '位置情報が許可されていません。ブラウザの設定で許可してください' : '現在地を取得できませんでした。空の見える場所でお試しください');
+    if (err.code === 1) gpsStop();
+  }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 });
+  S.prefs.gps = true; savePrefs(); wakeOn(); refresh();
+}
+function gpsStop() {
+  if (S.watch != null) navigator.geolocation.clearWatch(S.watch);
+  S.watch = null; if (S.me && S.me.src === 'gps') S.me = null;
+  try { S.wake && S.wake.release(); } catch (e) {} S.wake = null;
+  S.prefs.gps = false; savePrefs(); refresh();
+}
+$('bGps').onclick = () => S.watch != null ? gpsStop() : gpsStart();
+
+/* menu */
+const openSheet = id => { $('menu').hidden = $('setup').hidden = true; $(id).hidden = false; };
+$('bMenu').onclick = () => { $('courseName').value = S.course.name || ''; offEstimate(); openSheet('menu'); };
+$('menuClose').onclick = () => $('menu').hidden = true;
+$('courseName').oninput = () => { S.course.name = $('courseName').value; saveCourse(); };
+$('goSim').onclick = () => { $('menu').hidden = true; S.mode = 'me'; refresh(); };
+$('pinReset').onclick = () => { S.round = { pins: {} }; saveRound(); refresh(); toast('ピン位置を消しました（グリーン中心までの距離に戻ります）'); };
+$('jumpGo').onclick = () => {
+  const u = $('jumpUrl').value;
+  let m = u.match(/lat=(-?[\d.]+)&lon=(-?[\d.]+)/) || null, ll = null, z = 16;
+  if (m) ll = [+m[2], +m[1]];
+  else if ((m = u.match(/#(\d+(?:\.\d+)?)\/(-?[\d.]+)\/(-?[\d.]+)/))) { z = +m[1]; ll = [+m[3], +m[2]]; }
+  if (!ll || !isFinite(ll[0]) || !isFinite(ll[1])) { toast('URLから場所を読み取れませんでした'); return; }
+  S.course.center = ll; saveCourse(); $('menu').hidden = true;
+  map.jumpTo({ center: ll, zoom: Math.max(15, Math.min(18, z)), bearing: 0, pitch: S.is3D ? 60 : 0 });
+};
+$('exportBtn').onclick = () => {
+  const blob = new Blob([JSON.stringify(S.course, null, 1)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${S.course.name || 'course'}.json`;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+};
+$('importBtn').onclick = () => $('importFile').click();
+$('importFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const c = JSON.parse(await f.text());
+    if (!Array.isArray(c.holes) || c.holes.length !== 18) throw 0;
+    S.course = { name: String(c.name || 'コース'), center: c.center || DEFAULT_CENTER, holes: c.holes.map((h, i) => ({ n: i + 1, par: [3, 4, 5].includes(+h.par) ? +h.par : 4, tee: h.tee || null, green: h.green || null })) };
+    saveCourse(); S.round = { pins: {} }; saveRound(); N = 1; $('menu').hidden = true; refresh();
+    if (registered(hole())) camera(S.view); else map.jumpTo({ center: S.course.center, zoom: 16 });
+    toast(`「${S.course.name}」を読み込みました`);
+  } catch (err) { toast('このファイルは読み込めませんでした'); }
+};
+let wipeArm = null;
+$('wipeBtn').onclick = () => {
+  if (!wipeArm) { $('wipeBtn').textContent = 'もう一度押すと消します'; wipeArm = setTimeout(() => { wipeArm = null; $('wipeBtn').textContent = '登録を消す'; }, 3500); return; }
+  clearTimeout(wipeArm); wipeArm = null; $('wipeBtn').textContent = '登録を消す';
+  S.course.holes = blankHoles(); saveCourse(); S.round = { pins: {} }; saveRound(); N = 1; S.tap = null; refresh(); toast('登録を消しました');
+};
+
+/* setup */
+function renderSetup() {
+  const h = hole();
+  $('sHole').textContent = `${N}番ホール`; $('sPar').value = String(h.par);
+  $('setupHint').textContent = S.mode === 'setup-green' ? 'グリーンの中心をタップしてください。' : S.mode === 'setup-tee' ? 'ティー（バックティー）の位置をタップしてください。' : '登録し直したい項目のボタンを押してください。';
+  const chips = $('chips'); chips.textContent = '';
+  S.course.holes.forEach(x => {
+    const b = document.createElement('button'); b.textContent = x.n;
+    b.className = registered(x) ? 'done' : (x.tee || x.green) ? 'half' : '';
+    b.setAttribute('aria-current', x.n === N); b.setAttribute('aria-label', `${x.n}番ホール${registered(x) ? '（登録済み）' : ''}`);
+    b.onclick = () => { N = x.n; S.mode = registered(x) ? null : (x.tee ? 'setup-green' : 'setup-tee'); savePrefs(); refresh(); if (registered(x)) camera('top'); };
+    chips.appendChild(b);
+  });
+}
+function openSetup() {
+  openSheet('setup');
+  const h = hole(); S.mode = !h.tee ? 'setup-tee' : !h.green ? 'setup-green' : null; S.tap = null;
+  if (S.is3D) { S.is3D = false; map.setTerrain(null); map.easeTo({ pitch: 0, duration: 500 }); }
+  refresh();
+}
+function closeSetup() { $('setup').hidden = true; if (S.mode && S.mode.startsWith('setup')) S.mode = null; }
+$('goSetup').onclick = openSetup;
+$('obStart').onclick = () => { $('onboard').hidden = true; openSetup(); };
+$('obLater').onclick = () => $('onboard').hidden = true;
+$('setupDone').onclick = () => { closeSetup(); refresh(); if (registered(hole())) camera(S.view); };
+$('sPar').onchange = () => { hole().par = +$('sPar').value; saveCourse(); refresh(); };
+$('sTee').onclick = () => { S.mode = 'setup-tee'; refresh(); };
+$('sGreen').onclick = () => { S.mode = 'setup-green'; refresh(); };
+
+/* offline save */
+function offTiles() {
+  const pts = []; S.course.holes.forEach(h => { if (h.tee) pts.push(h.tee); if (h.green) pts.push(h.green); });
+  let w, s, e, n;
+  if (pts.length) {
+    w = Math.min(...pts.map(p => p[0])); e = Math.max(...pts.map(p => p[0])); s = Math.min(...pts.map(p => p[1])); n = Math.max(...pts.map(p => p[1]));
+    const dLat = 220 / 111320, dLng = 220 / (111320 * Math.cos(rad((s + n) / 2)));
+    w -= dLng; e += dLng; s -= dLat; n += dLat;
+  } else { const b = map.getBounds(); w = b.getWest(); e = b.getEast(); s = b.getSouth(); n = b.getNorth(); }
+  const list = [];
+  const range = (z, fn) => { const x0 = Math.floor(lng2x(w, z)), x1 = Math.floor(lng2x(e, z)), y0 = Math.floor(lat2y(n, z)), y1 = Math.floor(lat2y(s, z)); for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) fn(x, y); };
+  for (let z = 12; z <= 18; z++) range(z, (x, y) => list.push({ kind: 'photo', z, x, y }));
+  for (let z = 12; z <= 15; z++) range(z, (x, y) => list.push({ kind: 'dem', z, x, y }));
+  return { list, fromHoles: pts.length > 0 };
+}
+function offEstimate() {
+  const { list, fromHoles } = offTiles();
+  $('offMsg').textContent = `${fromHoles ? '登録したホールの周り' : 'いま画面に映っている範囲'}・約${list.length}枚（目安 ${Math.max(1, Math.round(list.length * 25 / 1024))}MB）`;
+}
+let offBusy = false;
+$('offSave').onclick = async () => {
+  if (offBusy) return;
+  if (!(await openCache())) { $('offMsg').textContent = 'このブラウザでは端末に保存できません。'; return; }
+  offBusy = true; $('offSave').disabled = true;
+  const { list } = offTiles(); let done = 0, bytes = 0, fail = 0;
+  const bar = $('offBar'); bar.hidden = false; bar.firstElementChild.style.width = '0%';
+  let i = 0;
+  const worker = async () => {
+    while (i < list.length) {
+      const t = list[i++];
+      try {
+        if (t.kind === 'photo') { const b = await tileBlob(`${GSI}seamlessphoto/${t.z}/${t.x}/${t.y}.jpg`); if (b) bytes += b.size; else fail++; }
+        else { const h = await heights(t.z, t.x, t.y); if (!h) fail++; }
+      } catch (e) { fail++; }
+      done++; bar.firstElementChild.style.width = (done / list.length * 100).toFixed(1) + '%';
+      $('offMsg').textContent = `保存中… ${done}/${list.length}`;
+    }
+  };
+  await Promise.all(Array.from({ length: 6 }, worker));
+  $('offMsg').textContent = fail > list.length * .3 ? '一部しか保存できませんでした。電波の良い場所でもう一度お試しください。' : `保存しました（写真 約${(bytes / 1048576).toFixed(1)}MB）。電波がなくても表示できます。`;
+  $('offSave').disabled = false; offBusy = false;
+};
+
+if (S.prefs.gps) gpsStart();
+refresh();
+})();
+</script>
+</body>
+</html>
