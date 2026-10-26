@@ -114,10 +114,19 @@ input[type=text]{flex:1 1 200px}
 .ptop h2{margin:0;font-size:19px}
 .ptop>:first-child{justify-self:start}.ptop>:last-child{justify-self:end}
 .ptop .back{padding:10px 12px;border-radius:10px;background:#fff;font-weight:700;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.12)}
-.phole{display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:14px;padding:8px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-.phole .pic{width:52px;height:44px;border-radius:10px;background:#eef2ea;font-size:26px}
-.phole .ph{font-weight:700;font-size:16px}.phole .ph b{font-size:26px}.phole .ph span{color:var(--muted);font-size:14px;margin-left:4px}
+.mysum{display:flex;align-items:baseline;justify-content:center;gap:12px;background:#fff;border-radius:14px;padding:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);font-variant-numeric:tabular-nums}
+.mysum b{font-size:40px;line-height:1;font-weight:800}
+.mysum span{font-size:14px;color:var(--muted);font-weight:600}
+.sc.my tr.mine td{height:40px;font-size:17px;font-weight:700;cursor:pointer}
+.sc.my tr.mine td:first-child{font-size:12px;font-weight:600;color:var(--muted);cursor:default}
+.sc.my tr.mine td.sum{cursor:default}
+.sc.my td.sel{outline:3px solid var(--accent);outline-offset:-3px;background:#e6f2e9}
+.stepper{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border-radius:14px;padding:10px 12px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.stepper .sh b{display:block;font-size:20px}.stepper .sh span{font-size:13px;color:var(--muted);font-weight:600}
+.stepper .clr{padding:10px 10px;border-radius:10px;background:#eef2ea;font-size:13px;font-weight:700;color:var(--muted)}
+.stepper .clr:disabled{opacity:.4}
 .plist{display:grid;gap:8px}
+.prow .btn{flex:none;padding:10px 12px}
 .prow{background:#fff;border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .prow .who{flex:1;min-width:0}
 .prow .nm{font-weight:700;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -131,15 +140,17 @@ input[type=text]{flex:1 1 200px}
 .stp .val b{display:block;font-size:30px;line-height:1.05;font-variant-numeric:tabular-nums}
 .stp .val small{display:block;font-size:10.5px;color:var(--muted);font-weight:700;white-space:nowrap}
 .stp .val.under b{color:#b3261e}.stp .val.over b{color:#0b6bcb}
-.rk{background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden}
-.rrow{display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:10px;padding:12px 14px}
-.rrow+.rrow{border-top:1px solid #eef2ea}
-.rrow .pos{font-size:22px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums}
-.rrow.top .pos{color:#b8860b}
-.rrow .nm{font-weight:700;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rrow .meta{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
-.rrow .dv{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums}
-.rk .empty{padding:16px;font-size:14px;color:var(--muted);text-align:center}
+/* ranking table: about 5 rows tall, scrolls inside when there are more players */
+.rk{background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);max-height:262px;overflow-y:auto;overscroll-behavior:contain}
+.rkt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.rkt th{position:sticky;top:0;background:#f1f4ee;font-size:12px;color:var(--muted);font-weight:700;padding:8px 6px;text-align:center}
+.rkt td{padding:9px 6px;text-align:center;border-top:1px solid #eef2ea;font-size:14px;color:var(--muted)}
+.rkt th:nth-child(2),.rkt td.nm{text-align:left}
+.rkt td.pos{font-size:20px;font-weight:800;color:var(--ink);width:44px}
+.rkt td.nm{font-size:16px;font-weight:700;color:var(--ink);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rkt td.dv{font-size:22px;font-weight:800;color:var(--ink)}
+.rkt tr.top td.pos{color:#b8860b}
+.rkt tr.me td,.sc tr.me td{background:#f3faf4}
 table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;font-size:13px;font-variant-numeric:tabular-nums;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .sc th,.sc td{border:1px solid #e3e8df;padding:6px 0;text-align:center}
 .sc th:first-child,.sc td:first-child{width:58px;text-align:left;padding-left:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -220,7 +231,7 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
     <p>地理院地図のURLを貼り付けると、その場所へ移動します。</p>
     <div class="row"><input type="text" id="jumpUrl" placeholder="https://maps.gsi.go.jp/#16/35.22/139.10/…" aria-label="地理院地図のURL"><button class="btn" id="jumpGo">移動</button></div>
     <h3>ラウンド</h3>
-    <div class="row"><button class="btn" id="pinReset">今日のピン位置をすべて消す</button></div>
+    <div class="row"><button class="btn" id="goPlayers">参加者とスコア</button><button class="btn" id="pinReset">今日のピン位置をすべて消す</button></div>
     <h3>コースデータ</h3>
     <div class="row">
       <button class="btn" id="exportBtn">書き出す（ファイル）</button>
@@ -261,26 +272,34 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 </div>
 
 <button class="edge l" id="edgeL" aria-label="ランキングを開く">ランキング</button>
-<button class="edge r" id="edgeR" aria-label="スコア入力を開く">スコア入力</button>
+<button class="edge r" id="edgeR" aria-label="マイスコアを開く">マイスコア</button>
+
+<div class="sheet" id="players" hidden>
+  <div class="inner">
+    <h2><span>参加者</span><button id="plClose">閉じる</button></h2>
+    <p>いちばん上があなたです。ほかの人のスコアは「スコア入力」から入れます。マップを右にスライドすると、全員の順位とスコアが見られます。</p>
+    <div class="plist" id="plList"></div>
+    <div class="row"><button class="btn" id="plAdd">＋ 参加者を追加</button></div>
+    <div class="row"><button class="btn danger" id="scWipe">スコアをすべて消す</button></div>
+  </div>
+</div>
 
 <section class="page" id="pRank" aria-label="ランキング">
   <div class="inner">
     <div class="ptop"><span></span><h2>ランキング</h2><button class="back" data-go="map">マップ ›</button></div>
     <p id="rkInfo"></p>
     <div class="rk" id="rkList"></div>
-    <h3>スコアカード</h3>
+    <h3>全員のスコア</h3>
     <div id="rkCard" style="display:grid;gap:10px"></div>
   </div>
 </section>
 
 <section class="page" id="pScore" aria-label="スコア入力">
   <div class="inner">
-    <div class="ptop"><button class="back" data-go="map">‹ マップ</button><h2>スコア入力</h2><button class="back" id="scEdit">参加者</button></div>
-    <div class="phole"><button class="pic" id="scPrev" aria-label="前のホール">‹</button><div class="ph"><b id="scNo">1</b>番ホール<span id="scPar">Par 4</span></div><button class="pic" id="scNext" aria-label="次のホール">›</button></div>
-    <div class="plist" id="scList"></div>
-    <div class="row" hidden><button class="btn" id="scAdd">＋ 参加者を追加</button></div>
-    <p>＋ を押すとパーから入力が始まります。数字を押すとそのホールのスコアを消せます。</p>
-    <div class="row"><button class="btn danger" id="scWipe">スコアをすべて消す</button></div>
+    <div class="ptop"><button class="back" data-go="map">‹ マップ</button><h2 id="scTitle">マイスコア</h2><span></span></div>
+    <div class="mysum" id="scSum"></div>
+    <div id="scBoard" style="display:grid;gap:10px"></div>
+    <p>スコアの欄をタップすると、その下に − ＋ が出ます。＋ を押すとパーから入力が始まります。</p>
   </div>
 </section>
 
@@ -730,7 +749,7 @@ function gpsStop() {
 $('bGps').onclick = () => S.watch != null ? gpsStop() : gpsStart();
 
 /* menu */
-const openSheet = id => { $('menu').hidden = $('setup').hidden = true; $(id).hidden = false; };
+const openSheet = id => { $('menu').hidden = $('setup').hidden = $('players').hidden = true; $(id).hidden = false; };
 $('bMenu').onclick = () => { $('courseName').value = S.course.name || ''; offEstimate(); openSheet('menu'); };
 $('menuClose').onclick = () => $('menu').hidden = true;
 $('courseName').oninput = () => { S.course.name = $('courseName').value; saveCourse(); };
@@ -822,69 +841,102 @@ const fmtDiff = d => d === 0 ? '±0' : (d > 0 ? '+' : '') + d;
 const TERM = { '-3': 'アルバトロス', '-2': 'イーグル', '-1': 'バーディー', '0': 'パー', '1': 'ボギー', '2': 'ダブルボギー', '3': 'トリプル' };
 const termOf = (v, par) => v === 1 ? 'ホールインワン' : TERM[v - par] || fmtDiff(v - par);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-let scEdit = false;
+/* score page: one player's 18-hole card (you, unless opened from the participants sheet);
+   tapping a score cell opens -/+ right under that half of the card */
+const me = () => S.score.players[0];
+let scPlayer = null, scHole = 0;  // scPlayer: id of another player, null = you
+const scWho = () => S.score.players.find(p => p.id === scPlayer) || me();
+function scoreEnter() { if (S.page !== 'score') scHole = N - 1; }
 function renderScore() {
-  const h = hole(), list = $('scList');
-  $('scNo').textContent = N; $('scPar').textContent = 'Par ' + h.par;
-  list.textContent = '';
-  S.score.players.forEach(p => {
-    const row = el('div', 'prow');
-    if (scEdit) {
-      const inp = el('input'); inp.type = 'text'; inp.value = p.name; inp.maxLength = 12; inp.setAttribute('aria-label', '名前');
-      inp.oninput = () => { p.name = inp.value; saveScore(); };
-      const del = el('button', 'del', '✕'); del.setAttribute('aria-label', `${p.name}を外す`); del.disabled = S.score.players.length <= 1;
-      del.onclick = () => { S.score.players = S.score.players.filter(x => x !== p); delete S.score.strokes[p.id]; saveScore(); renderScore(); };
-      row.append(inp, del);
-    } else {
-      const v = strokesOf(p)[N - 1], t = totals(p), who = el('div', 'who');
-      who.append(el('div', 'nm', p.name || '名前なし'), el('div', 'tot', t.n ? `計 ${t.tot}（${fmtDiff(t.diff)}）・${t.n}H` : 'まだ入力なし'));
-      const set = nv => { strokesOf(p)[N - 1] = nv; saveScore(); renderScore(); };
-      const stp = el('div', 'stp'), minus = el('button', '', '−'), plus = el('button', '', '＋');
-      const val = el('button', 'val' + (v == null ? '' : v < h.par ? ' under' : v > h.par ? ' over' : ''));
-      val.append(el('b', '', v == null ? '—' : v), el('small', '', v == null ? '未入力' : termOf(v, h.par)));
-      minus.setAttribute('aria-label', `${p.name} 1打減らす`); plus.setAttribute('aria-label', `${p.name} 1打増やす`);
-      val.setAttribute('aria-label', v == null ? '未入力' : `${v}打。押すと消す`);
-      minus.onclick = () => set(v == null ? h.par - 1 : Math.max(1, v - 1));
-      plus.onclick = () => set(v == null ? h.par : Math.min(20, v + 1));
-      val.onclick = () => { if (v != null) set(null); };
-      stp.append(minus, val, plus);
-      row.append(who, stp);
+  const p = scWho(), a = strokesOf(p), t = totals(p), isMe = p === me();
+  $('scTitle').textContent = isMe ? 'マイスコア' : `${p.name || '名前なし'} のスコア`;
+  const sum = $('scSum'); sum.textContent = '';
+  sum.append(el('b', '', t.n ? fmtDiff(t.diff) : '—'), el('span', '', t.n ? `計 ${t.tot}打 ・ ${t.n}ホール` : 'まだ入力がありません'));
+  const board = $('scBoard'); board.textContent = '';
+  [['OUT', 0], ['IN', 9]].forEach(([label, from]) => {
+    const tb = el('table', 'sc my'), head = el('tr'), par = el('tr', 'par'), row = el('tr', 'mine');
+    head.append(el('th', '', 'H')); par.append(el('td', '', 'Par')); row.append(el('td', '', 'スコア'));
+    let parSum = 0, s = 0, any = false;
+    for (let i = from; i < from + 9; i++) {
+      const hp = S.course.holes[i].par, v = a[i];
+      head.append(el('th', '', i + 1)); par.append(el('td', '', hp)); parSum += hp;
+      const c = el('td', (v == null ? '' : v < hp ? 'under' : v >= hp + 2 ? 'over2' : '') + (i === scHole ? ' sel' : ''), v == null ? '' : v);
+      c.setAttribute('role', 'button'); c.setAttribute('aria-label', `${i + 1}番 ${v == null ? '未入力' : v + '打'}`);
+      c.onclick = () => { scHole = i; renderScore(); };
+      row.append(c);
+      if (v != null) { s += v; any = true; }
     }
+    head.append(el('th', 'sum', label)); par.append(el('td', 'sum', parSum)); row.append(el('td', 'sum', any ? s : ''));
+    tb.append(head, par, row);
+    board.appendChild(tb);
+    if (scHole >= from && scHole < from + 9) board.appendChild(scoreStepper(p, scHole));
+  });
+}
+function scoreStepper(p, i) {
+  const hp = S.course.holes[i].par, v = strokesOf(p)[i], box = el('div', 'stepper');
+  const set = nv => { strokesOf(p)[i] = nv; saveScore(); renderScore(); };
+  const hd = el('div', 'sh'); hd.append(el('b', '', `${i + 1}番`), el('span', '', `Par ${hp}`));
+  const stp = el('div', 'stp'), minus = el('button', '', '−'), plus = el('button', '', '＋');
+  const val = el('div', 'val' + (v == null ? '' : v < hp ? ' under' : v > hp ? ' over' : ''));
+  val.append(el('b', '', v == null ? '—' : v), el('small', '', v == null ? '未入力' : termOf(v, hp)));
+  minus.setAttribute('aria-label', '1打減らす'); plus.setAttribute('aria-label', '1打増やす');
+  minus.onclick = () => set(v == null ? hp - 1 : Math.max(1, v - 1));
+  plus.onclick = () => set(v == null ? hp : Math.min(20, v + 1));
+  stp.append(minus, val, plus);
+  const clr = el('button', 'clr', '消す'); clr.disabled = v == null; clr.onclick = () => set(null);
+  box.append(hd, stp, clr);
+  return box;
+}
+
+/* participants sheet (menu): names, adding/removing, and entering other people's scores */
+function renderPlayers() {
+  const list = $('plList'); list.textContent = '';
+  S.score.players.forEach((p, idx) => {
+    const row = el('div', 'prow'), inp = el('input');
+    inp.type = 'text'; inp.value = p.name; inp.maxLength = 12; inp.setAttribute('aria-label', '名前');
+    inp.oninput = () => { p.name = inp.value; saveScore(); };
+    const go = el('button', 'btn', idx ? 'スコア入力' : '自分');
+    go.disabled = !idx;
+    go.onclick = () => { $('players').hidden = true; scPlayer = p.id; scHole = N - 1; goPage('score'); };
+    const del = el('button', 'del', '✕'); del.setAttribute('aria-label', `${p.name}を外す`); del.disabled = !idx;
+    del.onclick = () => { S.score.players = S.score.players.filter(x => x !== p); delete S.score.strokes[p.id]; saveScore(); renderPlayers(); };
+    row.append(inp, go, del);
     list.appendChild(row);
   });
-  $('scAdd').parentElement.hidden = !scEdit; $('scAdd').disabled = S.score.players.length >= 8;
-  $('scEdit').textContent = scEdit ? '完了' : '参加者';
+  $('plAdd').disabled = S.score.players.length >= 8;
 }
-$('scPrev').onclick = () => { goHole(N - 1); renderScore(); };
-$('scNext').onclick = () => { goHole(N + 1); renderScore(); };
-$('scEdit').onclick = () => { scEdit = !scEdit; renderScore(); };
-$('scAdd').onclick = () => {
+$('goPlayers').onclick = () => { renderPlayers(); openSheet('players'); };
+$('plClose').onclick = () => $('players').hidden = true;
+$('plAdd').onclick = () => {
   S.score.players.push({ id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: `参加者${S.score.players.length + 1}` });
-  saveScore(); renderScore();
-  const ins = $('scList').querySelectorAll('input'); ins[ins.length - 1].select();
+  saveScore(); renderPlayers();
+  const ins = $('plList').querySelectorAll('input'); ins[ins.length - 1].select();
 };
 let scWipeArm = null;
 $('scWipe').onclick = () => {
   if (!scWipeArm) { $('scWipe').textContent = 'もう一度押すと消します'; scWipeArm = setTimeout(() => { scWipeArm = null; $('scWipe').textContent = 'スコアをすべて消す'; }, 3500); return; }
   clearTimeout(scWipeArm); scWipeArm = null; $('scWipe').textContent = 'スコアをすべて消す';
-  S.score.strokes = {}; saveScore(); renderScore(); toast('スコアを消しました');
+  S.score.strokes = {}; saveScore(); toast('スコアを消しました');
 };
 
 /* ================= ranking ================= */
 function renderRank() {
   const rows = S.score.players.map(p => Object.assign({ p }, totals(p)));
   rows.sort((a, b) => (b.n > 0) - (a.n > 0) || a.diff - b.diff || a.tot - b.tot);
-  const list = $('rkList'); list.textContent = '';
   const maxN = Math.max(0, ...rows.map(r => r.n));
   $('rkInfo').textContent = maxN ? `${maxN}ホールまでの成績（パーとの差で順位）` : 'スコアを入力すると、ここに順位が出ます。';
+  // ranking table (scrolls inside its box when there are many players)
+  const tb = el('table', 'rkt'), hd = el('tr');
+  ['順位', '名前', 'スコア', '打数', 'H'].forEach(x => hd.append(el('th', '', x)));
+  tb.append(hd);
   let pos = 0;
   rows.forEach((r, i) => {
     if (r.n && (i === 0 || r.diff !== rows[i - 1].diff || !rows[i - 1].n)) pos = i + 1;
-    const row = el('div', 'rrow' + (r.n && pos === 1 ? ' top' : '')), who = el('div');
-    who.append(el('div', 'nm', r.p.name || '名前なし'), el('div', 'meta', r.n ? `計 ${r.tot}打・${r.n}ホール` : 'まだ入力なし'));
-    row.append(el('div', 'pos', r.n ? pos : '—'), who, el('div', 'dv', r.n ? fmtDiff(r.diff) : '—'));
-    list.appendChild(row);
+    const tr = el('tr', (r.n && pos === 1 ? 'top' : '') + (r.p === me() ? ' me' : ''));
+    tr.append(el('td', 'pos', r.n ? pos : '—'), el('td', 'nm', r.p.name || '名前なし'), el('td', 'dv', r.n ? fmtDiff(r.diff) : '—'), el('td', '', r.n ? r.tot : '—'), el('td', '', r.n));
+    tb.append(tr);
   });
+  const list = $('rkList'); list.textContent = ''; list.appendChild(tb);
   // scorecard: OUT (1-9) and IN (10-18)
   const card = $('rkCard'); card.textContent = '';
   [['OUT', 0], ['IN', 9]].forEach(([label, from]) => {
@@ -895,7 +947,7 @@ function renderRank() {
     head.append(el('th', 'sum', label)); par.append(el('td', 'sum', parSum));
     t.append(head, par);
     S.score.players.forEach(p => {
-      const tr = el('tr'), a = strokesOf(p); let sum = 0, any = false;
+      const tr = el('tr', p === me() ? 'me' : ''), a = strokesOf(p); let sum = 0, any = false;
       tr.append(el('td', '', p.name || '—'));
       for (let i = from; i < from + 9; i++) {
         const v = a[i], hp = S.course.holes[i].par;
@@ -921,12 +973,12 @@ function pageView(v, dragging) {
   });
 }
 function goPage(name) {
-  if (name === 'score') renderScore();
+  if (name === 'score') { scoreEnter(); renderScore(); }
+  else scPlayer = null;  // swiping to the score page always shows your own card
   if (name === 'rank') renderRank();
-  if (name !== 'score' && scEdit) scEdit = false;
   S.page = name; pageView(PAGE_POS[name]);
 }
-const canSwipe = () => S.page !== 'map' || (!S.mode && $('menu').hidden && $('setup').hidden && $('onboard').hidden);
+const canSwipe = () => S.page !== 'map' || (!S.mode && $('menu').hidden && $('setup').hidden && $('players').hidden && $('onboard').hidden);
 let sw = null, swallowClick = false;
 function swipeStart(e) {
   if ((e.pointerType === 'mouse' && e.button) || !canSwipe() || e.target.closest('input,select')) return;
@@ -941,7 +993,7 @@ document.addEventListener('pointermove', e => {
     // finger moving left reveals the page on the right, and vice versa
     sw.to = sw.from === 'map' ? (dx < 0 ? 'score' : 'rank') : (PAGE_POS[sw.from] > 0) === (dx > 0) ? 'map' : null;
     if (!sw.to) { sw = null; return; }
-    if (sw.to === 'score') renderScore(); else if (sw.to === 'rank') renderRank();
+    if (sw.to === 'score') { scoreEnter(); renderScore(); } else if (sw.to === 'rank') renderRank();
   }
   const a = PAGE_POS[sw.from], b = PAGE_POS[sw.to];
   pageView(Math.min(Math.max(a, b), Math.max(Math.min(a, b), a - dx / innerWidth)), true);
