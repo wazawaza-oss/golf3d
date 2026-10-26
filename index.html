@@ -23,27 +23,27 @@ button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
 button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 
 /* top: distance panel — frosted glass so the map shows through; nothing sits at the bottom edge (Safari's bar) */
-.hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));max-width:440px;margin:0 auto;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 4px 18px rgba(0,0,0,.25);padding:6px 10px 8px;z-index:5;color:var(--ink);font-weight:800}
+.hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));max-width:440px;margin:0 auto;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 4px 18px rgba(0,0,0,.25);padding:4px 8px 5px;z-index:5;color:var(--ink);font-weight:800}
 .hrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.elev{display:flex;align-items:center;gap:4px;padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.75);border:1.5px solid var(--edge);font-size:12.5px;font-weight:800}
+.elev{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.75);border:1.5px solid var(--edge);font-size:12px;font-weight:800}
 .elev b{font-weight:900}
 .elev[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
-.gear{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--ink)}
+.gear{width:30px;height:28px;border-radius:10px;display:grid;place-items:center;color:var(--ink)}
 .gear svg{display:block}
-.holebar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px}
-.holebar .ic{width:42px;height:36px;border-radius:10px;font-size:26px;font-weight:900;line-height:1;background:rgba(255,255,255,.75);border:1.5px solid var(--edge);color:var(--ink)}
-.holename{font-weight:900;font-size:17px;display:flex;align-items:baseline;gap:6px}
-.holename b{font-size:24px}
-.holename .par{font-weight:800;font-size:15px}
-.dist{display:flex;align-items:baseline;justify-content:center;gap:4px}
-.dist .num{font-size:56px;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.02em;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 5px rgba(255,255,255,.7)}
+.holebar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:1px}
+.holebar .ic{width:40px;height:30px;border-radius:10px;font-size:22px;font-weight:900;line-height:1;background:rgba(255,255,255,.75);border:1.5px solid var(--edge);color:var(--ink)}
+.holename{font-weight:900;font-size:15px;display:flex;align-items:baseline;gap:6px}
+.holename b{font-size:22px}
+.holename .par{font-weight:800;font-size:14px}
+.dist{display:flex;align-items:baseline;justify-content:center;gap:4px;margin-top:-2px}
+.dist .num{font-size:50px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 5px rgba(255,255,255,.7)}
 .dist .unit{font-size:22px;font-weight:900}
 .dist .lab{font-size:14px;font-weight:800;margin-left:8px}
-.sub{text-align:center;font-size:14.5px;font-weight:800;min-height:1.4em;font-variant-numeric:tabular-nums;text-shadow:0 0 2px rgba(255,255,255,.9)}
+.sub{text-align:center;font-size:14px;font-weight:800;min-height:1.3em;line-height:1.3;font-variant-numeric:tabular-nums;text-shadow:0 0 2px rgba(255,255,255,.9)}
 .sub .up{color:#a3170f;font-weight:900}.sub .down{color:#0750a8;font-weight:900}
 
-/* right column: GPS / 3D / view / you / pin — fits between the distance panel (--hudb) and the bottom */
-.side{position:fixed;right:calc(env(safe-area-inset-right,0px) + 38px);top:calc(var(--hudb,190px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);display:flex;flex-direction:column;justify-content:center;gap:8px;z-index:4;pointer-events:none}
+/* right column: GPS / 3D / view / you / pin — fits between the distance panel (--hudb) and the bottom dock */
+.side{position:fixed;right:max(10px,env(safe-area-inset-right,0px));top:calc(var(--hudb,190px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 90px);display:flex;flex-direction:column;justify-content:center;gap:8px;z-index:4;pointer-events:none}
 .fab{pointer-events:auto;flex:0 1 58px;min-height:44px;width:58px;border-radius:14px;background:var(--panel);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);font-weight:900;font-size:15px;line-height:1.15;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center}
 .fab small{display:block;font-size:10.5px;font-weight:800;color:var(--ink);white-space:nowrap}
 .fab svg{display:block}
@@ -102,12 +102,16 @@ input[type=text]{flex:1 1 200px}
 .onboard p{margin:0;font-size:14px;line-height:1.65;color:var(--muted)}
 
 /* side pages: ranking (left of map) and score entry (right of map) */
-/* side tabs: 順位 (left) and スコア (right), icon + two letters; the right one sits outside the button column */
-.edge{position:fixed;top:50%;transform:translateY(-50%);z-index:4;width:32px;padding:10px 0;background:var(--panel);border:1.5px solid var(--edge);box-shadow:0 2px 8px rgba(0,0,0,.25);display:flex;flex-direction:column;align-items:center;gap:5px;font-size:13px;font-weight:900;color:var(--ink);touch-action:pan-y}
-.edge span{writing-mode:vertical-rl;letter-spacing:.12em}
-.edge svg{display:block}
-.edge.l{left:0;border-left:none;border-radius:0 12px 12px 0}
-.edge.r{right:0;border-right:none;border-radius:12px 0 0 12px}
+/* bottom dock (kept clear of Safari's bar): 順位 | this hole's score − / + | スコアボード */
+.dock{position:fixed;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 14px);max-width:440px;margin:0 auto;display:grid;grid-template-columns:64px 1fr 64px;gap:8px;z-index:5}
+.dk{height:64px;border-radius:14px;background:var(--panel);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);font-weight:900;font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
+.dk svg{display:block}
+.dkstep{height:64px;border-radius:14px;background:var(--panel);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 6px;color:var(--ink)}
+.dkstep>button{width:48px;height:48px;border-radius:12px;background:#e2e8dd;font-size:26px;font-weight:900;flex:none}
+.dkstep .dv{flex:1;min-width:0;text-align:center;line-height:1.1}
+.dkstep .dv small{display:block;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dkstep .dv b{display:block;font-size:26px;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums}
+.dkstep .dv.under b{color:#a3170f}.dkstep .dv.over b{color:#0750a8}
 .hud{touch-action:pan-y}
 .page{position:fixed;inset:0;z-index:10;background:#f1f4ee;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;transform:translateX(100%);visibility:hidden;transition:transform .25s ease,visibility 0s linear .25s;padding:calc(env(safe-area-inset-top,0px) + 10px) max(14px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 28px) max(14px,env(safe-area-inset-left,0px));box-shadow:0 0 24px rgba(0,0,0,.25)}
 .page.on{visibility:visible;transition:transform .25s ease,visibility 0s}
@@ -200,7 +204,7 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
   <div class="hrow">
     <button class="elev" id="bElev" aria-pressed="true"><span aria-hidden="true">↕</span>高低差 <b>オン</b></button>
     <button class="gear" id="bMenu" aria-label="メニュー（コース登録・保存・スコア共有）">
-      <svg width="26" height="26" viewBox="-14 -14 28 28" aria-hidden="true"><circle r="9.6" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="3.77 3.77"/><circle r="8" fill="currentColor"/><circle r="3.4" fill="#fff"/></svg>
+      <svg width="22" height="22" viewBox="-14 -14 28 28" aria-hidden="true"><circle r="9.6" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="3.77 3.77"/><circle r="8" fill="currentColor"/><circle r="3.4" fill="#fff"/></svg>
     </button>
   </div>
   <div class="holebar">
@@ -287,12 +291,19 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
   <div class="row"><button class="btn primary" id="obStart">登録を始める</button><button class="btn" id="obLater">あとで</button></div>
 </div>
 
-<button class="edge l" id="edgeL" aria-label="ランキングを開く">
-  <svg width="18" height="16" viewBox="0 0 18 16" aria-hidden="true"><path d="M6.5 4h5v12h-5zM0 8h5.5v8H0zM12.5 10H18v6h-5.5z" fill="currentColor"/></svg><span>順位</span>
-</button>
-<button class="edge r" id="edgeR" aria-label="マイスコアを開く">
-  <svg width="16" height="18" viewBox="0 0 16 18" aria-hidden="true"><rect x="1" y="1" width="14" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 6h8M4 9.5h8M4 13h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>スコア</span>
-</button>
+<div class="dock" id="dock">
+  <button class="dk" id="dkRank" aria-label="順位を開く">
+    <svg width="22" height="20" viewBox="0 0 18 16" aria-hidden="true"><path d="M6.5 4h5v12h-5zM0 8h5.5v8H0zM12.5 10H18v6h-5.5z" fill="currentColor"/></svg>順位
+  </button>
+  <div class="dkstep">
+    <button id="dkMinus" aria-label="1打減らす">−</button>
+    <div class="dv" id="dkVal" aria-live="polite"><small id="dkHole">1番 Par 4</small><b id="dkNum">—</b><small id="dkTerm">未入力</small></div>
+    <button id="dkPlus" aria-label="1打増やす">＋</button>
+  </div>
+  <button class="dk" id="dkCard" aria-label="スコアボードを開く">
+    <svg width="20" height="22" viewBox="0 0 16 18" aria-hidden="true"><rect x="1" y="1" width="14" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 6h8M4 9.5h8M4 13h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>スコアボード
+  </button>
+</div>
 
 <div class="sheet" id="players" hidden>
   <div class="inner">
@@ -651,7 +662,8 @@ function refresh() {
   $('bPin').setAttribute('aria-pressed', S.mode === 'pin');
   $('b3d').setAttribute('aria-pressed', S.is3D);
   $('viewName').textContent = { tee: 'ティー', top: '真上', green: 'グリーン' }[S.view];
-  $('edgeL').hidden = $('edgeR').hidden = !!S.mode || !$('setup').hidden;
+  $('dock').hidden = !!S.mode || !$('setup').hidden;
+  renderDock();
   if (!$('setup').hidden) renderSetup();
   placeCross();
   readout();
@@ -949,6 +961,22 @@ function scoreStepper(p, i) {
   return box;
 }
 
+/* bottom dock: your score for the hole on screen, entered with − / ＋ (same rules as the score page) */
+function renderDock() {
+  const i = N - 1, hp = S.course.holes[i].par, v = strokesOf(me())[i];
+  $('dkVal').className = 'dv' + (v == null ? '' : v < hp ? ' under' : v > hp ? ' over' : '');
+  $('dkHole').textContent = `${N}番 Par ${hp}`;
+  $('dkNum').textContent = v == null ? '—' : v;
+  $('dkTerm').textContent = v == null ? '未入力' : termOf(v, hp);
+}
+function dockStep(d) {
+  const a = strokesOf(me()), i = N - 1, hp = S.course.holes[i].par, v = a[i];
+  a[i] = d < 0 ? (v == null ? hp - 1 : Math.max(1, v - 1)) : (v == null ? hp : Math.min(20, v + 1));
+  saveScore(); renderDock();
+}
+$('dkMinus').onclick = () => dockStep(-1);
+$('dkPlus').onclick = () => dockStep(1);
+
 /* participants sheet (menu): names, adding/removing, and entering other people's scores */
 function renderPlayers() {
   const list = $('plList'); list.textContent = '';
@@ -1204,6 +1232,7 @@ function goPage(name) {
   if (name === 'score') { scoreEnter(); renderScore(); }
   else scPlayer = null;  // swiping to the score page always shows your own card
   if (name === 'rank') { renderRank(); if (S.page !== 'rank') roomPull(); }
+  if (name === 'map') renderDock();
   S.page = name; pageView(PAGE_POS[name]);
 }
 const canSwipe = () => S.page !== 'map' || (!S.mode && $('menu').hidden && $('setup').hidden && $('players').hidden && $('share').hidden && $('onboard').hidden);
@@ -1238,9 +1267,9 @@ function swipeEnd(e) {
 document.addEventListener('pointerup', swipeEnd);
 document.addEventListener('pointercancel', swipeEnd);
 document.addEventListener('click', e => { if (swallowClick) { e.preventDefault(); e.stopPropagation(); swallowClick = false; } }, true);
-[document.querySelector('.hud'), $('edgeL'), $('edgeR'), $('pRank'), $('pScore')].forEach(x => x.addEventListener('pointerdown', swipeStart));
-$('edgeL').onclick = () => goPage('rank');
-$('edgeR').onclick = () => goPage('score');
+[document.querySelector('.hud'), $('pRank'), $('pScore')].forEach(x => x.addEventListener('pointerdown', swipeStart));
+$('dkRank').onclick = () => goPage('rank');
+$('dkCard').onclick = () => goPage('score');
 document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => goPage(b.dataset.go));
 pageView(0);
 
