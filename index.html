@@ -9,8 +9,11 @@
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <style>
 :root{
-  --ink:#14223a; --muted:#5a6672; --panel:rgba(255,255,255,.96); --line:#d9dfd4;
-  --accent:#1d6638; --pin:#d6402b; --me:#1a73e8; --meas:#ffc400; --tee:#2f6fd1;
+  /* high contrast for bright sunlight: near-black text on opaque white panels */
+  --ink:#0a1322; --muted:#36414d; --panel:#fff; --edge:rgba(10,19,34,.28); --line:#b9c2b3;
+  --accent:#16592f; --tee:#2f6fd1;
+  /* map marks: fluorescent colours, each with its own shape (you: circle, pin: flag, mark: diamond) */
+  --me:#00e5ff; --pin:#ff2bd6; --meas:#c6ff00;
 }
 html,body{height:100%;margin:0}
 [hidden]{display:none!important}
@@ -20,33 +23,38 @@ button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
 button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 
 /* top: hole + distance */
-.hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translateX(-50%);width:min(440px,calc(100% - 20px));background:var(--panel);border-radius:16px;box-shadow:0 4px 18px rgba(0,0,0,.18);padding:8px 12px 10px;z-index:5}
+.hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:10px;right:10px;max-width:440px;margin:0 auto;background:var(--panel);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 4px 18px rgba(0,0,0,.3);padding:8px 12px 10px;z-index:5}
+@media (max-width:580px){.hud{right:68px}}  /* leave room for the settings button */
 .holebar{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.holebar .ic{width:40px;height:36px;border-radius:10px;font-size:26px;line-height:1;background:#eef2ea}
-.holename{font-weight:700;font-size:17px;display:flex;align-items:baseline;gap:6px}
+.holebar .ic{width:40px;height:36px;border-radius:10px;font-size:26px;font-weight:800;line-height:1;background:#e2e8dd;color:var(--ink)}
+.holename{font-weight:800;font-size:17px;display:flex;align-items:baseline;gap:6px}
 .holename b{font-size:24px}
-.holename .par{font-weight:500;color:var(--muted);font-size:14px}
+.holename .par{font-weight:700;color:var(--ink);font-size:15px}
 .dist{display:flex;align-items:baseline;justify-content:center;gap:4px;margin-top:2px}
-.dist .num{font-size:54px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
-.dist .unit{font-size:22px;font-weight:700}
-.dist .lab{font-size:13px;color:var(--muted);margin-left:8px}
-.dist .tapx{align-self:center;width:30px;height:30px;border-radius:50%;background:var(--meas);color:#14223a;font-size:13px;font-weight:800;margin-left:6px}
-.sub{text-align:center;font-size:13.5px;color:var(--ink);min-height:1.4em;font-variant-numeric:tabular-nums}
-.sub .up{color:#b3261e;font-weight:700}.sub .down{color:#0b6bcb;font-weight:700}
+.dist .num{font-size:54px;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.dist .unit{font-size:22px;font-weight:800}
+.dist .lab{font-size:14px;font-weight:700;color:var(--ink);margin-left:8px}
+.dist .tapx{align-self:center;width:30px;height:30px;transform:rotate(45deg);border-radius:4px;background:var(--meas);border:2px solid #fff;box-shadow:0 0 0 1.5px var(--ink);color:var(--ink);font-size:13px;font-weight:900;margin-left:8px}
+.dist .tapx span{display:block;transform:rotate(-45deg)}
+.sub{text-align:center;font-size:14px;font-weight:600;color:var(--ink);min-height:1.4em;font-variant-numeric:tabular-nums}
+.sub .up{color:#a3170f;font-weight:800}.sub .down{color:#0750a8;font-weight:800}
+/* settings (menu) button, top right */
+.gear{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:max(10px,env(safe-area-inset-right,0px));width:50px;height:50px;border-radius:14px;background:var(--panel);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);z-index:5;display:grid;place-items:center}
+.gear svg{display:block}
 
 /* right side */
 .side{position:fixed;right:max(10px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);display:grid;gap:10px;z-index:4}
-.fab{width:54px;height:54px;border-radius:14px;background:var(--panel);box-shadow:0 3px 12px rgba(0,0,0,.2);font-weight:800;font-size:15px}
-.fab small{display:block;font-size:10px;font-weight:600;color:var(--muted)}
+.fab{width:54px;height:54px;border-radius:14px;background:var(--panel);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);font-weight:900;font-size:15px;color:var(--ink)}
+.fab small{display:block;font-size:10.5px;font-weight:700;color:var(--ink)}
 .fab[aria-pressed="true"]{background:var(--accent);color:#fff}
-.fab[aria-pressed="true"] small{color:#d8eedd}
+.fab[aria-pressed="true"] small{color:#fff}
 
 /* bottom bar */
-.bottom{position:fixed;left:0;right:0;bottom:0;padding:8px max(10px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 8px) max(10px,env(safe-area-inset-left,0px));display:grid;grid-template-columns:repeat(4,1fr);gap:8px;z-index:5;pointer-events:none}
-.bottom button{pointer-events:auto;height:56px;border-radius:14px;background:var(--panel);box-shadow:0 3px 12px rgba(0,0,0,.2);font-weight:700;font-size:13.5px;line-height:1.2}
-.bottom button small{display:block;font-size:10.5px;color:var(--muted);font-weight:600}
+.bottom{position:fixed;left:0;right:0;bottom:0;padding:8px max(10px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 8px) max(10px,env(safe-area-inset-left,0px));display:grid;grid-template-columns:repeat(3,1fr);gap:8px;z-index:5;pointer-events:none}
+.bottom button{pointer-events:auto;height:56px;border-radius:14px;background:var(--panel);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);font-weight:800;font-size:15px;line-height:1.2;color:var(--ink)}
+.bottom button small{display:block;font-size:11.5px;color:var(--ink);font-weight:700}
 .bottom button[aria-pressed="true"]{background:var(--accent);color:#fff}
-.bottom button[aria-pressed="true"] small{color:#d8eedd}
+.bottom button[aria-pressed="true"] small{color:#fff}
 
 /* floating cards */
 .banner{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 78px);width:min(440px,calc(100% - 20px));border-radius:14px;z-index:6;box-shadow:0 4px 18px rgba(0,0,0,.22);background:#14223a;color:#fff;padding:10px 12px;display:grid;gap:8px;font-weight:700;font-size:15px}
@@ -167,18 +175,21 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 /* map markers */
 .mk{pointer-events:none}
 .mk.tee{width:24px;height:24px;border-radius:50%;background:var(--tee);color:#fff;font:700 12px/24px system-ui,sans-serif;text-align:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)}
-.mk.pin{width:3px;height:36px;background:#fff;box-shadow:0 0 2px rgba(0,0,0,.7)}
-.mk.pin::after{content:"";position:absolute;left:3px;top:0;border-left:17px solid var(--pin);border-top:7px solid transparent;border-bottom:7px solid transparent}
+/* pin: fluorescent flag on a dark pole, white-edged (SVG built in mkPin) */
+.mk.pin{width:54px;height:50px}
+.mk.pin svg{display:block;overflow:visible}
 .mk.gc{width:10px;height:10px;border-radius:50%;background:#7ad86a;border:2px solid #fff;box-shadow:0 0 3px rgba(0,0,0,.5)}
-.mk.me{width:18px;height:18px;border-radius:50%;background:var(--me);border:3px solid #fff;box-shadow:0 0 0 7px rgba(26,115,232,.28),0 1px 4px rgba(0,0,0,.4)}
-.mk.me.sim{background:#8a5cf6;box-shadow:0 0 0 7px rgba(138,92,246,.28),0 1px 4px rgba(0,0,0,.4)}
+/* you: fluorescent circle with a white ring and a thin dark edge */
+.mk.me{width:20px;height:20px;box-sizing:border-box;border-radius:50%;background:var(--me);border:3.5px solid #fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.65),0 0 0 9px rgba(0,229,255,.3),0 1px 5px rgba(0,0,0,.5)}
+.mk.me.sim{background:#c08bff;box-shadow:0 0 0 1.5px rgba(0,0,0,.65),0 0 0 9px rgba(192,139,255,.3),0 1px 5px rgba(0,0,0,.5)}
 /* markers are positioned absolutely by MapLibre (transform); never override position on .mk, and animate only children */
-.mk.tap{width:24px;height:24px;z-index:2}
-.mk.tap .dot{position:absolute;inset:0;box-sizing:border-box;border-radius:50%;background:var(--meas);border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.5);animation:tapPop .42s cubic-bezier(.34,1.7,.5,1)}
-.mk.tap::before,.mk.tap::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--meas);opacity:0;animation:tapRing 2.4s ease-out infinite}
+/* measured point: fluorescent diamond */
+.mk.tap{width:26px;height:26px;z-index:2}
+.mk.tap .dot{position:absolute;inset:3px;box-sizing:border-box;border-radius:3px;background:var(--meas);border:3.5px solid #fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.65),0 1px 5px rgba(0,0,0,.5);transform:rotate(45deg);animation:tapPop .42s cubic-bezier(.34,1.7,.5,1)}
+.mk.tap::before,.mk.tap::after{content:"";position:absolute;inset:3px;border-radius:3px;border:2.5px solid var(--meas);opacity:0;transform:rotate(45deg);animation:tapRing 2.4s ease-out infinite}
 .mk.tap::after{animation-delay:1.2s}
-@keyframes tapPop{0%{transform:scale(0)}100%{transform:scale(1)}}
-@keyframes tapRing{0%{transform:scale(1);opacity:.85}100%{transform:scale(3.2);opacity:0}}
+@keyframes tapPop{0%{transform:rotate(45deg) scale(0)}100%{transform:rotate(45deg) scale(1)}}
+@keyframes tapRing{0%{transform:rotate(45deg) scale(1);opacity:.9}100%{transform:rotate(45deg) scale(3.2);opacity:0}}
 .mk.num{font:700 11px/1 system-ui,sans-serif;background:rgba(20,34,58,.88);color:#fff;border-radius:10px;padding:4px 7px}
 .maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{bottom:calc(env(safe-area-inset-bottom,0px) + 72px)}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
@@ -193,9 +204,12 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
     <div class="holename"><b id="hNo">1</b>H <span class="par" id="hPar">Par 4</span></div>
     <button class="ic" id="nextHole" aria-label="次のホール">›</button>
   </div>
-  <div class="dist"><span class="num" id="dNum">—</span><span class="unit">Y</span><span class="lab" id="dLab">ピンまで</span><button class="tapx" id="tapClear" aria-label="マークを消す" hidden>✕</button></div>
+  <div class="dist"><span class="num" id="dNum">—</span><span class="unit">Y</span><span class="lab" id="dLab">ピンまで</span><button class="tapx" id="tapClear" aria-label="マークを消す" hidden><span>✕</span></button></div>
   <div class="sub" id="dSub"></div>
 </div>
+<button class="gear" id="bMenu" aria-label="メニュー（コース登録・保存・スコア共有）">
+  <svg width="28" height="28" viewBox="-14 -14 28 28" aria-hidden="true"><circle r="9.6" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="3.77 3.77"/><circle r="8" fill="currentColor"/><circle r="3.4" fill="#fff"/></svg>
+</button>
 
 <div class="side">
   <button class="fab" id="b3d" aria-pressed="false">3D<small>立体</small></button>
@@ -217,7 +231,6 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
   <button id="bGps" aria-pressed="false">GPS<small>オフ</small></button>
   <button id="bPin">ピン<small>位置を置く</small></button>
   <button id="bElev" aria-pressed="true">高低差<small>オン</small></button>
-  <button id="bMenu">メニュー<small>登録・保存</small></button>
 </div>
 
 <div class="sheet" id="menu" hidden>
@@ -520,7 +533,11 @@ const mkEl = (cls, html) => { const d = document.createElement('div'); d.classNa
 const M = {
   tee: new maplibregl.Marker({ element: mkEl('tee', 'T') }),
   gc: new maplibregl.Marker({ element: mkEl('gc') }),
-  pin: new maplibregl.Marker({ element: mkEl('pin'), anchor: 'bottom' }),
+  pin: new maplibregl.Marker({ element: Object.assign(mkEl('pin'), { innerHTML:
+    '<svg width="54" height="50" viewBox="0 0 54 50" aria-hidden="true">' +
+    '<path d="M27 48V3" stroke="#fff" stroke-width="6" stroke-linecap="round"/><path d="M27 48V3" stroke="#0a1322" stroke-width="2.5" stroke-linecap="round"/>' +
+    '<path d="M28 3L51 13L28 23Z" fill="none" stroke="rgba(0,0,0,.6)" stroke-width="6" stroke-linejoin="round"/>' +
+    '<path d="M28 3L51 13L28 23Z" fill="#ff2bd6" stroke="#fff" stroke-width="3" stroke-linejoin="round"/></svg>' }), anchor: 'bottom' }),
   me: new maplibregl.Marker({ element: mkEl('me') }),
   tap: new maplibregl.Marker({ element: Object.assign(mkEl('tap'), { innerHTML: '<span class="dot"></span>' }) })
 };
@@ -552,10 +569,13 @@ map.on('load', () => {
   map.addSource('lines', { type: 'geojson', data: fc([]) });
   map.addLayer({ id: 'lines-dash', type: 'line', source: 'lines', filter: ['in', ['get', 'kind'], ['literal', ['hole', 'setup']]],
     layout: { 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 2, 'line-opacity': .8, 'line-dasharray': [2, 2] } });
+  // distance lines: white casing under a fluorescent line; you → pin is solid cyan, mark → pin is dashed lime
+  map.addLayer({ id: 'lines-case', type: 'line', source: 'lines', filter: ['in', ['get', 'kind'], ['literal', ['tap', 'me']]],
+    layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 7.5 } });
   map.addLayer({ id: 'lines-tap', type: 'line', source: 'lines', filter: ['==', ['get', 'kind'], 'tap'],
-    layout: { 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 2, 'line-opacity': .5 } });
+    layout: { 'line-join': 'round' }, paint: { 'line-color': '#c6ff00', 'line-width': 4, 'line-dasharray': [1.6, 1.1] } });
   map.addLayer({ id: 'lines-me', type: 'line', source: 'lines', filter: ['==', ['get', 'kind'], 'me'],
-    layout: { 'line-cap': 'round' }, paint: { 'line-color': '#ffc400', 'line-width': 3.5 } });
+    layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#00e5ff', 'line-width': 4 } });
   mapReady = true;
   refresh();
   if (registered(hole())) camera(S.view, 0);
@@ -670,7 +690,7 @@ async function readout() {
   const tok = ++rdTok, h = hole(), pin = pinLL(), sub = $('dSub');
   sub.textContent = '';
   $('tapClear').hidden = !S.tap;
-  if (!registered(h)) { $('dNum').textContent = '—'; $('dLab').textContent = '未登録のホール'; sub.textContent = 'メニュー →「コース登録」で登録できます'; return; }
+  if (!registered(h)) { $('dNum').textContent = '—'; $('dLab').textContent = '未登録のホール'; sub.textContent = '右上の ⚙ →「コース登録」で登録できます'; return; }
   if (S.tap) {  // tapped (yellow) point: distance from there to the pin
     const y = yards(S.tap, pin);
     $('dNum').textContent = Math.round(y); $('dLab').textContent = 'マークからピン';
