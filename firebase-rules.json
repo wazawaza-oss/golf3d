@@ -1,0 +1,33 @@
+{
+  "rules": {
+    "rooms": {
+      "$code": {
+        ".read": "auth != null && $code.matches(/^[A-Z2-9]{5}$/)",
+        "created": {
+          ".write": "auth != null && !data.exists()",
+          ".validate": "newData.isNumber() && $code.matches(/^[A-Z2-9]{5}$/)"
+        },
+        "members": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && root.child('rooms/' + $code + '/created').exists()",
+            ".validate": "newData.hasChildren(['players', 't'])",
+            "players": {
+              "$i": {
+                ".validate": "$i.matches(/^[0-7]$/) && newData.hasChildren(['id', 'name', 'strokes'])",
+                "id": { ".validate": "newData.isString() && newData.val().length <= 40" },
+                "name": { ".validate": "newData.isString() && newData.val().length <= 12" },
+                "strokes": {
+                  "$h": { ".validate": "$h.matches(/^([0-9]|1[0-7])$/) && newData.isNumber() && newData.val() >= 0 && newData.val() <= 20" }
+                },
+                "$other": { ".validate": false }
+              }
+            },
+            "t": { ".validate": "newData.isNumber()" },
+            "$other": { ".validate": false }
+          }
+        },
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}

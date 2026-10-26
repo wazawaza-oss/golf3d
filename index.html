@@ -158,6 +158,11 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 .sc tr.par td{color:var(--muted);font-size:12px}
 .sc td.under{color:#b3261e;font-weight:800}.sc td.over2{color:#0b6bcb}
 .sc .sum{font-weight:800;background:#f7f9f5}
+/* round sharing */
+.rcode{font-size:34px;font-weight:800;letter-spacing:.18em;text-align:center;background:#f1f4ee;border-radius:14px;padding:10px;font-variant-numeric:tabular-nums}
+#rmCodeIn{text-transform:uppercase;letter-spacing:.12em;font-weight:700}
+.rstat{font-size:13px;font-weight:700;color:var(--muted)}
+.rstat.ok{color:#1e7a3c}
 
 /* map markers */
 .mk{pointer-events:none}
@@ -231,7 +236,7 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
     <p>地理院地図のURLを貼り付けると、その場所へ移動します。</p>
     <div class="row"><input type="text" id="jumpUrl" placeholder="https://maps.gsi.go.jp/#16/35.22/139.10/…" aria-label="地理院地図のURL"><button class="btn" id="jumpGo">移動</button></div>
     <h3>ラウンド</h3>
-    <div class="row"><button class="btn" id="goPlayers">参加者とスコア</button><button class="btn" id="pinReset">今日のピン位置をすべて消す</button></div>
+    <div class="row"><button class="btn primary" id="goShare">スコアを共有</button><button class="btn" id="goPlayers">参加者とスコア</button><button class="btn" id="pinReset">今日のピン位置をすべて消す</button></div>
     <h3>コースデータ</h3>
     <div class="row">
       <button class="btn" id="exportBtn">書き出す（ファイル）</button>
@@ -281,6 +286,30 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
     <div class="plist" id="plList"></div>
     <div class="row"><button class="btn" id="plAdd">＋ 参加者を追加</button></div>
     <div class="row"><button class="btn danger" id="scWipe">スコアをすべて消す</button></div>
+  </div>
+</div>
+
+<div class="sheet" id="share" hidden>
+  <div class="inner">
+    <h2><span>スコアを共有</span><button id="rmClose">閉じる</button></h2>
+    <div id="rmOut" class="inner">
+      <p>同じラウンドに入ると、各自が自分のスマホで入れたスコアが、全員のランキングにすぐ出ます。入らなくても、この端末だけで今までどおり使えます。</p>
+      <div class="row"><input type="text" id="rmName" maxlength="12" placeholder="あなたの名前" aria-label="あなたの名前"></div>
+      <h3>新しく始める（組の1人だけ）</h3>
+      <div class="row"><button class="btn primary" id="rmCreate">ラウンドを作成</button></div>
+      <h3>コードで参加する</h3>
+      <div class="row"><input type="text" id="rmCodeIn" maxlength="5" placeholder="例 K7P3Q" aria-label="ラウンドのコード" autocomplete="off"><button class="btn primary" id="rmJoin">参加</button></div>
+    </div>
+    <div id="rmIn" class="inner" hidden>
+      <p>このコードかリンクを、同じ組の人に送ってください。</p>
+      <div class="rcode" id="rmCode"></div>
+      <div class="row"><button class="btn primary" id="rmShareLink">リンクを送る</button><span class="rstat" id="rmStat"></span></div>
+      <h3>参加している人</h3>
+      <p id="rmMembers"></p>
+      <p>スマホを持っていない人は「参加者とスコア」で追加すると、その人のスコアも全員に届きます（同じ人を2台で追加しないでください）。</p>
+      <div class="row"><button class="btn danger" id="rmLeave">ラウンドから抜ける</button></div>
+    </div>
+    <p id="rmMsg" style="color:#b3261e"></p>
   </div>
 </div>
 
@@ -749,7 +778,7 @@ function gpsStop() {
 $('bGps').onclick = () => S.watch != null ? gpsStop() : gpsStart();
 
 /* menu */
-const openSheet = id => { $('menu').hidden = $('setup').hidden = $('players').hidden = true; $(id).hidden = false; };
+const openSheet = id => { $('menu').hidden = $('setup').hidden = $('players').hidden = $('share').hidden = true; $(id).hidden = false; };
 $('bMenu').onclick = () => { $('courseName').value = S.course.name || ''; offEstimate(); openSheet('menu'); };
 $('menuClose').onclick = () => $('menu').hidden = true;
 $('courseName').oninput = () => { S.course.name = $('courseName').value; saveCourse(); };
@@ -830,8 +859,8 @@ $('sToggle').onclick = () => {
 };
 
 /* ================= score entry ================= */
-const saveScore = () => saveJSON('golf3d.score', S.score);
-const strokesOf = p => S.score.strokes[p.id] || (S.score.strokes[p.id] = Array(18).fill(null));
+const saveScore = () => { saveJSON('golf3d.score', S.score); roomPush(); };
+const strokesOf = p => p.remote ? p.strokes : S.score.strokes[p.id] || (S.score.strokes[p.id] = Array(18).fill(null));
 function totals(p) {
   let tot = 0, par = 0, n = 0;
   strokesOf(p).forEach((v, i) => { if (v) { tot += v; par += S.course.holes[i].par; n++; } });
@@ -919,12 +948,159 @@ $('scWipe').onclick = () => {
   S.score.strokes = {}; saveScore(); toast('スコアを消しました');
 };
 
+/* ================= round sharing (Firebase Realtime Database) =================
+   rooms/{CODE}/members/{uid} = { players: [{ id, name, strokes[18] (0 = empty) }], t }
+   Each phone writes only its own node: players[0] is the owner, the rest are people without a phone
+   typed in on that phone. The SDK loads only once a round is joined, so solo/offline use never needs it. */
+// Firebase web app config: public by design; access is limited by the database rules (firebase-rules.json)
+const FB_CONFIG = {
+  apiKey: 'AIzaSyD4ZvWQsx_0xXq7KJL4V123kdl8L3N2xPM',
+  authDomain: 'golfscoreapp-f2d31.firebaseapp.com',
+  databaseURL: 'https://golfscoreapp-f2d31-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId: 'golfscoreapp-f2d31',
+  appId: '1:513780302035:web:155d3e482323ebebf2d426'
+};
+const FB_SDK = 'https://www.gstatic.com/firebasejs/12.4.0/';
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789', CODE_RE = /^[A-Z2-9]{5}$/;
+let room = loadJSON('golf3d.room');  // { code, uid, members } — members are cached for offline viewing
+if (!room || !CODE_RE.test(room.code) || !room.uid) room = null;
+let roomLive = false, roomOff = null, fbP = null, pushT = null;
+const saveRoom = () => saveJSON('golf3d.room', room);
+const newCode = () => Array.from(crypto.getRandomValues(new Uint8Array(5)), b => CODE_CHARS[b % CODE_CHARS.length]).join('');
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), ms))]);
+function fb() {
+  if (!FB_CONFIG) return Promise.reject(new Error('nocfg'));
+  return fbP || (fbP = (async () => {
+    const [A, Au, D] = await Promise.all(['app', 'auth', 'database'].map(m => import(`${FB_SDK}firebase-${m}.js`)));
+    const app = A.initializeApp(FB_CONFIG), auth = Au.getAuth(app);
+    await auth.authStateReady();  // anonymous sign-in is kept on the phone, so the same uid comes back
+    if (!auth.currentUser) await Au.signInAnonymously(auth);
+    return { D, db: D.getDatabase(app), uid: auth.currentUser.uid };
+  })().catch(e => { fbP = null; throw e; }));
+}
+const memberRef = (f, code) => f.D.ref(f.db, `rooms/${code}/members/${f.uid}`);
+const myNode = () => ({
+  players: S.score.players.slice(0, 8).map(p => ({ id: p.id, name: (p.name || '').slice(0, 12), strokes: strokesOf(p).map(v => v || 0) })),
+  t: Date.now()
+});
+function roomPush() {
+  if (!room) return;
+  clearTimeout(pushT);
+  pushT = setTimeout(() => fb().then(f => room && f.D.set(memberRef(f, room.code), myNode()).catch(() => {})).catch(() => {}), 250);
+}
+// everyone in the round: this phone's players first, then the other phones' players
+function allPlayers() {
+  const list = S.score.players.slice();
+  if (room) Object.entries(room.members || {}).forEach(([uid, m]) => {
+    if (uid === room.uid || !m || !m.players) return;
+    Object.values(m.players).forEach((p, i) => p && list.push({
+      id: `${uid}:${p.id || i}`, name: String(p.name || ''), remote: true,
+      strokes: Array.from({ length: 18 }, (_, h) => +(p.strokes || {})[h] || null)
+    }));
+  });
+  return list;
+}
+function roomRefresh() {
+  if (S.page === 'rank') renderRank();
+  if (!$('share').hidden) renderShare();
+}
+async function roomConnect() {
+  if (!room || roomOff) return;
+  let f; try { f = await fb(); } catch (e) { return; }  // offline: cached scores stay on screen, retried when back online
+  if (!room || roomOff) return;
+  const code = room.code, D = f.D;
+  const u1 = D.onValue(D.ref(f.db, `rooms/${code}/members`), snap => {
+    if (!room || room.code !== code) return;
+    room.members = snap.val() || {}; saveRoom(); roomRefresh();
+  }, () => {});
+  const u2 = D.onValue(D.ref(f.db, '.info/connected'), snap => {
+    roomLive = !!snap.val();
+    if (roomLive) roomPush();  // resend everything entered while offline
+    roomRefresh();
+  });
+  roomOff = () => { u1(); u2(); roomOff = null; roomLive = false; };
+}
+async function roomEnter(code) {
+  const msg = $('rmMsg'), name = $('rmName').value.trim();
+  msg.textContent = '';
+  if (!name) { msg.textContent = '名前を入れてください。'; $('rmName').focus(); return; }
+  me().name = name; saveJSON('golf3d.score', S.score);
+  if (!FB_CONFIG) { msg.textContent = '共有の設定がまだ済んでいません。'; return; }
+  $('rmCreate').disabled = $('rmJoin').disabled = true; msg.textContent = '接続中…';
+  try {
+    const f = await withTimeout(fb(), 15000), D = f.D, created = c => D.ref(f.db, `rooms/${c}/created`);
+    if (!code) {
+      // a code already in use is refused by the rules; try a few fresh ones
+      for (let k = 0; k < 4 && !code; k++) {
+        const c = newCode();
+        try { await withTimeout(D.set(created(c), Date.now()), 10000); code = c; } catch (e) { if (e.message === 'timeout') throw e; }
+      }
+      if (!code) throw new Error('create');
+    } else if (!(await withTimeout(D.get(created(code)), 10000)).exists()) throw new Error('nf');
+    room = { code, uid: f.uid, members: {} }; saveRoom();
+    await withTimeout(D.set(memberRef(f, code), myNode()), 10000);
+    msg.textContent = '';
+    roomConnect(); renderShare();
+    toast(`ラウンド ${code} に入りました`);
+  } catch (e) {
+    if (!room) msg.textContent = e.message === 'nf' ? 'そのコードのラウンドが見つかりません。' : '接続できませんでした。電波を確認して、もう一度お試しください。';
+    else msg.textContent = '';
+    renderShare();
+  }
+  $('rmCreate').disabled = $('rmJoin').disabled = false;
+}
+function renderShare() {
+  $('rmOut').hidden = !!room; $('rmIn').hidden = !room;
+  if (!room) { if (!$('rmName').value) $('rmName').value = me().name === '自分' ? '' : me().name; return; }
+  $('rmCode').textContent = room.code;
+  const st = $('rmStat');
+  st.textContent = roomLive ? '● つながっています' : '○ オフライン（電波が戻ったら送ります）';
+  st.classList.toggle('ok', roomLive);
+  $('rmMembers').textContent = allPlayers().map(p => p === me() ? `${p.name}（あなた）` : p.name || '名前なし').join('、');
+}
+$('goShare').onclick = () => { $('rmMsg').textContent = ''; renderShare(); openSheet('share'); };
+$('rmClose').onclick = () => $('share').hidden = true;
+$('rmCreate').onclick = () => roomEnter(null);
+$('rmJoin').onclick = () => {
+  const c = $('rmCodeIn').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!CODE_RE.test(c)) { $('rmMsg').textContent = 'コードは英数字5文字です。'; return; }
+  roomEnter(c);
+};
+$('rmShareLink').onclick = async () => {
+  const url = `${location.origin}${location.pathname}?r=${room.code}`;
+  try { if (navigator.share) { await navigator.share({ title: 'ゴルフのスコア共有', text: `ラウンドのコード：${room.code}`, url }); return; } }
+  catch (e) { if (e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(url); toast('リンクをコピーしました'); } catch (e) { toast(url); }
+};
+let rmLeaveArm = null;
+$('rmLeave').onclick = () => {
+  if (!rmLeaveArm) { $('rmLeave').textContent = 'もう一度押すと抜けます'; rmLeaveArm = setTimeout(() => { rmLeaveArm = null; $('rmLeave').textContent = 'ラウンドから抜ける'; }, 3500); return; }
+  clearTimeout(rmLeaveArm); rmLeaveArm = null; $('rmLeave').textContent = 'ラウンドから抜ける';
+  const code = room.code;
+  if (roomOff) roomOff();
+  room = null; saveRoom(); renderShare(); roomRefresh();
+  fb().then(f => f.D.remove(memberRef(f, code))).catch(() => {});  // your own scores stay on this phone
+};
+addEventListener('online', roomConnect);
+roomConnect();
+// opened from a shared link (?r=CODE): show the join form with the code filled in
+(() => {
+  const c = (new URLSearchParams(location.search).get('r') || '').toUpperCase();
+  if (!c) return;
+  history.replaceState(null, '', location.pathname + location.hash);
+  if (!CODE_RE.test(c) || (room && room.code === c)) return;
+  renderShare(); openSheet('share');
+  if (room) $('rmMsg').textContent = `別のラウンド（${c}）に入るには、いまのラウンドから抜けてください。`;
+  else { $('rmCodeIn').value = c; if (!$('rmName').value) $('rmName').focus(); }
+})();
+
 /* ================= ranking ================= */
 function renderRank() {
-  const rows = S.score.players.map(p => Object.assign({ p }, totals(p)));
+  const all = allPlayers(), rows = all.map(p => Object.assign({ p }, totals(p)));
   rows.sort((a, b) => (b.n > 0) - (a.n > 0) || a.diff - b.diff || a.tot - b.tot);
   const maxN = Math.max(0, ...rows.map(r => r.n));
   $('rkInfo').textContent = maxN ? `${maxN}ホールまでの成績（パーとの差で順位）` : 'スコアを入力すると、ここに順位が出ます。';
+  if (room) $('rkInfo').textContent += `　共有中：${room.code}${roomLive ? '' : '（オフライン）'}`;
   // ranking table (scrolls inside its box when there are many players)
   const tb = el('table', 'rkt'), hd = el('tr');
   ['順位', '名前', 'スコア', '打数', 'H'].forEach(x => hd.append(el('th', '', x)));
@@ -946,7 +1122,7 @@ function renderRank() {
     for (let i = from; i < from + 9; i++) { head.append(el('th', '', i + 1)); par.append(el('td', '', S.course.holes[i].par)); parSum += S.course.holes[i].par; }
     head.append(el('th', 'sum', label)); par.append(el('td', 'sum', parSum));
     t.append(head, par);
-    S.score.players.forEach(p => {
+    all.forEach(p => {
       const tr = el('tr', p === me() ? 'me' : ''), a = strokesOf(p); let sum = 0, any = false;
       tr.append(el('td', '', p.name || '—'));
       for (let i = from; i < from + 9; i++) {
@@ -978,7 +1154,7 @@ function goPage(name) {
   if (name === 'rank') renderRank();
   S.page = name; pageView(PAGE_POS[name]);
 }
-const canSwipe = () => S.page !== 'map' || (!S.mode && $('menu').hidden && $('setup').hidden && $('players').hidden && $('onboard').hidden);
+const canSwipe = () => S.page !== 'map' || (!S.mode && $('menu').hidden && $('setup').hidden && $('players').hidden && $('share').hidden && $('onboard').hidden);
 let sw = null, swallowClick = false;
 function swipeStart(e) {
   if ((e.pointerType === 'mouse' && e.button) || !canSwipe() || e.target.closest('input,select')) return;
