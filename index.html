@@ -34,8 +34,6 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 .dist .num{font-size:54px;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .dist .unit{font-size:22px;font-weight:800}
 .dist .lab{font-size:14px;font-weight:700;color:var(--ink);margin-left:8px}
-.dist .tapx{align-self:center;width:30px;height:30px;transform:rotate(45deg);border-radius:4px;background:var(--meas);border:2px solid #fff;box-shadow:0 0 0 1.5px var(--ink);color:var(--ink);font-size:13px;font-weight:900;margin-left:8px}
-.dist .tapx span{display:block;transform:rotate(-45deg)}
 .sub{text-align:center;font-size:14px;font-weight:600;color:var(--ink);min-height:1.4em;font-variant-numeric:tabular-nums}
 .sub .up{color:#a3170f;font-weight:800}.sub .down{color:#0750a8;font-weight:800}
 /* settings (menu) button, top right */
@@ -204,7 +202,7 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
     <div class="holename"><b id="hNo">1</b>H <span class="par" id="hPar">Par 4</span></div>
     <button class="ic" id="nextHole" aria-label="次のホール">›</button>
   </div>
-  <div class="dist"><span class="num" id="dNum">—</span><span class="unit">Y</span><span class="lab" id="dLab">ピンまで</span><button class="tapx" id="tapClear" aria-label="マークを消す" hidden><span>✕</span></button></div>
+  <div class="dist"><span class="num" id="dNum">—</span><span class="unit">Y</span><span class="lab" id="dLab">ピンまで</span></div>
   <div class="sub" id="dSub"></div>
 </div>
 <button class="gear" id="bMenu" aria-label="メニュー（コース登録・保存・スコア共有）">
@@ -525,7 +523,7 @@ const map = new maplibregl.Map({
     ]
   }
 });
-map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+// no attribution badge on the map; the GSI credit is shown in the menu sheet instead
 map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
 map.touchZoomRotate.enableRotation();
 
@@ -689,7 +687,6 @@ let rdTok = 0;
 async function readout() {
   const tok = ++rdTok, h = hole(), pin = pinLL(), sub = $('dSub');
   sub.textContent = '';
-  $('tapClear').hidden = !S.tap;
   if (!registered(h)) { $('dNum').textContent = '—'; $('dLab').textContent = '未登録のホール'; sub.textContent = '右上の ⚙ →「コース登録」で登録できます'; return; }
   if (S.tap) {  // tapped (yellow) point: distance from there to the pin
     const y = yards(S.tap, pin);
@@ -737,11 +734,14 @@ function placeAt(ll) {
   refresh();
 }
 $('sPlace').onclick = $('bannerPlace').onclick = () => placeAt(crossLL());
+let tapT = null;
 map.on('click', e => {
   const ll = [e.lngLat.lng, e.lngLat.lat];
   // while placing, a tap only brings that spot under the crosshair; the button does the placing
   if (isPlacing()) { centerOn(ll); return; }
+  // the tapped point shows its distance for 5 s, then the display goes back to your position
   S.tap = ll; refresh();
+  clearTimeout(tapT); tapT = setTimeout(() => { S.tap = null; refresh(); }, 5000);
   const dot = M.tap.getElement().firstChild;  // replay the pop on every tap
   dot.style.animation = 'none'; void dot.offsetWidth; dot.style.animation = '';
 });
@@ -752,7 +752,6 @@ function goHole(n) {
   refresh();
   if (!(S.mode && S.mode.startsWith('setup'))) camera(S.view);
 }
-$('tapClear').onclick = () => { S.tap = null; refresh(); };
 $('prevHole').onclick = () => goHole(N - 1);
 $('nextHole').onclick = () => goHole(N + 1);
 $('bannerCancel').onclick = () => { if (S.mode && S.mode.startsWith('setup')) closeSetup(); S.mode = null; refresh(); };
@@ -1003,10 +1002,29 @@ const myNode = () => ({
   players: S.score.players.slice(0, 8).map(p => ({ id: p.id, name: (p.name || '').slice(0, 12), strokes: strokesOf(p).map(v => v || 0) })),
   t: Date.now()
 });
+let roomDirty = false;  // scores changed since you last left the score page
 function roomPush() {
   if (!room) return;
+  roomDirty = true;
   clearTimeout(pushT);
   pushT = setTimeout(() => fb().then(f => room && f.D.set(memberRef(f, room.code), myNode()).catch(() => {})).catch(() => {}), 250);
+}
+// leaving the score page sends your card right away (entries are also sent as you type)
+function roomSendNow() {
+  if (!room) return;
+  clearTimeout(pushT);
+  fb().then(f => room && f.D.set(memberRef(f, room.code), myNode())).catch(() => {});
+  if (roomDirty) toast(roomLive ? 'スコアを共有しました' : '電波が戻ったらスコアを共有します');
+  roomDirty = false;
+}
+// opening the ranking fetches everyone's latest scores (on top of the live updates)
+function roomPull() {
+  if (!room) return;
+  const code = room.code;
+  fb().then(f => f.D.get(f.D.ref(f.db, `rooms/${code}/members`))).then(snap => {
+    if (!room || room.code !== code) return;
+    room.members = snap.val() || {}; saveRoom(); roomRefresh();
+  }).catch(() => {});
 }
 // everyone in the round: this phone's players first, then the other phones' players
 function allPlayers() {
@@ -1169,9 +1187,10 @@ function pageView(v, dragging) {
   });
 }
 function goPage(name) {
+  if (S.page === 'score' && name !== 'score') roomSendNow();
   if (name === 'score') { scoreEnter(); renderScore(); }
   else scPlayer = null;  // swiping to the score page always shows your own card
-  if (name === 'rank') renderRank();
+  if (name === 'rank') { renderRank(); if (S.page !== 'rank') roomPull(); }
   S.page = name; pageView(PAGE_POS[name]);
 }
 const canSwipe = () => S.page !== 'map' || (!S.mode && $('menu').hidden && $('setup').hidden && $('players').hidden && $('share').hidden && $('onboard').hidden);
