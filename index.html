@@ -44,10 +44,10 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 
 /* right column: GPS / 3D / view / you / pin — fits between the distance panel (--hudb) and the bottom dock */
 .side{position:fixed;right:max(10px,env(safe-area-inset-right,0px));top:calc(var(--hudb,190px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 90px);display:flex;flex-direction:column;justify-content:center;gap:8px;z-index:4;pointer-events:none}
-.fab{pointer-events:auto;flex:0 1 58px;min-height:44px;width:58px;border-radius:14px;background:var(--panel);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);font-weight:900;font-size:15px;line-height:1.15;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.fab{pointer-events:auto;flex:0 1 58px;min-height:44px;width:58px;border-radius:14px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);font-weight:900;font-size:15px;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);line-height:1.15;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center}
 .fab small{display:block;font-size:10.5px;font-weight:800;color:var(--ink);white-space:nowrap}
 .fab svg{display:block}
-.fab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.fab[aria-pressed="true"]{background:rgba(22,89,47,.82);text-shadow:none;border-color:var(--accent);color:#fff}
 .fab[aria-pressed="true"] small{color:#fff}
 
 /* floating cards */
@@ -104,10 +104,10 @@ input[type=text]{flex:1 1 200px}
 /* side pages: ranking (left of map) and score entry (right of map) */
 /* bottom dock (kept clear of Safari's bar): 順位 | this hole's score − / + | スコアボード */
 .dock{position:fixed;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 14px);max-width:440px;margin:0 auto;display:grid;grid-template-columns:64px 1fr 64px;gap:8px;z-index:5}
-.dk{height:64px;border-radius:14px;background:var(--panel);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);font-weight:900;font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
+.dk{height:64px;border-radius:14px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);font-weight:900;font-size:11px;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
 .dk svg{display:block}
-.dkstep{height:64px;border-radius:14px;background:var(--panel);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 6px;color:var(--ink)}
-.dkstep>button{width:48px;height:48px;border-radius:12px;background:#e2e8dd;font-size:26px;font-weight:900;flex:none}
+.dkstep{height:64px;border-radius:14px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 6px;color:var(--ink)}
+.dkstep>button{width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,.7);border:1.5px solid var(--edge);font-size:26px;font-weight:900;flex:none}
 .dkstep .dv{flex:1;min-width:0;text-align:center;line-height:1.1}
 .dkstep .dv small{display:block;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dkstep .dv b{display:block;font-size:26px;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums}
@@ -192,8 +192,6 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 @keyframes tapPop{0%{transform:rotate(45deg) scale(0)}100%{transform:rotate(45deg) scale(1)}}
 @keyframes tapRing{0%{transform:rotate(45deg) scale(1);opacity:.9}100%{transform:rotate(45deg) scale(3.2);opacity:0}}
 .mk.num{font:700 11px/1 system-ui,sans-serif;background:rgba(20,34,58,.88);color:#fff;border-radius:10px;padding:4px 7px}
-/* nothing at the bottom edge: the scale bar sits under the distance panel */
-.maplibregl-ctrl-bottom-left{top:calc(var(--hudb,190px) + 6px);bottom:auto}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -539,7 +537,6 @@ const map = new maplibregl.Map({
   }
 });
 // no attribution badge on the map; the GSI credit is shown in the menu sheet instead
-map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
 map.touchZoomRotate.enableRotation();
 
 const mkEl = (cls, html) => { const d = document.createElement('div'); d.className = 'mk ' + cls; if (html) d.textContent = html; return d; };
@@ -698,7 +695,7 @@ function centerOn(ll, extra = {}) {
 map.on('move', () => { if (isPlacing()) crossLabel(); });
 addEventListener('resize', placeCross);
 if ('ResizeObserver' in window) { const ro = new ResizeObserver(placeCross); ro.observe($('setup')); ro.observe($('banner')); }
-// the button column, toast and scale bar start just below the distance panel
+// the button column and toast start just below the distance panel
 const hudEdge = () => document.documentElement.style.setProperty('--hudb', Math.round(document.querySelector('.hud').getBoundingClientRect().bottom) + 'px');
 hudEdge(); addEventListener('resize', hudEdge);
 if ('ResizeObserver' in window) new ResizeObserver(hudEdge).observe(document.querySelector('.hud'));
