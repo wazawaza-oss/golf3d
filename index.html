@@ -24,13 +24,7 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 
 /* top: distance panel — frosted glass so the map shows through; nothing sits at the bottom edge (Safari's bar) */
 .hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));max-width:440px;margin:0 auto;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 4px 18px rgba(0,0,0,.25);padding:4px 8px 5px;z-index:5;color:var(--ink);font-weight:800}
-.hrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.elev{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.75);border:1.5px solid var(--edge);font-size:12px;font-weight:800}
-.elev b{font-weight:900}
-.elev[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
-.gear{width:30px;height:28px;border-radius:10px;display:grid;place-items:center;color:var(--ink)}
-.gear svg{display:block}
-.holebar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:1px}
+.holebar{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .holebar .ic{width:40px;height:30px;border-radius:10px;font-size:22px;font-weight:900;line-height:1;background:rgba(255,255,255,.75);border:1.5px solid var(--edge);color:var(--ink)}
 .holename{font-weight:900;font-size:15px;display:flex;align-items:baseline;gap:6px}
 .holename b{font-size:22px}
@@ -42,9 +36,9 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 .sub{text-align:center;font-size:14px;font-weight:800;min-height:1.3em;line-height:1.3;font-variant-numeric:tabular-nums;text-shadow:0 0 2px rgba(255,255,255,.9)}
 .sub .up{color:#a3170f;font-weight:900}.sub .down{color:#0750a8;font-weight:900}
 
-/* right column: GPS / 3D / view / you / pin — fits between the distance panel (--hudb) and the bottom dock */
-.side{position:fixed;right:max(10px,env(safe-area-inset-right,0px));top:calc(var(--hudb,190px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 90px);display:flex;flex-direction:column;justify-content:center;gap:8px;z-index:4;pointer-events:none}
-.fab{pointer-events:auto;flex:0 1 58px;min-height:44px;width:58px;border-radius:14px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);font-weight:900;font-size:15px;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);line-height:1.15;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center}
+/* right column: settings / GPS / 3D / view / you / pin — fits between the distance panel (--hudb) and the bottom dock */
+.side{position:fixed;right:max(10px,env(safe-area-inset-right,0px));top:calc(var(--hudb,190px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 90px);display:flex;flex-direction:column;justify-content:center;gap:7px;z-index:4;pointer-events:none}
+.fab{pointer-events:auto;flex:0 1 50px;min-height:40px;width:52px;border-radius:12px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);font-weight:900;font-size:15px;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);line-height:1.15;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center}
 .fab small{display:block;font-size:10.5px;font-weight:800;color:var(--ink);white-space:nowrap}
 .fab svg{display:block}
 .fab[aria-pressed="true"]{background:rgba(22,89,47,.82);text-shadow:none;border-color:var(--accent);color:#fff}
@@ -199,12 +193,6 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 <div id="map" role="application" aria-label="コースマップ"></div>
 
 <div class="hud">
-  <div class="hrow">
-    <button class="elev" id="bElev" aria-pressed="true"><span aria-hidden="true">↕</span>高低差 <b>オン</b></button>
-    <button class="gear" id="bMenu" aria-label="メニュー（コース登録・保存・スコア共有）">
-      <svg width="22" height="22" viewBox="-14 -14 28 28" aria-hidden="true"><circle r="9.6" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="3.77 3.77"/><circle r="8" fill="currentColor"/><circle r="3.4" fill="#fff"/></svg>
-    </button>
-  </div>
   <div class="holebar">
     <button class="ic" id="prevHole" aria-label="前のホール">‹</button>
     <div class="holename"><b id="hNo">1</b>H <span class="par" id="hPar">Par 4</span></div>
@@ -214,6 +202,9 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
   <div class="sub" id="dSub"></div>
 </div>
 <div class="side">
+  <button class="fab" id="bMenu" aria-label="設定（コース登録・高低差・スコア共有）">
+    <svg width="20" height="20" viewBox="-14 -14 28 28" aria-hidden="true"><circle r="9.6" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="3.77 3.77"/><circle r="8" fill="currentColor"/><circle r="3.4" fill="#fff"/></svg><small>設定</small>
+  </button>
   <button class="fab" id="bGps" aria-pressed="false">GPS<small id="gpsInfo">オフ</small></button>
   <button class="fab" id="b3d" aria-pressed="false">3D<small>立体</small></button>
   <button class="fab" id="bView">視点<small id="viewName">ティー</small></button>
@@ -235,8 +226,10 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 
 <div class="sheet" id="menu" hidden>
   <div class="inner">
-    <h2><span id="menuTitle">メニュー</span><button id="menuClose">閉じる</button></h2>
+    <h2><span id="menuTitle">設定</span><button id="menuClose">閉じる</button></h2>
     <div class="row"><input type="text" id="courseName" maxlength="40" aria-label="コース名"></div>
+    <h3>表示</h3>
+    <div class="row"><button class="btn" id="bElev" aria-pressed="true">↕ 高低差 <b>オン</b></button><span style="font-size:13px;color:var(--muted)">打ち上げ・打ち下ろしと実質の距離を出します</span></div>
     <div class="row">
       <button class="btn primary" id="goSetup">コース登録（ティー・グリーン）</button>
       <button class="btn" id="goSim">現在地を置く（テスト）</button>
@@ -708,7 +701,7 @@ let rdTok = 0;
 async function readout() {
   const tok = ++rdTok, h = hole(), pin = pinLL(), sub = $('dSub');
   sub.textContent = '';
-  if (!registered(h)) { $('dNum').textContent = '—'; $('dLab').textContent = '未登録のホール'; sub.textContent = '右上の ⚙ →「コース登録」で登録できます'; return; }
+  if (!registered(h)) { $('dNum').textContent = '—'; $('dLab').textContent = '未登録のホール'; sub.textContent = '右の「設定」→「コース登録」で登録できます'; return; }
   if (S.tap) {  // tapped (yellow) point: distance from there to the pin
     const y = yards(S.tap, pin);
     $('dNum').textContent = Math.round(y); $('dLab').textContent = 'マークからピン';
