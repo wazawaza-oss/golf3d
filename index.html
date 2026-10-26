@@ -151,15 +151,21 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 /* map markers */
 .mk{pointer-events:none}
 .mk.tee{width:24px;height:24px;border-radius:50%;background:var(--tee);color:#fff;font:700 12px/24px system-ui,sans-serif;text-align:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)}
-.mk.pin{width:3px;height:36px;background:#fff;box-shadow:0 0 2px rgba(0,0,0,.7);position:relative}
+.mk.pin{width:3px;height:36px;background:#fff;box-shadow:0 0 2px rgba(0,0,0,.7)}
 .mk.pin::after{content:"";position:absolute;left:3px;top:0;border-left:17px solid var(--pin);border-top:7px solid transparent;border-bottom:7px solid transparent}
 .mk.gc{width:10px;height:10px;border-radius:50%;background:#7ad86a;border:2px solid #fff;box-shadow:0 0 3px rgba(0,0,0,.5)}
 .mk.me{width:18px;height:18px;border-radius:50%;background:var(--me);border:3px solid #fff;box-shadow:0 0 0 7px rgba(26,115,232,.28),0 1px 4px rgba(0,0,0,.4)}
 .mk.me.sim{background:#8a5cf6;box-shadow:0 0 0 7px rgba(138,92,246,.28),0 1px 4px rgba(0,0,0,.4)}
-.mk.tap{width:18px;height:18px;border-radius:50%;background:var(--meas);border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.5);position:relative;z-index:2}
+/* markers are positioned absolutely by MapLibre (transform); never override position on .mk, and animate only children */
+.mk.tap{width:24px;height:24px;z-index:2}
+.mk.tap .dot{position:absolute;inset:0;box-sizing:border-box;border-radius:50%;background:var(--meas);border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.5);animation:tapPop .42s cubic-bezier(.34,1.7,.5,1)}
+.mk.tap::before,.mk.tap::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--meas);opacity:0;animation:tapRing 2.4s ease-out infinite}
+.mk.tap::after{animation-delay:1.2s}
+@keyframes tapPop{0%{transform:scale(0)}100%{transform:scale(1)}}
+@keyframes tapRing{0%{transform:scale(1);opacity:.85}100%{transform:scale(3.2);opacity:0}}
 .mk.num{font:700 11px/1 system-ui,sans-serif;background:rgba(20,34,58,.88);color:#fff;border-radius:10px;padding:4px 7px}
 .maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{bottom:calc(env(safe-area-inset-bottom,0px) + 72px)}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
@@ -468,7 +474,7 @@ const M = {
   gc: new maplibregl.Marker({ element: mkEl('gc') }),
   pin: new maplibregl.Marker({ element: mkEl('pin'), anchor: 'bottom' }),
   me: new maplibregl.Marker({ element: mkEl('me') }),
-  tap: new maplibregl.Marker({ element: mkEl('tap') })
+  tap: new maplibregl.Marker({ element: Object.assign(mkEl('tap'), { innerHTML: '<span class="dot"></span>' }) })
 };
 let numMarkers = [];
 function place(m, ll) { if (ll) { m.setLngLat(ll); if (!m._shown) { m.addTo(map); m._shown = true; } } else if (m._shown) { m.remove(); m._shown = false; } }
@@ -492,12 +498,14 @@ let mapReady = false;
 map.on('load', () => {
   map.addSource('rings', { type: 'geojson', data: fc([]) });
   map.addLayer({ id: 'rings-glow', type: 'line', source: 'rings',
-    paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-blur': 5, 'line-opacity': ['interpolate', ['linear'], ['get', 'r'], 50, .16, 400, .05] } });
+    paint: { 'line-color': '#ffffff', 'line-width': 5, 'line-blur': 4, 'line-opacity': ['interpolate', ['linear'], ['get', 'r'], 50, .06, 400, .02] } });
   map.addLayer({ id: 'rings', type: 'line', source: 'rings',
-    paint: { 'line-color': '#ffffff', 'line-width': ['case', ['==', ['%', ['get', 'r'], 100], 0], 1.6, 1.1], 'line-opacity': ['interpolate', ['linear'], ['get', 'r'], 50, .55, 400, .18] } });
+    paint: { 'line-color': '#ffffff', 'line-width': ['case', ['==', ['%', ['get', 'r'], 100], 0], 1.1, .8], 'line-opacity': ['interpolate', ['linear'], ['get', 'r'], 50, .28, 400, .1] } });
   map.addSource('lines', { type: 'geojson', data: fc([]) });
   map.addLayer({ id: 'lines-dash', type: 'line', source: 'lines', filter: ['in', ['get', 'kind'], ['literal', ['hole', 'setup']]],
     layout: { 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 2, 'line-opacity': .8, 'line-dasharray': [2, 2] } });
+  map.addLayer({ id: 'lines-tap', type: 'line', source: 'lines', filter: ['==', ['get', 'kind'], 'tap'],
+    layout: { 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 2, 'line-opacity': .5 } });
   map.addLayer({ id: 'lines-me', type: 'line', source: 'lines', filter: ['==', ['get', 'kind'], 'me'],
     layout: { 'line-cap': 'round' }, paint: { 'line-color': '#ffc400', 'line-width': 3.5 } });
   mapReady = true;
@@ -552,8 +560,11 @@ function refresh() {
   if (mapReady) {
     const f = [], pin = pinLL();
     if (setup) S.course.holes.forEach(x => { if (registered(x)) f.push(ln(x.tee, x.green, 'setup')); });
-    else if (registered(h) && !S.me) f.push(ln(h.tee, h.green, 'hole'));
-    if (pin && S.me) f.push(ln(S.me.ll, pin, 'me'));
+    else if (S.tap) { if (pin) f.push(ln(pin, S.tap, 'tap')); }  // while a point is tapped, only the faint pin-to-mark line
+    else {
+      if (registered(h) && !S.me) f.push(ln(h.tee, h.green, 'hole'));
+      if (pin && S.me) f.push(ln(S.me.ll, pin, 'me'));
+    }
     map.getSource('lines').setData(fc(f));
     // rings reach a little past the tee (or the player, if farther)
     const reach = pin && !setup ? Math.max(h.tee ? yards(h.tee, pin) : 0, S.me ? yards(S.me.ll, pin) : 0, 150) + 25 : 0;
@@ -663,6 +674,8 @@ map.on('click', e => {
   // while placing, a tap only brings that spot under the crosshair; the button does the placing
   if (isPlacing()) { centerOn(ll); return; }
   S.tap = ll; refresh();
+  const dot = M.tap.getElement().firstChild;  // replay the pop on every tap
+  dot.style.animation = 'none'; void dot.offsetWidth; dot.style.animation = '';
 });
 function goHole(n) {
   N = ((n - 1 + 18) % 18) + 1; S.tap = null; savePrefs();
@@ -676,7 +689,7 @@ $('prevHole').onclick = () => goHole(N - 1);
 $('nextHole').onclick = () => goHole(N + 1);
 $('bannerCancel').onclick = () => { if (S.mode && S.mode.startsWith('setup')) closeSetup(); S.mode = null; refresh(); };
 
-$('b3d').onclick = () => { set3D(!S.is3D); refresh(); };
+$('b3d').onclick = () => { if (!mapReady) return; set3D(!S.is3D); refresh(); };
 $('bView').onclick = () => {
   S.view = { tee: 'top', top: 'green', green: 'tee' }[S.view];
   if (!registered(hole())) toast('このホールはまだ登録されていません'); else camera(S.view);
