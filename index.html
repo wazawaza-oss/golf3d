@@ -22,40 +22,36 @@ body{font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo"
 button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
 button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 
-/* top: hole + distance */
-.hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:10px;right:10px;max-width:440px;margin:0 auto;background:var(--panel);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 4px 18px rgba(0,0,0,.3);padding:8px 12px 10px;z-index:5}
-@media (max-width:580px){.hud{right:68px}}  /* leave room for the settings button */
-.holebar{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.holebar .ic{width:40px;height:36px;border-radius:10px;font-size:26px;font-weight:800;line-height:1;background:#e2e8dd;color:var(--ink)}
-.holename{font-weight:800;font-size:17px;display:flex;align-items:baseline;gap:6px}
-.holename b{font-size:24px}
-.holename .par{font-weight:700;color:var(--ink);font-size:15px}
-.dist{display:flex;align-items:baseline;justify-content:center;gap:4px;margin-top:2px}
-.dist .num{font-size:54px;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
-.dist .unit{font-size:22px;font-weight:800}
-.dist .lab{font-size:14px;font-weight:700;color:var(--ink);margin-left:8px}
-.sub{text-align:center;font-size:14px;font-weight:600;color:var(--ink);min-height:1.4em;font-variant-numeric:tabular-nums}
-.sub .up{color:#a3170f;font-weight:800}.sub .down{color:#0750a8;font-weight:800}
-/* settings (menu) button, top right */
-.gear{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:max(10px,env(safe-area-inset-right,0px));width:50px;height:50px;border-radius:14px;background:var(--panel);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);z-index:5;display:grid;place-items:center}
+/* top: distance panel — frosted glass so the map shows through; nothing sits at the bottom edge (Safari's bar) */
+.hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));max-width:440px;margin:0 auto;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 4px 18px rgba(0,0,0,.25);padding:6px 10px 8px;z-index:5;color:var(--ink);font-weight:800}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.elev{display:flex;align-items:center;gap:4px;padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.75);border:1.5px solid var(--edge);font-size:12.5px;font-weight:800}
+.elev b{font-weight:900}
+.elev[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.gear{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--ink)}
 .gear svg{display:block}
+.holebar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px}
+.holebar .ic{width:42px;height:36px;border-radius:10px;font-size:26px;font-weight:900;line-height:1;background:rgba(255,255,255,.75);border:1.5px solid var(--edge);color:var(--ink)}
+.holename{font-weight:900;font-size:17px;display:flex;align-items:baseline;gap:6px}
+.holename b{font-size:24px}
+.holename .par{font-weight:800;font-size:15px}
+.dist{display:flex;align-items:baseline;justify-content:center;gap:4px}
+.dist .num{font-size:56px;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.02em;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 5px rgba(255,255,255,.7)}
+.dist .unit{font-size:22px;font-weight:900}
+.dist .lab{font-size:14px;font-weight:800;margin-left:8px}
+.sub{text-align:center;font-size:14.5px;font-weight:800;min-height:1.4em;font-variant-numeric:tabular-nums;text-shadow:0 0 2px rgba(255,255,255,.9)}
+.sub .up{color:#a3170f;font-weight:900}.sub .down{color:#0750a8;font-weight:900}
 
-/* right side */
-.side{position:fixed;right:max(10px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);display:grid;gap:10px;z-index:4}
-.fab{width:54px;height:54px;border-radius:14px;background:var(--panel);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);font-weight:900;font-size:15px;color:var(--ink)}
-.fab small{display:block;font-size:10.5px;font-weight:700;color:var(--ink)}
-.fab[aria-pressed="true"]{background:var(--accent);color:#fff}
+/* right column: GPS / 3D / view / you / pin — fits between the distance panel (--hudb) and the bottom */
+.side{position:fixed;right:calc(env(safe-area-inset-right,0px) + 38px);top:calc(var(--hudb,190px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);display:flex;flex-direction:column;justify-content:center;gap:8px;z-index:4;pointer-events:none}
+.fab{pointer-events:auto;flex:0 1 58px;min-height:44px;width:58px;border-radius:14px;background:var(--panel);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);font-weight:900;font-size:15px;line-height:1.15;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.fab small{display:block;font-size:10.5px;font-weight:800;color:var(--ink);white-space:nowrap}
+.fab svg{display:block}
+.fab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .fab[aria-pressed="true"] small{color:#fff}
 
-/* bottom bar */
-.bottom{position:fixed;left:0;right:0;bottom:0;padding:8px max(10px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 8px) max(10px,env(safe-area-inset-left,0px));display:grid;grid-template-columns:repeat(3,1fr);gap:8px;z-index:5;pointer-events:none}
-.bottom button{pointer-events:auto;height:56px;border-radius:14px;background:var(--panel);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);font-weight:800;font-size:15px;line-height:1.2;color:var(--ink)}
-.bottom button small{display:block;font-size:11.5px;color:var(--ink);font-weight:700}
-.bottom button[aria-pressed="true"]{background:var(--accent);color:#fff}
-.bottom button[aria-pressed="true"] small{color:#fff}
-
 /* floating cards */
-.banner{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 78px);width:min(440px,calc(100% - 20px));border-radius:14px;z-index:6;box-shadow:0 4px 18px rgba(0,0,0,.22);background:#14223a;color:#fff;padding:10px 12px;display:grid;gap:8px;font-weight:700;font-size:15px}
+.banner{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 24px);width:min(440px,calc(100% - 20px));border-radius:14px;z-index:6;box-shadow:0 4px 18px rgba(0,0,0,.22);background:#14223a;color:#fff;padding:10px 12px;display:grid;gap:8px;font-weight:700;font-size:15px}
 .banner .bb{display:flex;gap:8px}
 .banner button{background:#fff;color:var(--ink);border-radius:10px;padding:10px 14px;font-size:14px;font-weight:700;flex:none}
 .banner button.go{flex:1;background:var(--meas);color:#14223a;font-size:16px}
@@ -100,16 +96,19 @@ input[type=text]{flex:1 1 200px}
 @media (max-width:420px){.chips{grid-template-columns:repeat(6,1fr)}}
 .progress{height:8px;border-radius:4px;background:#eef2ea;overflow:hidden}
 .progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
-.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 150px);transform:translateX(-50%);background:rgba(20,34,58,.92);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;z-index:9;max-width:calc(100% - 40px);text-align:center}
+.toast{position:fixed;left:50%;top:calc(var(--hudb,190px) + 12px);transform:translateX(-50%);background:rgba(20,34,58,.92);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;z-index:9;max-width:calc(100% - 40px);text-align:center}
 .onboard{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(380px,calc(100% - 40px));background:#fff;border-radius:16px;padding:18px;z-index:7;box-shadow:0 8px 30px rgba(0,0,0,.3);display:grid;gap:12px}
 .onboard h2{margin:0;font-size:18px}
 .onboard p{margin:0;font-size:14px;line-height:1.65;color:var(--muted)}
 
 /* side pages: ranking (left of map) and score entry (right of map) */
-.edge{position:fixed;top:calc(50% + 110px);z-index:4;width:28px;height:96px;background:var(--panel);box-shadow:0 2px 8px rgba(0,0,0,.2);writing-mode:vertical-rl;font-size:12.5px;font-weight:700;letter-spacing:.1em;touch-action:pan-y}
-.edge.l{left:0;border-radius:0 12px 12px 0}
-.edge.r{right:0;border-radius:12px 0 0 12px}
-.hud,.bottom{touch-action:pan-y}
+/* side tabs: 順位 (left) and スコア (right), icon + two letters; the right one sits outside the button column */
+.edge{position:fixed;top:50%;transform:translateY(-50%);z-index:4;width:32px;padding:10px 0;background:var(--panel);border:1.5px solid var(--edge);box-shadow:0 2px 8px rgba(0,0,0,.25);display:flex;flex-direction:column;align-items:center;gap:5px;font-size:13px;font-weight:900;color:var(--ink);touch-action:pan-y}
+.edge span{writing-mode:vertical-rl;letter-spacing:.12em}
+.edge svg{display:block}
+.edge.l{left:0;border-left:none;border-radius:0 12px 12px 0}
+.edge.r{right:0;border-right:none;border-radius:12px 0 0 12px}
+.hud{touch-action:pan-y}
 .page{position:fixed;inset:0;z-index:10;background:#f1f4ee;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;transform:translateX(100%);visibility:hidden;transition:transform .25s ease,visibility 0s linear .25s;padding:calc(env(safe-area-inset-top,0px) + 10px) max(14px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 28px) max(14px,env(safe-area-inset-left,0px));box-shadow:0 0 24px rgba(0,0,0,.25)}
 .page.on{visibility:visible;transition:transform .25s ease,visibility 0s}
 .page.drag{transition:none}
@@ -189,7 +188,8 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 @keyframes tapPop{0%{transform:rotate(45deg) scale(0)}100%{transform:rotate(45deg) scale(1)}}
 @keyframes tapRing{0%{transform:rotate(45deg) scale(1);opacity:.9}100%{transform:rotate(45deg) scale(3.2);opacity:0}}
 .mk.num{font:700 11px/1 system-ui,sans-serif;background:rgba(20,34,58,.88);color:#fff;border-radius:10px;padding:4px 7px}
-.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{bottom:calc(env(safe-area-inset-bottom,0px) + 72px)}
+/* nothing at the bottom edge: the scale bar sits under the distance panel */
+.maplibregl-ctrl-bottom-left{top:calc(var(--hudb,190px) + 6px);bottom:auto}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -197,6 +197,12 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 <div id="map" role="application" aria-label="コースマップ"></div>
 
 <div class="hud">
+  <div class="hrow">
+    <button class="elev" id="bElev" aria-pressed="true"><span aria-hidden="true">↕</span>高低差 <b>オン</b></button>
+    <button class="gear" id="bMenu" aria-label="メニュー（コース登録・保存・スコア共有）">
+      <svg width="26" height="26" viewBox="-14 -14 28 28" aria-hidden="true"><circle r="9.6" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="3.77 3.77"/><circle r="8" fill="currentColor"/><circle r="3.4" fill="#fff"/></svg>
+    </button>
+  </div>
   <div class="holebar">
     <button class="ic" id="prevHole" aria-label="前のホール">‹</button>
     <div class="holename"><b id="hNo">1</b>H <span class="par" id="hPar">Par 4</span></div>
@@ -205,14 +211,14 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
   <div class="dist"><span class="num" id="dNum">—</span><span class="unit">Y</span><span class="lab" id="dLab">ピンまで</span></div>
   <div class="sub" id="dSub"></div>
 </div>
-<button class="gear" id="bMenu" aria-label="メニュー（コース登録・保存・スコア共有）">
-  <svg width="28" height="28" viewBox="-14 -14 28 28" aria-hidden="true"><circle r="9.6" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="3.77 3.77"/><circle r="8" fill="currentColor"/><circle r="3.4" fill="#fff"/></svg>
-</button>
-
 <div class="side">
+  <button class="fab" id="bGps" aria-pressed="false">GPS<small id="gpsInfo">オフ</small></button>
   <button class="fab" id="b3d" aria-pressed="false">3D<small>立体</small></button>
   <button class="fab" id="bView">視点<small id="viewName">ティー</small></button>
   <button class="fab" id="bMe" aria-label="現在地を中心に表示">◎<small>現在地</small></button>
+  <button class="fab" id="bPin" aria-pressed="false" aria-label="ピン位置を置く">
+    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M6 21V2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M7 2L19 7L7 12Z" fill="#ff2bd6" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><small>ピン位置</small>
+  </button>
 </div>
 
 <div class="cross" id="cross" hidden>
@@ -224,12 +230,6 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 </div>
 
 <div class="banner" id="banner" hidden><span id="bannerText"></span><div class="bb"><button id="bannerCancel">やめる</button><button class="go" id="bannerPlace">＋ ここに置く</button></div></div>
-
-<div class="bottom">
-  <button id="bGps" aria-pressed="false">GPS<small>オフ</small></button>
-  <button id="bPin">ピン<small>位置を置く</small></button>
-  <button id="bElev" aria-pressed="true">高低差<small>オン</small></button>
-</div>
 
 <div class="sheet" id="menu" hidden>
   <div class="inner">
@@ -287,8 +287,12 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
   <div class="row"><button class="btn primary" id="obStart">登録を始める</button><button class="btn" id="obLater">あとで</button></div>
 </div>
 
-<button class="edge l" id="edgeL" aria-label="ランキングを開く">ランキング</button>
-<button class="edge r" id="edgeR" aria-label="マイスコアを開く">マイスコア</button>
+<button class="edge l" id="edgeL" aria-label="ランキングを開く">
+  <svg width="18" height="16" viewBox="0 0 18 16" aria-hidden="true"><path d="M6.5 4h5v12h-5zM0 8h5.5v8H0zM12.5 10H18v6h-5.5z" fill="currentColor"/></svg><span>順位</span>
+</button>
+<button class="edge r" id="edgeR" aria-label="マイスコアを開く">
+  <svg width="16" height="18" viewBox="0 0 16 18" aria-hidden="true"><rect x="1" y="1" width="14" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 6h8M4 9.5h8M4 13h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>スコア</span>
+</button>
 
 <div class="sheet" id="players" hidden>
   <div class="inner">
@@ -639,8 +643,12 @@ function refresh() {
   // banner (pin / test position; setup has its own controls in the sheet)
   const BAN = { pin: `${N}番のピン位置に十字を合わせる`, me: 'テスト用の現在地に十字を合わせる' };
   $('banner').hidden = !BAN[S.mode] || !$('setup').hidden; if (BAN[S.mode]) $('bannerText').textContent = BAN[S.mode];
-  $('bElev').setAttribute('aria-pressed', S.prefs.elev); $('bElev').querySelector('small').textContent = S.prefs.elev ? 'オン' : 'オフ';
-  $('bGps').setAttribute('aria-pressed', !!S.watch); $('bGps').querySelector('small').textContent = S.watch ? 'オン' : 'オフ';
+  document.querySelector('.side').hidden = !$('banner').hidden;  // the banner would cover the lower buttons
+  $('bElev').setAttribute('aria-pressed', S.prefs.elev); $('bElev').querySelector('b').textContent = S.prefs.elev ? 'オン' : 'オフ';
+  // GPS button: accuracy while on (green), 'オフ' while off
+  $('bGps').setAttribute('aria-pressed', S.watch != null);
+  $('gpsInfo').textContent = S.watch == null ? 'オフ' : S.me && S.me.src === 'gps' ? `±${Math.round(S.me.acc || 0)}m` : '取得中';
+  $('bPin').setAttribute('aria-pressed', S.mode === 'pin');
   $('b3d').setAttribute('aria-pressed', S.is3D);
   $('viewName').textContent = { tee: 'ティー', top: '真上', green: 'グリーン' }[S.view];
   $('edgeL').hidden = $('edgeR').hidden = !!S.mode || !$('setup').hidden;
@@ -678,10 +686,14 @@ function centerOn(ll, extra = {}) {
 map.on('move', () => { if (isPlacing()) crossLabel(); });
 addEventListener('resize', placeCross);
 if ('ResizeObserver' in window) { const ro = new ResizeObserver(placeCross); ro.observe($('setup')); ro.observe($('banner')); }
+// the button column, toast and scale bar start just below the distance panel
+const hudEdge = () => document.documentElement.style.setProperty('--hudb', Math.round(document.querySelector('.hud').getBoundingClientRect().bottom) + 'px');
+hudEdge(); addEventListener('resize', hudEdge);
+if ('ResizeObserver' in window) new ResizeObserver(hudEdge).observe(document.querySelector('.hud'));
 const fmtElev = (d, y) => {
   const cls = d >= 0 ? 'up' : 'down', word = d >= 0 ? '打ち上げ' : '打ち下ろし';
   const span = document.createElement('span'); span.className = cls; span.textContent = `${d >= 0 ? '↑' : '↓'}${Math.abs(d).toFixed(0)}m ${word}`;
-  return [span, ` ・ 実質 ${Math.round(y + d / YD)}Y`];
+  return [span, `・実質${Math.round(y + d / YD)}Y`];
 };
 let rdTok = 0;
 async function readout() {
@@ -695,7 +707,7 @@ async function readout() {
     if (S.prefs.elev) {
       const [a, b] = await Promise.all([elevAt(S.tap), elevAt(pin)]);
       if (tok !== rdTok || a == null || b == null) return;
-      const rest = sub.textContent; sub.textContent = ''; sub.append(...fmtElev(b - a, y)); if (rest) sub.append(` ・ ${rest}`);
+      const rest = sub.textContent; sub.textContent = ''; sub.append(...fmtElev(b - a, y)); if (rest) sub.append(`・${rest}`);
     }
     return;
   }
@@ -705,12 +717,13 @@ async function readout() {
   }
   const y = yards(S.me.ll, pin);
   $('dNum').textContent = Math.round(y); $('dLab').textContent = 'ピンまで';
-  const acc = S.me.src === 'sim' ? 'テスト位置' : `GPS誤差 ±${Math.round(S.me.acc || 0)}m`;
-  sub.textContent = acc;
+  // 4th line: elevation only (GPS accuracy is on the GPS button)
+  const test = S.me.src === 'sim' ? 'テスト位置' : '';
+  sub.textContent = test;
   if (S.prefs.elev) {
     const [a, b] = await Promise.all([elevAt(S.me.ll), elevAt(pin)]);
     if (tok !== rdTok || a == null || b == null) return;
-    sub.textContent = ''; sub.append(...fmtElev(b - a, y), ` ・ ${acc}`);
+    sub.textContent = ''; sub.append(...fmtElev(b - a, y)); if (test) sub.append(`・${test}`);
   }
 }
 let toastT = null;
@@ -1225,7 +1238,7 @@ function swipeEnd(e) {
 document.addEventListener('pointerup', swipeEnd);
 document.addEventListener('pointercancel', swipeEnd);
 document.addEventListener('click', e => { if (swallowClick) { e.preventDefault(); e.stopPropagation(); swallowClick = false; } }, true);
-[document.querySelector('.hud'), document.querySelector('.bottom'), $('edgeL'), $('edgeR'), $('pRank'), $('pScore')].forEach(x => x.addEventListener('pointerdown', swipeStart));
+[document.querySelector('.hud'), $('edgeL'), $('edgeR'), $('pRank'), $('pScore')].forEach(x => x.addEventListener('pointerdown', swipeStart));
 $('edgeL').onclick = () => goPage('rank');
 $('edgeR').onclick = () => goPage('score');
 document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => goPage(b.dataset.go));
