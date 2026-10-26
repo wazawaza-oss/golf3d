@@ -70,6 +70,59 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 .btn[aria-pressed="true"]{background:var(--ink);color:#fff}
 .btn.big{flex:1;padding:13px 14px;font-size:17px}
 
+/* settings: full-height grouped list (iOS Settings style), dark text for sunlight */
+#menu{top:calc(env(safe-area-inset-top,0px) + 10px);max-height:none;padding:0;background:#f0f1f4;-webkit-user-select:none;user-select:none}
+.mhead{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:12px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));background:rgba(240,241,244,.94);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid #d9dce1}
+.mhead h2{grid-column:2;margin:0;font-size:22px;font-weight:900;color:var(--ink)}
+.mhead .mback{grid-column:1;justify-self:start;font-size:16px;font-weight:800;color:#0b5cad;padding:8px 4px}
+.mhead .mdone{grid-column:3;justify-self:end;font-size:17px;font-weight:900;color:#0b5cad;padding:8px 4px}
+.mbody{max-width:560px;margin:0 auto;padding:4px max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 32px) max(16px,env(safe-area-inset-left,0px))}
+.grp-t{margin:22px 6px 7px;font-size:13px;font-weight:800;color:#3a4350;letter-spacing:.03em}
+#menu .grp-f{margin:8px 6px 0;font-size:13px;line-height:1.5;font-weight:600;color:#3a4350}
+.grp{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.grp>*+*{border-top:1px solid #e3e5e9}
+.mrow{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 14px;text-align:left;font-size:16px;font-weight:800;color:var(--ink);background:#fff}
+.mrow:active{background:#eceef1}
+.mrow:disabled{opacity:1;cursor:default}
+.mrow:disabled .mval{color:#6b7380}
+.mic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none}
+.mic svg{display:block}
+.mtx{flex:1;min-width:0}
+.mtx small{display:block;margin-top:1px;font-size:12.5px;font-weight:600;color:#3a4350}
+.mval{font-size:15px;font-weight:700;color:#3a4350;white-space:nowrap}
+.chev{font-size:24px;line-height:1;color:#8a909a;margin-left:-4px}
+.mrow.danger{justify-content:center;color:#c8102e;font-weight:900}
+.mrow.center{justify-content:center;color:#0b5cad;font-weight:900}
+.mrow input{flex:1;min-width:0;border:none;padding:6px 0;font-size:16px;background:transparent}
+.grp.wipe,.grp.mgap{margin-top:30px}
+#menu .grp-f.credit{margin-top:14px;text-align:center;font-size:12px}
+/* current course card */
+.mcourse{display:flex;align-items:center;gap:10px;padding:12px 14px}
+.mcourse .cn{flex:1;min-width:0;font-size:22px;font-weight:900;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mcourse input{flex:1;min-width:0;font-size:20px;font-weight:800}
+.cnedit{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;color:#0b5cad;background:#eef3fa;flex:none}
+/* checklist marks: green ✓ when done, yellow ○ when not yet */
+.ck{width:28px;height:28px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:16px;font-weight:900;box-sizing:border-box}
+.ck.ok{background:#1f9d48;color:#fff}
+.ck.ok::after{content:"✓"}
+.ck.no{border:3px solid #e0a800}
+/* iOS-style switch (the whole row is the switch) */
+.sw{position:relative;width:51px;height:31px;border-radius:16px;background:#b8bcc4;flex:none;transition:background .2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.25);transition:transform .2s}
+.mrow[aria-checked="true"] .sw{background:#1f9d48}
+.mrow[aria-checked="true"] .sw::after{transform:translateX(20px)}
+/* in-sheet confirm and the undo bar */
+.mconfirm{position:fixed;inset:0;z-index:20;background:rgba(10,19,34,.45);display:grid;place-items:center;padding:20px}
+.mcard{width:min(320px,100%);background:#fff;border-radius:16px;padding:20px 18px 14px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.mcard p{margin:0;font-size:17px;font-weight:900;color:var(--ink);line-height:1.45}
+.mcard small{display:block;margin-top:6px;font-size:13.5px;font-weight:700;color:#3a4350}
+.mcbtn{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.mcbtn button{height:46px;border-radius:12px;background:#eceef1;font-size:16px;font-weight:900;color:var(--ink)}
+.mcbtn button.red{background:#c8102e;color:#fff}
+.snack{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 24px);z-index:21;width:min(420px,calc(100% - 24px));display:flex;align-items:center;gap:10px;padding:10px 10px 10px 16px;border-radius:14px;background:#14223a;color:#fff;font-size:14.5px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.snack span{flex:1}
+.snack button{padding:10px 14px;border-radius:10px;background:#fff;color:var(--ink);font-weight:900;font-size:14.5px}
+
 /* setup sheet (collapsible) */
 #setup{padding-top:8px}
 #setup .inner{gap:10px}
@@ -224,35 +277,83 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 
 <div class="banner" id="banner" hidden><span id="bannerText"></span><div class="bb"><button id="bannerCancel">やめる</button><button class="go" id="bannerPlace">＋ ここに置く</button></div></div>
 
+<!-- settings: grouped list like iOS Settings; sub-screens slide in place of the main list -->
 <div class="sheet" id="menu" hidden>
-  <div class="inner">
-    <h2><span id="menuTitle">設定</span><button id="menuClose">閉じる</button></h2>
-    <div class="row"><input type="text" id="courseName" maxlength="40" aria-label="コース名"></div>
-    <h3>表示</h3>
-    <div class="row"><button class="btn" id="bElev" aria-pressed="true">↕ 高低差 <b>オン</b></button><span style="font-size:13px;color:var(--muted)">打ち上げ・打ち下ろしと実質の距離を出します</span></div>
-    <div class="row">
-      <button class="btn primary" id="goSetup">コース登録（ティー・グリーン）</button>
-      <button class="btn" id="goSim">現在地を置く（テスト）</button>
+  <div class="mhead">
+    <button class="mback" id="mBack" hidden>‹ 設定</button>
+    <h2 id="menuTitle">設定</h2>
+    <button class="mdone" id="menuClose">完了</button>
+  </div>
+  <div class="mbody" id="mMain">
+    <div class="grp-t">いまのコース</div>
+    <div class="grp">
+      <div class="mcourse">
+        <span id="cnText" class="cn"></span>
+        <input type="text" id="courseName" maxlength="40" aria-label="コース名" hidden>
+        <button class="cnedit" id="cnEdit" aria-label="コース名を変更"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button>
+      </div>
+      <button class="mrow" id="ckSetup"><span class="ck" id="ckSetupMark"></span><span class="mtx">コース登録</span><span class="mval" id="ckSetupVal"></span><span class="chev">›</span></button>
+      <button class="mrow" id="ckOff"><span class="ck" id="ckOffMark"></span><span class="mtx">電波なしで使う準備</span><span class="mval" id="ckOffVal"></span><span class="chev">›</span></button>
     </div>
-    <h3>電波がなくても使えるようにする</h3>
-    <p id="offInfo">登録したホールの周りの航空写真と標高データを、この端末に保存します。ラウンド前に電波のある場所で実行してください。</p>
-    <div class="progress" hidden id="offBar"><i></i></div>
-    <div class="row"><button class="btn primary" id="offSave">このコースを端末に保存</button><span id="offMsg" style="font-size:13px;color:var(--muted)"></span></div>
-    <h3>場所を移動</h3>
-    <p>地理院地図のURLを貼り付けると、その場所へ移動します。</p>
-    <div class="row"><input type="text" id="jumpUrl" placeholder="https://maps.gsi.go.jp/#16/35.22/139.10/…" aria-label="地理院地図のURL"><button class="btn" id="jumpGo">移動</button></div>
-    <h3>ラウンド</h3>
-    <div class="row"><button class="btn primary" id="goShare">スコアを共有</button><button class="btn" id="goPlayers">参加者とスコア</button><button class="btn" id="pinReset">今日のピン位置をすべて消す</button></div>
-    <h3>コースデータ</h3>
-    <div class="row">
-      <button class="btn" id="exportBtn">書き出す（ファイル）</button>
-      <button class="btn" id="importBtn">読み込む</button>
-      <button class="btn danger" id="wipeBtn">登録を消す</button>
+    <p class="grp-f">ラウンド前にこの2つがそろっていれば準備完了です。</p>
+
+    <div class="grp-t">今日のラウンド</div>
+    <div class="grp">
+      <button class="mrow" id="goPlayers"><span class="mic" style="background:#2f6fd1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.5c2.6.4 4.5 2.4 4.5 5.5"/></svg></span><span class="mtx">参加者とスコア</span><span class="mval" id="mvPlayers"></span><span class="chev">›</span></button>
+      <button class="mrow" id="goShare"><span class="mic" style="background:#1f9d48"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" aria-hidden="true"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/></svg></span><span class="mtx">スコアを共有</span><span class="mval" id="mvShare"></span><span class="chev">›</span></button>
+      <button class="mrow" id="pinReset"><span class="mic" style="background:#d63c8e"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v5h5"/></svg></span><span class="mtx">ピン位置をリセット</span><span class="mval" id="mvPins"></span></button>
+    </div>
+
+    <div class="grp-t">表示</div>
+    <div class="grp">
+      <button class="mrow" id="bElev" role="switch" aria-checked="true"><span class="mic" style="background:#e07a00"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M2 20l6.5-9 4 5 3-3.5L22 20z"/></svg></span><span class="mtx">高低差を表示<small>公式競技ではオフにします</small></span><span class="sw" aria-hidden="true"></span></button>
+    </div>
+
+    <div class="grp-t">コース</div>
+    <div class="grp">
+      <button class="mrow" id="goSetup"><span class="mic" style="background:#1f9d48"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V3"/><path d="M6 4l12 4.5L6 13"/></svg></span><span class="mtx">ティー・グリーンを登録</span><span class="chev">›</span></button>
+      <button class="mrow" id="offSave"><span class="mic" style="background:#2f6fd1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M12 6v8M9 11l3 3 3-3"/></svg></span><span class="mtx">端末に保存<small id="offInfo">電波がなくても地図が見られる</small></span><span class="mval" id="offVal"></span></button>
+      <button class="mrow" id="goJump"><span class="mic" style="background:#7a4fd6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg></span><span class="mtx">別のコースに切り替え</span><span class="chev">›</span></button>
+    </div>
+
+    <div class="grp-t">バックアップ</div>
+    <div class="grp">
+      <button class="mrow" id="exportBtn"><span class="mic" style="background:#5b6573"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 14v6h14v-6"/></svg></span><span class="mtx">コースデータを書き出す</span><span class="chev">›</span></button>
+      <button class="mrow" id="importBtn"><span class="mic" style="background:#5b6573"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 14v6h14v-6"/></svg></span><span class="mtx">コースデータを読み込む</span><span class="chev">›</span></button>
       <input type="file" id="importFile" accept="application/json,.json" hidden>
     </div>
-    <p>出典：地理院タイル（航空写真・標高）国土地理院</p>
+
+    <div class="grp-t">その他</div>
+    <div class="grp">
+      <button class="mrow" id="goTest"><span class="mic" style="background:#8a8f96"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6M10 3v6L5 19a1.5 1.5 0 0 0 1.3 2h11.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/></svg></span><span class="mtx">テスト用の機能</span><span class="chev">›</span></button>
+    </div>
+
+    <div class="grp wipe"><button class="mrow danger" id="wipeBtn">このコースの登録を消す</button></div>
+    <p class="grp-f credit">出典：地理院タイル（国土地理院）</p>
+  </div>
+
+  <div class="mbody" id="mJump" hidden>
+    <p class="grp-f">地理院地図（maps.gsi.go.jp）で行きたいコースを表示し、そのページのURLを貼り付けてください。地図がその場所へ移動します。</p>
+    <div class="grp"><div class="mrow"><input type="text" id="jumpUrl" placeholder="https://maps.gsi.go.jp/#16/35.22/139.10/…" aria-label="地理院地図のURL"></div></div>
+    <div class="grp mgap"><button class="mrow center" id="jumpGo">この場所へ移動</button></div>
+  </div>
+
+  <div class="mbody" id="mTest" hidden>
+    <p class="grp-f">開発・確認用の機能です。普段のラウンドでは使いません。</p>
+    <div class="grp">
+      <button class="mrow" id="goSim"><span class="mic" style="background:#7a4fd6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="6"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></span><span class="mtx">現在地をタップで置く（テスト）<small>十字を合わせて「ここに置く」で現在地にします</small></span><span class="chev">›</span></button>
+    </div>
+  </div>
+
+  <div class="mconfirm" id="wipeAsk" hidden>
+    <div class="mcard" role="alertdialog" aria-labelledby="wipeQ">
+      <p id="wipeQ"></p>
+      <small>消すと元に戻せません</small>
+      <div class="mcbtn"><button id="wipeNo">キャンセル</button><button id="wipeYes" class="red">消す</button></div>
+    </div>
   </div>
 </div>
+<div class="snack" id="snack" hidden><span id="snackText"></span><button id="snackUndo">元に戻す</button></div>
 
 <div class="sheet" id="setup" hidden>
   <div class="inner">
@@ -645,7 +746,7 @@ function refresh() {
   const BAN = { pin: `${N}番のピン位置に十字を合わせる`, me: 'テスト用の現在地に十字を合わせる' };
   $('banner').hidden = !BAN[S.mode] || !$('setup').hidden; if (BAN[S.mode]) $('bannerText').textContent = BAN[S.mode];
   document.querySelector('.side').hidden = !$('banner').hidden;  // the banner would cover the lower buttons
-  $('bElev').setAttribute('aria-pressed', S.prefs.elev); $('bElev').querySelector('b').textContent = S.prefs.elev ? 'オン' : 'オフ';
+  $('bElev').setAttribute('aria-checked', !!S.prefs.elev);
   // GPS button: accuracy while on (green), 'オフ' while off
   $('bGps').setAttribute('aria-pressed', S.watch != null);
   $('gpsInfo').textContent = S.watch == null ? 'オフ' : S.me && S.me.src === 'gps' ? `±${Math.round(S.me.acc || 0)}m` : '取得中';
@@ -787,7 +888,6 @@ $('bPin').onclick = () => {
   refresh();
   if (S.mode === 'pin') centerOn(S.round.pins[N] || hole().green, { zoom: Math.max(map.getZoom(), 18.3), duration: 700 });
 };
-$('bElev').onclick = () => { S.prefs.elev = !S.prefs.elev; savePrefs(); refresh(); toast(S.prefs.elev ? '高低差を表示します' : '高低差を隠しました（公式競技向け）'); };
 
 /* GPS */
 async function wakeOn() { try { if ('wakeLock' in navigator) S.wake = await navigator.wakeLock.request('screen'); } catch (e) {} }
@@ -811,13 +911,67 @@ function gpsStop() {
 }
 $('bGps').onclick = () => S.watch != null ? gpsStop() : gpsStart();
 
-/* menu */
+/* settings */
 const openSheet = id => { $('menu').hidden = $('setup').hidden = $('players').hidden = $('share').hidden = true; $(id).hidden = false; };
-$('bMenu').onclick = () => { $('courseName').value = S.course.name || ''; offEstimate(); openSheet('menu'); };
-$('menuClose').onclick = () => $('menu').hidden = true;
-$('courseName').oninput = () => { S.course.name = $('courseName').value; saveCourse(); };
+const OFF_KEY = 'golf3d.offline';  // { sig } of the course whose map was last saved to this phone
+const courseSig = () => JSON.stringify(S.course.holes.map(h => [h.tee, h.green]));
+const offSaved = () => { const o = loadJSON(OFF_KEY); return !!(o && o.sig === courseSig()); };
+let offState = null;  // { pct } while the map is being saved
+const M_TITLE = { mMain: '設定', mJump: 'コースの切り替え', mTest: 'テスト用の機能' };
+function mShow(id) {  // the main list, or one of its sub-screens
+  Object.keys(M_TITLE).forEach(x => $(x).hidden = x !== id);
+  $('mBack').hidden = id === 'mMain'; $('menuTitle').textContent = M_TITLE[id];
+  $('menu').scrollTop = 0;
+}
+function renderMenu() {
+  $('cnText').textContent = S.course.name || '名前なし';
+  const n = S.course.holes.filter(registered).length;
+  $('ckSetupMark').className = 'ck ' + (n === 18 ? 'ok' : 'no'); $('ckSetupVal').textContent = `${n} / 18ホール`;
+  const saved = offSaved() && !offState, busy = offState && `保存中 ${offState.pct}%`;
+  $('ckOffMark').className = 'ck ' + (saved ? 'ok' : 'no');
+  $('ckOffVal').textContent = busy || (saved ? '保存済み' : '保存する');
+  $('offVal').textContent = busy || (saved ? '保存済み' : '未保存');
+  $('offInfo').textContent = `約${Math.max(1, Math.round(offTiles().list.length * 25 / 1024))}MB・電波がなくても地図が見られる`;
+  $('mvPlayers').textContent = `${allPlayers().length}人`;
+  $('mvShare').textContent = room ? room.code : '';
+  const pins = Object.keys(S.round.pins).length;
+  $('mvPins').textContent = pins ? `${pins}ホール設定中` : 'なし'; $('pinReset').disabled = !pins;
+  $('bElev').setAttribute('aria-checked', !!S.prefs.elev);
+}
+$('bMenu').onclick = () => { mShow('mMain'); renderMenu(); openSheet('menu'); };
+$('menuClose').onclick = () => { cnDone(); $('menu').hidden = true; };
+$('mBack').onclick = () => mShow('mMain');
+// course name: pencil turns the name into a text field
+function cnDone() {
+  const inp = $('courseName'); if (inp.hidden) return;
+  const v = inp.value.trim(); if (v) { S.course.name = v; saveCourse(); }
+  inp.hidden = true; $('cnText').hidden = false; renderMenu();
+}
+$('cnEdit').onclick = () => {
+  const inp = $('courseName');
+  if (!inp.hidden) { cnDone(); return; }
+  inp.value = S.course.name || ''; inp.hidden = false; $('cnText').hidden = true; inp.focus(); inp.select();
+};
+$('courseName').onblur = cnDone;
+$('courseName').onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) $('courseName').blur(); };  // not while converting kana
+$('ckSetup').onclick = $('goSetup').onclick = () => openSetup();
+$('ckOff').onclick = $('offSave').onclick = () => offSaveRun();
+$('goJump').onclick = () => mShow('mJump');
+$('goTest').onclick = () => mShow('mTest');
 $('goSim').onclick = () => { $('menu').hidden = true; S.mode = 'me'; refresh(); };
-$('pinReset').onclick = () => { S.round = { pins: {} }; saveRound(); refresh(); toast('ピン位置を消しました（グリーン中心までの距離に戻ります）'); };
+$('bElev').onclick = () => { S.prefs.elev = !S.prefs.elev; savePrefs(); refresh(); renderMenu(); };
+// undo bar: a few seconds to take back the last action
+let snackT = null;
+function snack(text, undo) {
+  $('snackText').textContent = text; $('snack').hidden = false;
+  $('snackUndo').onclick = () => { clearTimeout(snackT); $('snack').hidden = true; undo(); };
+  clearTimeout(snackT); snackT = setTimeout(() => $('snack').hidden = true, 5000);
+}
+$('pinReset').onclick = () => {
+  const prev = S.round.pins, n = Object.keys(prev).length;
+  S.round = { pins: {} }; saveRound(); refresh(); renderMenu();
+  snack(`ピン位置を消しました（${n}ホール）`, () => { S.round.pins = prev; saveRound(); refresh(); if (!$('menu').hidden) renderMenu(); });
+};
 $('jumpGo').onclick = () => {
   const u = $('jumpUrl').value;
   let m = u.match(/lat=(-?[\d.]+)&lon=(-?[\d.]+)/) || null, ll = null, z = 16;
@@ -844,11 +998,12 @@ $('importFile').onchange = async e => {
     toast(`「${S.course.name}」を読み込みました`);
   } catch (err) { toast('このファイルは読み込めませんでした'); }
 };
-let wipeArm = null;
-$('wipeBtn').onclick = () => {
-  if (!wipeArm) { $('wipeBtn').textContent = 'もう一度押すと消します'; wipeArm = setTimeout(() => { wipeArm = null; $('wipeBtn').textContent = '登録を消す'; }, 3500); return; }
-  clearTimeout(wipeArm); wipeArm = null; $('wipeBtn').textContent = '登録を消す';
-  S.course.holes = blankHoles(); saveCourse(); S.round = { pins: {} }; saveRound(); N = 1; S.tap = null; refresh(); toast('登録を消しました');
+// deleting the course asks inside the sheet (no browser confirm())
+$('wipeBtn').onclick = () => { $('wipeQ').textContent = `「${S.course.name || 'このコース'}」の登録を消しますか？`; $('wipeAsk').hidden = false; $('wipeNo').focus(); };
+$('wipeNo').onclick = () => $('wipeAsk').hidden = true;
+$('wipeYes').onclick = () => {
+  $('wipeAsk').hidden = true;
+  S.course.holes = blankHoles(); saveCourse(); S.round = { pins: {} }; saveRound(); N = 1; S.tap = null; refresh(); renderMenu(); toast('登録を消しました');
 };
 
 /* setup */
@@ -1278,33 +1433,30 @@ function offTiles() {
   for (let z = 12; z <= 15; z++) range(z, (x, y) => list.push({ kind: 'dem', z, x, y }));
   return { list, fromHoles: pts.length > 0 };
 }
-function offEstimate() {
-  const { list, fromHoles } = offTiles();
-  $('offMsg').textContent = `${fromHoles ? '登録したホールの周り' : 'いま画面に映っている範囲'}・約${list.length}枚（目安 ${Math.max(1, Math.round(list.length * 25 / 1024))}MB）`;
-}
-let offBusy = false;
-$('offSave').onclick = async () => {
-  if (offBusy) return;
-  if (!(await openCache())) { $('offMsg').textContent = 'このブラウザでは端末に保存できません。'; return; }
-  offBusy = true; $('offSave').disabled = true;
-  const { list } = offTiles(); let done = 0, bytes = 0, fail = 0;
-  const bar = $('offBar'); bar.hidden = false; bar.firstElementChild.style.width = '0%';
-  let i = 0;
+// save the aerial photos and elevation around the course to this phone; progress shows in the settings rows
+async function offSaveRun() {
+  if (offState) return;
+  if (!(await openCache())) { toast('このブラウザでは端末に保存できません'); return; }
+  const { list } = offTiles(); let done = 0, fail = 0, i = 0;
+  offState = { pct: 0 }; renderMenu();
   const worker = async () => {
     while (i < list.length) {
       const t = list[i++];
       try {
-        if (t.kind === 'photo') { const b = await tileBlob(`${GSI}seamlessphoto/${t.z}/${t.x}/${t.y}.jpg`); if (b) bytes += b.size; else fail++; }
-        else { const h = await heights(t.z, t.x, t.y); if (!h) fail++; }
+        if (t.kind === 'photo') { if (!(await tileBlob(`${GSI}seamlessphoto/${t.z}/${t.x}/${t.y}.jpg`))) fail++; }
+        else if (!(await heights(t.z, t.x, t.y))) fail++;
       } catch (e) { fail++; }
-      done++; bar.firstElementChild.style.width = (done / list.length * 100).toFixed(1) + '%';
-      $('offMsg').textContent = `保存中… ${done}/${list.length}`;
+      const p = Math.floor(++done / list.length * 100);
+      if (p !== offState.pct) { offState.pct = p; if (!$('menu').hidden) renderMenu(); }
     }
   };
   await Promise.all(Array.from({ length: 6 }, worker));
-  $('offMsg').textContent = fail > list.length * .3 ? '一部しか保存できませんでした。電波の良い場所でもう一度お試しください。' : `保存しました（写真 約${(bytes / 1048576).toFixed(1)}MB）。電波がなくても表示できます。`;
-  $('offSave').disabled = false; offBusy = false;
-};
+  offState = null;
+  const ok = fail <= list.length * .3;
+  if (ok) saveJSON(OFF_KEY, { sig: courseSig(), at: Date.now() });
+  renderMenu();
+  toast(ok ? '端末に保存しました。電波がなくても地図が見られます' : '一部しか保存できませんでした。電波の良い場所でもう一度お試しください');
+}
 
 if (S.prefs.gps) gpsStart();
 refresh();
