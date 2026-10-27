@@ -23,9 +23,9 @@ button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
 button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 
 /* top: distance panel — light frosted glass with dark text (readable in sun); nothing sits at the bottom edge (Safari's bar).
-   Symmetric so the distance sits in the middle: [‹][HOLE 1] | label / big distance | [PAR 4][›], then a hairline and the elevation line */
+   [‹] [ 1H · PAR 4 / big distance ] [›], then a hairline and the elevation line */
 .hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));max-width:440px;margin:0 auto;z-index:5;
-  display:grid;grid-template-columns:38px 50px 1fr 50px 38px;grid-template-areas:"prev hno dist par next" "sub sub sub sub sub";align-items:center;
+  display:grid;grid-template-columns:40px 1fr 40px;grid-template-areas:"prev mid next" "sub sub sub";align-items:center;
   padding:4px 4px 6px;border-radius:18px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
   border:1px solid rgba(10,19,34,.16);box-shadow:0 6px 20px rgba(0,0,0,.22);color:var(--ink);font-weight:800}
 /* hole arrows at the two edges: big tap areas, light chevrons; only a soft highlight while pressed */
@@ -34,14 +34,17 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 #prevHole{grid-area:prev}#nextHole{grid-area:next}
 .hole .ic:active{background:rgba(10,19,34,.08)}
 .hole .ic svg{display:block}
-/* hole number (left) and par (right) as matching small stacks */
-.holename,.parbox{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;text-shadow:0 0 2px rgba(255,255,255,.9)}
-.holename{grid-area:hno}.parbox{grid-area:par}
-.holename small,.parbox small{font-size:9.5px;font-weight:800;letter-spacing:.16em;color:#3a4350}
-.holename b,.parbox b{font-size:30px;font-weight:900;margin-top:4px;font-variant-numeric:tabular-nums}
-.parbox b{color:#3a4350}
-.dist{grid-area:dist;align-self:stretch;display:grid;grid-template-columns:auto auto;justify-content:center;align-content:center;align-items:baseline;column-gap:3px;padding:0 4px;border-inline:1px solid rgba(10,19,34,.14)}
-.dist .lab{grid-column:1 / -1;justify-self:center;font-size:12px;font-weight:800;color:#3a4350;margin-bottom:1px;white-space:nowrap}
+/* middle: hole and par on one line, the distance right under it */
+.mid{grid-area:mid;display:flex;flex-direction:column;align-items:stretch}
+.holeline{display:flex;justify-content:center;align-items:baseline;gap:10px;line-height:1;margin-top:2px;text-shadow:0 0 2px rgba(255,255,255,.9)}
+.holeline span{display:flex;align-items:baseline;gap:3px}
+.holeline b{font-size:22px;font-weight:900;font-variant-numeric:tabular-nums}
+.holeline small{font-size:13px;font-weight:800;color:#3a4350;letter-spacing:.04em}
+.holeline i{width:4px;height:4px;border-radius:50%;background:#7a8490;align-self:center}
+/* the number sits dead centre; its label takes the space to the right */
+.dist{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;column-gap:6px}
+.dist .nv{grid-column:2;white-space:nowrap}
+.dist .lab{grid-column:3;justify-self:start;padding-bottom:8px;font-size:11.5px;font-weight:800;color:#3a4350;line-height:1.2}
 .dist .num{font-size:52px;font-weight:900;line-height:.95;font-variant-numeric:tabular-nums;letter-spacing:-.03em;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 6px rgba(255,255,255,.6)}
 .dist .unit{font-size:20px;font-weight:900}
 /* elevation / extra line under a hairline; the rise or drop is a small tinted pill */
@@ -271,11 +274,12 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 <div class="hud">
   <div class="hole">
     <button class="ic" id="prevHole" aria-label="前のホール"><svg width="14" height="24" viewBox="0 0 14 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 3L3 12l8 9"/></svg></button>
-    <div class="holename"><small>HOLE</small><b id="hNo">1</b></div>
     <button class="ic" id="nextHole" aria-label="次のホール"><svg width="14" height="24" viewBox="0 0 14 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l8 9-8 9"/></svg></button>
   </div>
-  <div class="dist"><span class="lab" id="dLab">ピンまで</span><span class="num" id="dNum">—</span><span class="unit">Y</span></div>
-  <div class="parbox"><small>PAR</small><b id="hPar">4</b></div>
+  <div class="mid">
+    <div class="holeline"><span><b id="hNo">1</b><small>番ホール</small></span><i></i><span><small>PAR</small><b id="hPar">4</b></span></div>
+    <div class="dist"><span class="nv"><span class="num" id="dNum">—</span><span class="unit">Y</span></span><span class="lab" id="dLab">ピンまで</span></div>
+  </div>
   <div class="sub" id="dSub"></div>
 </div>
 <button class="tapreset" id="tapReset" aria-label="マークを消して現在地からの距離に戻す" hidden>リセット</button>
