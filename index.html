@@ -232,14 +232,16 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 .mk.me.sim{background:#c08bff;box-shadow:0 0 0 1.5px rgba(0,0,0,.65),0 0 0 9px rgba(192,139,255,.3),0 1px 5px rgba(0,0,0,.5)}
 /* markers are positioned absolutely by MapLibre (transform); never override position on .mk, and animate only children */
 /* measured point: fluorescent diamond */
-.mk.tap{width:26px;height:26px;z-index:2}
-.mk.tap .dot{position:absolute;inset:3px;box-sizing:border-box;border-radius:3px;background:var(--meas);border:3.5px solid #fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.65),0 1px 5px rgba(0,0,0,.5);transform:rotate(45deg);animation:tapPop .42s cubic-bezier(.34,1.7,.5,1)}
-.mk.tap::before,.mk.tap::after{content:"";position:absolute;inset:3px;border-radius:3px;border:2.5px solid var(--meas);opacity:0;transform:rotate(45deg);animation:tapRing 2.4s ease-out infinite}
+.mk.tap{width:40px;height:40px;z-index:2;pointer-events:auto;cursor:grab;touch-action:none}  /* big enough to grab and drag */
+.mk.tap .dot{position:absolute;inset:10px;box-sizing:border-box;border-radius:3px;background:var(--meas);border:3.5px solid #fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.65),0 1px 5px rgba(0,0,0,.5);transform:rotate(45deg);animation:tapPop .42s cubic-bezier(.34,1.7,.5,1)}
+.mk.tap::before,.mk.tap::after{content:"";position:absolute;inset:10px;border-radius:3px;border:2.5px solid var(--meas);opacity:0;transform:rotate(45deg);animation:tapRing 2.4s ease-out infinite}
 .mk.tap::after{animation-delay:1.2s}
 @keyframes tapPop{0%{transform:rotate(45deg) scale(0)}100%{transform:rotate(45deg) scale(1)}}
 @keyframes tapRing{0%{transform:rotate(45deg) scale(1);opacity:.9}100%{transform:rotate(45deg) scale(3.2);opacity:0}}
 /* faded through the colour: MapLibre sets an inline opacity on every marker, so CSS opacity has no effect */
 .mk.rl{font:600 11px/1 system-ui,sans-serif;color:rgba(255,255,255,.45);letter-spacing:.02em;white-space:nowrap;text-shadow:0 0 2px rgba(0,0,0,.25)}
+/* leg distance between two marks: small dark pill beside the line */
+.mk.leg{font:800 12.5px/1 system-ui,sans-serif;color:#fff;background:rgba(10,19,34,.62);border:1px solid rgba(198,255,0,.7);border-radius:9px;padding:3px 7px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .mk.num{font:700 11px/1 system-ui,sans-serif;background:rgba(20,34,58,.88);color:#fff;border-radius:10px;padding:4px 7px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 </style>
@@ -646,8 +648,18 @@ const M = {
     '<path d="M28 3L51 13L28 23Z" fill="none" stroke="rgba(0,0,0,.6)" stroke-width="6" stroke-linejoin="round"/>' +
     '<path d="M28 3L51 13L28 23Z" fill="#ff2bd6" stroke="#fff" stroke-width="3" stroke-linejoin="round"/></svg>' }), anchor: 'bottom' }),
   me: new maplibregl.Marker({ element: mkEl('me') }),
-  tap: new maplibregl.Marker({ element: Object.assign(mkEl('tap'), { innerHTML: '<span class="dot"></span>' }) })
 };
+// measuring marks (yellow diamonds): up to two, both draggable in 2D and 3D; S.tap holds their positions in tap order
+const TM = [0, 1].map(i => {
+  const m = new maplibregl.Marker({ element: Object.assign(mkEl('tap'), { innerHTML: '<span class="dot"></span>' }), draggable: true });
+  m.on('dragstart', () => clearTimeout(tapT));  // no auto-clear while a finger is on it
+  m.on('drag', () => { if (!S.tap || !S.tap[i]) return; const p = m.getLngLat(); S.tap[i] = [p.lng, p.lat]; tapDraw(true); });
+  m.on('dragend', () => tapIdle());
+  m.getElement().addEventListener('click', e => { e.stopPropagation(); tapIdle(); });  // touching a mark keeps it up
+  return m;
+});
+// leg distances shown on the map when there are two marks
+const LM = [0, 1].map(() => new maplibregl.Marker({ element: mkEl('leg'), anchor: 'left', offset: [12, 0] }));
 let numMarkers = [];
 function place(m, ll) { if (ll) { m.setLngLat(ll); if (!m._shown) { m.addTo(map); m._shown = true; } } else if (m._shown) { m.remove(); m._shown = false; } }
 
@@ -755,13 +767,13 @@ function refresh() {
   place(M.pin, pinLL());
   place(M.me, S.me && S.me.ll);
   M.me.getElement().classList.toggle('sim', !!(S.me && S.me.src === 'sim'));
-  place(M.tap, S.tap);
+  tapDraw();
   numMarkers.forEach(m => m.remove()); numMarkers = [];
   if (setup) S.course.holes.forEach(x => { if (x.tee && x.n !== N) numMarkers.push(new maplibregl.Marker({ element: mkEl('num', String(x.n)) }).setLngLat(x.tee).addTo(map)); });
   if (mapReady) {
     const f = [], pin = pinLL();
     if (setup) S.course.holes.forEach(x => { if (registered(x)) f.push(ln(x.tee, x.green, 'setup')); });
-    else if (S.tap) { if (pin) f.push(ln(pin, S.tap, 'tap')); }  // while a point is tapped, only the faint pin-to-mark line
+    else if (S.tap) { const p = tapLine(); if (p) f.push(p); }  // while marks are up, only their path to the pin
     else {
       if (registered(h) && !S.me) f.push(ln(h.tee, h.green, 'hole'));
       if (pin && S.me) f.push(ln(S.me.ll, pin, 'me'));
@@ -825,7 +837,8 @@ hudEdge(); addEventListener('resize', hudEdge);
 if ('ResizeObserver' in window) new ResizeObserver(hudEdge).observe(document.querySelector('.hud'));
 const fmtElev = (d, y) => {
   const cls = d >= 0 ? 'up' : 'down', word = d >= 0 ? '打ち上げ' : '打ち下ろし';
-  const span = document.createElement('span'); span.className = cls; span.textContent = `${d >= 0 ? '↑' : '↓'}${Math.abs(d).toFixed(0)}m ${word}`;
+  const span = document.createElement('span'); span.className = cls;
+  span.textContent = Math.abs(d) < .5 ? '高低差なし' : `${d >= 0 ? '↑' : '↓'}${Math.abs(d).toFixed(0)}m ${word}`;
   return [span, `・実質${Math.round(y + d / YD)}Y`];
 };
 let rdTok = 0;
@@ -833,14 +846,27 @@ async function readout() {
   const tok = ++rdTok, h = hole(), pin = pinLL(), sub = $('dSub');
   sub.textContent = '';
   if (!registered(h)) { $('dNum').textContent = '—'; $('dLab').textContent = '未登録のホール'; sub.textContent = '右の「設定」→「コース登録」で登録できます'; return; }
-  if (S.tap) {  // tapped (yellow) point: distance from there to the pin
-    const y = yards(S.tap, pin);
-    $('dNum').textContent = Math.round(y); $('dLab').textContent = 'マークからピン';
-    sub.textContent = S.me ? `現在地からマークまで ${Math.round(yards(S.me.ll, S.tap))}Y` : '';
+  if (S.tap) {
+    const path = tapPath(pin);
+    if (path.length === 2) {  // one mark: distance from there to the pin
+      const y = yards(path[0], pin);
+      $('dNum').textContent = Math.round(y); $('dLab').textContent = 'マークからピン';
+      sub.textContent = S.me ? `現在地からマークまで ${Math.round(yards(S.me.ll, path[0]))}Y` : '';
+      if (S.prefs.elev) {
+        const [a, b] = await Promise.all([elevAt(path[0]), elevAt(pin)]);
+        if (tok !== rdTok || a == null || b == null) return;
+        const rest = sub.textContent; sub.textContent = ''; sub.append(...fmtElev(b - a, y)); if (rest) sub.append(`・${rest}`);
+      }
+      return;
+    }
+    // two marks: the big number is the leg between them, then what is left to the pin
+    const [a, b] = path, y = yards(a, b), rest = `そこからピン ${Math.round(yards(b, pin))}Y`;
+    $('dNum').textContent = Math.round(y); $('dLab').textContent = 'マーク間';
+    sub.textContent = rest;
     if (S.prefs.elev) {
-      const [a, b] = await Promise.all([elevAt(S.tap), elevAt(pin)]);
-      if (tok !== rdTok || a == null || b == null) return;
-      const rest = sub.textContent; sub.textContent = ''; sub.append(...fmtElev(b - a, y)); if (rest) sub.append(`・${rest}`);
+      const [ea, eb] = await Promise.all([elevAt(a), elevAt(b)]);
+      if (tok !== rdTok || ea == null || eb == null) return;
+      sub.textContent = ''; sub.append(...fmtElev(eb - ea, y), `・${rest}`);
     }
     return;
   }
@@ -880,15 +906,34 @@ function placeAt(ll) {
   refresh();
 }
 $('sPlace').onclick = $('bannerPlace').onclick = () => placeAt(crossLL());
+/* measuring marks. 1st tap: a mark, distance to the pin. 2nd tap: a second mark — closer to the pin than
+   the first, it splits that leg; farther out, the path now starts there. A 3rd tap starts over.
+   Marks clear themselves after a few idle seconds and the display goes back to your position. */
 let tapT = null;
+const tapPath = pin => S.tap && pin ? S.tap.slice().sort((a, b) => yards(b, pin) - yards(a, pin)).concat([pin]) : null;  // farthest first
+const tapLine = () => { const p = tapPath(pinLL()); return p && { type: 'Feature', properties: { kind: 'tap' }, geometry: { type: 'LineString', coordinates: p } }; };
+function tapIdle() {
+  clearTimeout(tapT);
+  tapT = setTimeout(() => { S.tap = null; refresh(); }, S.tap && S.tap.length > 1 ? 10000 : 5000);
+}
+function tapDraw(dragging) {
+  const path = tapPath(pinLL());
+  TM.forEach((m, i) => place(m, S.tap && S.tap[i]));
+  LM.forEach((m, i) => {
+    const on = path && path.length === 3;
+    if (on) m.getElement().textContent = `${Math.round(yards(path[i], path[i + 1]))}Y`;
+    place(m, on ? lerpLL(path[i], path[i + 1], .5) : null);
+  });
+  if (dragging && mapReady) { const p = tapLine(); map.getSource('lines').setData(fc(p ? [p] : [])); readout(); }
+}
 map.on('click', e => {
+  if (e.originalEvent && e.originalEvent.target.closest && e.originalEvent.target.closest('.mk.tap')) return;
   const ll = [e.lngLat.lng, e.lngLat.lat];
   // while placing, a tap only brings that spot under the crosshair; the button does the placing
   if (isPlacing()) { centerOn(ll); return; }
-  // the tapped point shows its distance for 5 s, then the display goes back to your position
-  S.tap = ll; refresh();
-  clearTimeout(tapT); tapT = setTimeout(() => { S.tap = null; refresh(); }, 5000);
-  const dot = M.tap.getElement().firstChild;  // replay the pop on every tap
+  S.tap = S.tap && S.tap.length === 1 ? [S.tap[0], ll] : [ll];
+  refresh(); tapIdle();
+  const dot = TM[S.tap.length - 1].getElement().firstChild;  // replay the pop on the new mark
   dot.style.animation = 'none'; void dot.offsetWidth; dot.style.animation = '';
 });
 function goHole(n) {
