@@ -657,7 +657,7 @@ const TM = [0, 1].map(i => {
   return m;
 });
 // leg distances shown on the map when there are two marks
-const LM = [0, 1].map(() => new maplibregl.Marker({ element: mkEl('leg'), anchor: 'left', offset: [12, 0] }));
+const LM = [0, 1, 2].map(() => new maplibregl.Marker({ element: mkEl('leg'), anchor: 'left', offset: [12, 0] }));
 let numMarkers = [];
 function place(m, ll) { if (ll) { m.setLngLat(ll); if (!m._shown) { m.addTo(map); m._shown = true; } } else if (m._shown) { m.remove(); m._shown = false; } }
 
@@ -686,13 +686,11 @@ map.on('load', () => {
   map.addSource('lines', { type: 'geojson', data: fc([]) });
   map.addLayer({ id: 'lines-dash', type: 'line', source: 'lines', filter: ['in', ['get', 'kind'], ['literal', ['hole', 'setup']]],
     layout: { 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 2, 'line-opacity': .8, 'line-dasharray': [2, 2] } });
-  // distance lines: white casing under a fluorescent line; you → pin is solid cyan, mark → pin is dashed lime
-  map.addLayer({ id: 'lines-case', type: 'line', source: 'lines', filter: ['in', ['get', 'kind'], ['literal', ['tap', 'me']]],
+  // measured path (only after you tap the map): white casing under a dashed fluorescent lime line
+  map.addLayer({ id: 'lines-case', type: 'line', source: 'lines', filter: ['in', ['get', 'kind'], ['literal', ['tap']]],
     layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 7.5 } });
   map.addLayer({ id: 'lines-tap', type: 'line', source: 'lines', filter: ['==', ['get', 'kind'], 'tap'],
     layout: { 'line-join': 'round' }, paint: { 'line-color': '#c6ff00', 'line-width': 4, 'line-dasharray': [1.6, 1.1] } });
-  map.addLayer({ id: 'lines-me', type: 'line', source: 'lines', filter: ['==', ['get', 'kind'], 'me'],
-    layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#00e5ff', 'line-width': 4 } });
   mapReady = true;
   refresh();
   if (registered(hole())) camera(S.view, 0);
@@ -746,10 +744,7 @@ function refresh() {
     const f = [], pin = pinLL();
     if (setup) S.course.holes.forEach(x => { if (registered(x)) f.push(ln(x.tee, x.green, 'setup')); });
     else if (S.tap) { const p = tapLine(); if (p) f.push(p); }  // while marks are up, only their path to the pin
-    else {
-      if (registered(h) && !S.me) f.push(ln(h.tee, h.green, 'hole'));
-      if (pin && S.me) f.push(ln(S.me.ll, pin, 'me'));
-    }
+    else if (registered(h) && !S.me) f.push(ln(h.tee, h.green, 'hole'));  // no line from you to the pin until you tap
     map.getSource('lines').setData(fc(f));
     // rings reach a little past the tee (or the player, if farther)
     const reach = pin && !setup ? Math.max(h.tee ? yards(h.tee, pin) : 0, S.me ? yards(S.me.ll, pin) : 0, 150) + 25 : 0;
@@ -818,26 +813,17 @@ async function readout(quick) {  // quick: distances only (while dragging a mark
   sub.textContent = '';
   if (!registered(h)) { $('dNum').textContent = '—'; $('dLab').textContent = '未登録のホール'; sub.textContent = '右の「設定」→「コース登録」で登録できます'; return; }
   if (S.tap) {
-    const path = tapPath(pin);
-    if (path.length === 2) {  // one mark: distance from there to the pin
-      const y = yards(path[0], pin);
-      $('dNum').textContent = Math.round(y); $('dLab').textContent = 'マークからピン';
-      sub.textContent = S.me ? `現在地からマークまで ${Math.round(yards(S.me.ll, path[0]))}Y` : '';
-      if (S.prefs.elev && !quick) {
-        const [a, b] = await Promise.all([elevAt(path[0]), elevAt(pin)]);
-        if (tok !== rdTok || a == null || b == null) return;
-        const rest = sub.textContent; sub.textContent = ''; sub.append(...fmtElev(b - a, y)); if (rest) sub.append(`・${rest}`);
-      }
-      return;
-    }
-    // two marks: the big number is the leg between them, then what is left to the pin
-    const [a, b] = path, y = yards(a, b), rest = `そこからピン ${Math.round(yards(b, pin))}Y`;
-    $('dNum').textContent = Math.round(y); $('dLab').textContent = 'マーク間';
+    // the big number is the first leg (from you, or from the farthest mark); the rest of the legs follow below
+    const path = tapPath(pin), legs = path.slice(1).map((p, i) => Math.round(yards(path[i], p)));
+    const [a, b] = path, y = yards(a, b);
+    $('dNum').textContent = Math.round(y);
+    $('dLab').textContent = legs.length === 1 ? 'マークからピン' : S.me ? 'マークまで' : 'マーク間';
+    const rest = legs.length === 3 ? `マーク間 ${legs[1]}Y・そこからピン ${legs[2]}Y` : legs.length === 2 ? `そこからピン ${legs[1]}Y` : '';
     sub.textContent = rest;
     if (S.prefs.elev && !quick) {
       const [ea, eb] = await Promise.all([elevAt(a), elevAt(b)]);
       if (tok !== rdTok || ea == null || eb == null) return;
-      sub.textContent = ''; sub.append(...fmtElev(eb - ea, y), `・${rest}`);
+      sub.textContent = ''; sub.append(...fmtElev(eb - ea, y)); if (rest) sub.append(`・${rest}`);
     }
     return;
   }
@@ -875,13 +861,20 @@ function placeAt(ll) {
     default: return;
   }
   refresh();
+  if (!S.mode) camBack();
 }
+/* placing the pin or a test position zooms in on the spot; afterwards (placed or cancelled)
+   the map goes back to the view it had before */
+let camSave = null;
+const camKeep = () => { camSave = { center: map.getCenter(), zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() }; };
+function camBack() { if (camSave) { map.easeTo(Object.assign(camSave, { duration: 600 })); camSave = null; } }
 $('sPlace').onclick = $('bannerPlace').onclick = () => placeAt(crossLL());
 /* measuring marks. 1st tap: a mark, distance to the pin. 2nd tap: a second mark — closer to the pin than
    the first, it splits that leg; farther out, the path now starts there. A 3rd tap starts over.
    Marks clear themselves after a few idle seconds and the display goes back to your position. */
 let tapT = null;
-const tapPath = pin => S.tap && pin ? S.tap.slice().sort((a, b) => yards(b, pin) - yards(a, pin)).concat([pin]) : null;  // farthest first
+// the measured path: your position (when known), the marks farthest-first, then the pin
+const tapPath = pin => S.tap && pin ? (S.me ? [S.me.ll] : []).concat(S.tap.slice().sort((a, b) => yards(b, pin) - yards(a, pin)), [pin]) : null;
 const tapLine = () => { const p = tapPath(pinLL()); return p && { type: 'Feature', properties: { kind: 'tap' }, geometry: { type: 'LineString', coordinates: p } }; };
 function tapIdle() {
   clearTimeout(tapT);
@@ -897,8 +890,8 @@ function tapDraw(dragging) {
 function tapPaint(dragging) {
   const path = tapPath(pinLL());
   TM.forEach((m, i) => place(m, S.tap && S.tap[i]));
-  LM.forEach((m, i) => {
-    const on = path && path.length === 3, e = m.getElement();
+  LM.forEach((m, i) => {  // a label on every leg once there are two or more
+    const on = path && path.length >= 3 && i < path.length - 1, e = m.getElement();
     if (on) { const t = `${Math.round(yards(path[i], path[i + 1]))}Y`; if (e.textContent !== t) e.textContent = t; }
     place(m, on ? lerpLL(path[i], path[i + 1], .5) : null);
   });
@@ -917,13 +910,14 @@ map.on('click', e => {
 function goHole(n) {
   N = ((n - 1 + 18) % 18) + 1; S.tap = null; savePrefs();
   if (S.mode === 'pin') S.mode = null;
+  camSave = null;  // the new hole gets its own view
   if (S.mode && S.mode.startsWith('setup') || !$('setup').hidden) { const h = hole(); S.mode = registered(h) ? null : h.tee ? 'setup-green' : 'setup-tee'; }
   refresh();
   if (!(S.mode && S.mode.startsWith('setup'))) camera(S.view);
 }
 $('prevHole').onclick = () => goHole(N - 1);
 $('nextHole').onclick = () => goHole(N + 1);
-$('bannerCancel').onclick = () => { if (S.mode && S.mode.startsWith('setup')) closeSetup(); S.mode = null; refresh(); };
+$('bannerCancel').onclick = () => { if (S.mode && S.mode.startsWith('setup')) closeSetup(); S.mode = null; refresh(); camBack(); };
 
 $('b3d').onclick = () => { if (!mapReady) return; set3D(!S.is3D); refresh(); };
 $('bView').onclick = () => {
@@ -939,7 +933,8 @@ $('bPin').onclick = () => {
   if (!hole().green) { toast('先にこのホールを登録してください'); return; }
   S.mode = S.mode === 'pin' ? null : 'pin'; S.tap = null;
   refresh();
-  if (S.mode === 'pin') centerOn(S.round.pins[N] || hole().green, { zoom: Math.max(map.getZoom(), 18.3), duration: 700 });
+  if (S.mode === 'pin') { camKeep(); centerOn(S.round.pins[N] || hole().green, { zoom: Math.max(map.getZoom(), 18.3), duration: 700 }); }
+  else camBack();
 };
 
 /* GPS */
@@ -1011,7 +1006,7 @@ $('ckSetup').onclick = $('goSetup').onclick = () => openSetup();
 $('ckOff').onclick = $('offSave').onclick = () => offSaveRun();
 $('goJump').onclick = () => mShow('mJump');
 $('goTest').onclick = () => mShow('mTest');
-$('goSim').onclick = () => { $('menu').hidden = true; S.mode = 'me'; refresh(); };
+$('goSim').onclick = () => { $('menu').hidden = true; camKeep(); S.mode = 'me'; refresh(); };
 $('bElev').onclick = () => { S.prefs.elev = !S.prefs.elev; savePrefs(); refresh(); renderMenu(); };
 // undo bar: a few seconds to take back the last action
 let snackT = null;
