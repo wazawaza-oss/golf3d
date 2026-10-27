@@ -22,26 +22,31 @@ body{font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo"
 button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
 button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 
-/* top: distance panel — frosted glass so the map shows through; nothing sits at the bottom edge (Safari's bar) */
-.hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));max-width:440px;margin:0 auto;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 4px 18px rgba(0,0,0,.25);padding:4px 8px 5px;z-index:5;color:var(--ink);font-weight:800}
-/* hole arrows: tall buttons down both sides of the hole name and distance, easy to hit with a thumb */
-.hud{display:grid;grid-template-columns:56px 1fr 56px;grid-template-areas:"prev name next" "prev dist next" "sub sub sub";column-gap:6px}
-.holebar{display:contents}
-#prevHole{grid-area:prev}#nextHole{grid-area:next}
-.holename{grid-area:name;justify-self:center}
-.dist{grid-area:dist}
-.sub{grid-area:sub}
-.holebar .ic{width:100%;height:100%;min-height:64px;border-radius:12px;font-size:34px;font-weight:900;line-height:1;background:rgba(255,255,255,.75);border:1.5px solid var(--edge);color:var(--ink);display:grid;place-items:center;padding-bottom:3px}
-.holebar .ic:active{background:rgba(255,255,255,.95)}
-.holename{font-weight:900;font-size:15px;display:flex;align-items:baseline;gap:6px}
-.holename b{font-size:22px}
-.holename .par{font-weight:800;font-size:14px}
-.dist{display:flex;align-items:baseline;justify-content:center;gap:4px;margin-top:-2px}
-.dist .num{font-size:50px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 5px rgba(255,255,255,.7)}
-.dist .unit{font-size:22px;font-weight:900}
-.dist .lab{font-size:14px;font-weight:800;margin-left:8px}
-.sub{text-align:center;font-size:14px;font-weight:800;min-height:1.3em;line-height:1.3;font-variant-numeric:tabular-nums;text-shadow:0 0 2px rgba(255,255,255,.9)}
-.sub .up{color:#a3170f;font-weight:900}.sub .down{color:#0750a8;font-weight:900}
+/* top: distance panel — light frosted glass with dark text (readable in sun); nothing sits at the bottom edge (Safari's bar).
+   Layout: [‹ HOLE 1 PAR 4 ›] | [label / big distance], then a hairline and the elevation line */
+.hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));max-width:440px;margin:0 auto;z-index:5;
+  display:grid;grid-template-columns:auto 1px 1fr;grid-template-areas:"hole line dist" "sub sub sub";align-items:center;
+  padding:4px 6px 6px;border-radius:18px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  border:1px solid rgba(10,19,34,.16);box-shadow:0 6px 20px rgba(0,0,0,.22);color:var(--ink);font-weight:800}
+.hud::before{content:"";grid-area:line;align-self:stretch;margin:10px 0;background:rgba(10,19,34,.16)}  /* thin divider */
+/* hole selector: big tap areas, light chevrons; only a soft highlight while pressed */
+.hole{grid-area:hole;display:grid;grid-template-columns:44px 52px 44px;align-items:stretch;min-height:76px}
+.hole .ic{display:grid;place-items:center;border-radius:12px;color:var(--ink)}
+.hole .ic:active{background:rgba(10,19,34,.08)}
+.hole .ic svg{display:block}
+.holename{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;text-shadow:0 0 2px rgba(255,255,255,.9)}
+.holename small{font-size:9.5px;font-weight:800;letter-spacing:.16em;color:#3a4350}
+.holename b{font-size:32px;font-weight:900;margin:3px 0 4px;font-variant-numeric:tabular-nums}
+.holename .par{font-size:11.5px;font-weight:800;letter-spacing:.06em;color:#3a4350;text-transform:uppercase}
+/* distance: small label above the big number */
+.dist{grid-area:dist;display:grid;grid-template-columns:auto auto;justify-content:center;align-items:baseline;column-gap:3px;padding:0 6px}
+.dist .lab{grid-column:1 / -1;justify-self:center;font-size:12px;font-weight:800;color:#3a4350;margin-bottom:1px;white-space:nowrap}
+.dist .num{font-size:52px;font-weight:900;line-height:.95;font-variant-numeric:tabular-nums;letter-spacing:-.03em;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 6px rgba(255,255,255,.6)}
+.dist .unit{font-size:20px;font-weight:900}
+/* elevation / extra line under a hairline; the rise or drop is a small tinted pill */
+.sub{grid-area:sub;margin:2px 6px 0;padding-top:5px;border-top:1px solid rgba(10,19,34,.12);text-align:center;font-size:13px;font-weight:700;min-height:1.35em;line-height:1.35;font-variant-numeric:tabular-nums;text-shadow:0 0 2px rgba(255,255,255,.9)}
+.sub .up,.sub .down{display:inline-block;padding:0 7px;margin-right:4px;border-radius:999px;font-weight:900;text-shadow:none}
+.sub .up{color:#a3170f;background:rgba(163,23,15,.12)}.sub .down{color:#0750a8;background:rgba(7,80,168,.12)}
 /* while marks are up: a rounded リセット button sitting right above スコアボード (same width, same glass);
    the button column always ends above that spot, so nothing moves when it appears */
 .tapreset{position:fixed;right:max(10px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 86px);z-index:5;width:64px;height:38px;border-radius:12px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);font-size:13px;font-weight:900;text-shadow:0 0 2px rgba(255,255,255,.95)}
@@ -263,12 +268,12 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 <div id="map" role="application" aria-label="コースマップ"></div>
 
 <div class="hud">
-  <div class="holebar">
-    <button class="ic" id="prevHole" aria-label="前のホール">‹</button>
-    <div class="holename"><b id="hNo">1</b>H <span class="par" id="hPar">Par 4</span></div>
-    <button class="ic" id="nextHole" aria-label="次のホール">›</button>
+  <div class="hole">
+    <button class="ic" id="prevHole" aria-label="前のホール"><svg width="14" height="24" viewBox="0 0 14 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 3L3 12l8 9"/></svg></button>
+    <div class="holename"><small>HOLE</small><b id="hNo">1</b><span class="par" id="hPar">Par 4</span></div>
+    <button class="ic" id="nextHole" aria-label="次のホール"><svg width="14" height="24" viewBox="0 0 14 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l8 9-8 9"/></svg></button>
   </div>
-  <div class="dist"><span class="num" id="dNum">—</span><span class="unit">Y</span><span class="lab" id="dLab">ピンまで</span></div>
+  <div class="dist"><span class="lab" id="dLab">ピンまで</span><span class="num" id="dNum">—</span><span class="unit">Y</span></div>
   <div class="sub" id="dSub"></div>
 </div>
 <button class="tapreset" id="tapReset" aria-label="マークを消して現在地からの距離に戻す" hidden>リセット</button>
@@ -822,7 +827,7 @@ const fmtElev = (d, y) => {
   const cls = d >= 0 ? 'up' : 'down', word = d >= 0 ? '打ち上げ' : '打ち下ろし';
   const span = document.createElement('span'); span.className = cls;
   span.textContent = Math.abs(d) < .5 ? '高低差なし' : `${d >= 0 ? '↑' : '↓'}${Math.abs(d).toFixed(0)}m ${word}`;
-  return [span, `・実質${Math.round(y + d / YD)}Y`];
+  return [span, `実質${Math.round(y + d / YD)}Y`];  // the pill already separates the two
 };
 let rdTok = 0;
 async function readout(quick) {  // quick: distances only (while dragging a mark)
