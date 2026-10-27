@@ -23,23 +23,24 @@ button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
 button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 
 /* top: distance panel — light frosted glass with dark text (readable in sun); nothing sits at the bottom edge (Safari's bar).
-   Layout: [‹ HOLE 1 PAR 4 ›] | [label / big distance], then a hairline and the elevation line */
+   Symmetric so the distance sits in the middle: [‹][HOLE 1] | label / big distance | [PAR 4][›], then a hairline and the elevation line */
 .hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));max-width:440px;margin:0 auto;z-index:5;
-  display:grid;grid-template-columns:auto 1px 1fr;grid-template-areas:"hole line dist" "sub sub sub";align-items:center;
-  padding:4px 6px 6px;border-radius:18px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  display:grid;grid-template-columns:38px 50px 1fr 50px 38px;grid-template-areas:"prev hno dist par next" "sub sub sub sub sub";align-items:center;
+  padding:4px 4px 6px;border-radius:18px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
   border:1px solid rgba(10,19,34,.16);box-shadow:0 6px 20px rgba(0,0,0,.22);color:var(--ink);font-weight:800}
-.hud::before{content:"";grid-area:line;align-self:stretch;margin:10px 0;background:rgba(10,19,34,.16)}  /* thin divider */
-/* hole selector: big tap areas, light chevrons; only a soft highlight while pressed */
-.hole{grid-area:hole;display:grid;grid-template-columns:44px 52px 44px;align-items:stretch;min-height:76px}
-.hole .ic{display:grid;place-items:center;border-radius:12px;color:var(--ink)}
+/* hole arrows at the two edges: big tap areas, light chevrons; only a soft highlight while pressed */
+.hole{display:contents}
+.hole .ic{align-self:stretch;min-height:76px;display:grid;place-items:center;border-radius:12px;color:var(--ink)}
+#prevHole{grid-area:prev}#nextHole{grid-area:next}
 .hole .ic:active{background:rgba(10,19,34,.08)}
 .hole .ic svg{display:block}
-.holename{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;text-shadow:0 0 2px rgba(255,255,255,.9)}
-.holename small{font-size:9.5px;font-weight:800;letter-spacing:.16em;color:#3a4350}
-.holename b{font-size:32px;font-weight:900;margin:3px 0 4px;font-variant-numeric:tabular-nums}
-.holename .par{font-size:11.5px;font-weight:800;letter-spacing:.06em;color:#3a4350;text-transform:uppercase}
-/* distance: small label above the big number */
-.dist{grid-area:dist;display:grid;grid-template-columns:auto auto;justify-content:center;align-items:baseline;column-gap:3px;padding:0 6px}
+/* hole number (left) and par (right) as matching small stacks */
+.holename,.parbox{display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;text-shadow:0 0 2px rgba(255,255,255,.9)}
+.holename{grid-area:hno}.parbox{grid-area:par}
+.holename small,.parbox small{font-size:9.5px;font-weight:800;letter-spacing:.16em;color:#3a4350}
+.holename b,.parbox b{font-size:30px;font-weight:900;margin-top:4px;font-variant-numeric:tabular-nums}
+.parbox b{color:#3a4350}
+.dist{grid-area:dist;align-self:stretch;display:grid;grid-template-columns:auto auto;justify-content:center;align-content:center;align-items:baseline;column-gap:3px;padding:0 4px;border-inline:1px solid rgba(10,19,34,.14)}
 .dist .lab{grid-column:1 / -1;justify-self:center;font-size:12px;font-weight:800;color:#3a4350;margin-bottom:1px;white-space:nowrap}
 .dist .num{font-size:52px;font-weight:900;line-height:.95;font-variant-numeric:tabular-nums;letter-spacing:-.03em;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 6px rgba(255,255,255,.6)}
 .dist .unit{font-size:20px;font-weight:900}
@@ -270,10 +271,11 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 <div class="hud">
   <div class="hole">
     <button class="ic" id="prevHole" aria-label="前のホール"><svg width="14" height="24" viewBox="0 0 14 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 3L3 12l8 9"/></svg></button>
-    <div class="holename"><small>HOLE</small><b id="hNo">1</b><span class="par" id="hPar">Par 4</span></div>
+    <div class="holename"><small>HOLE</small><b id="hNo">1</b></div>
     <button class="ic" id="nextHole" aria-label="次のホール"><svg width="14" height="24" viewBox="0 0 14 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l8 9-8 9"/></svg></button>
   </div>
   <div class="dist"><span class="lab" id="dLab">ピンまで</span><span class="num" id="dNum">—</span><span class="unit">Y</span></div>
+  <div class="parbox"><small>PAR</small><b id="hPar">4</b></div>
   <div class="sub" id="dSub"></div>
 </div>
 <button class="tapreset" id="tapReset" aria-label="マークを消して現在地からの距離に戻す" hidden>リセット</button>
@@ -752,7 +754,7 @@ function set3D(on) {
 /* ================= rendering ================= */
 function refresh() {
   const h = hole(), setup = S.mode && S.mode.startsWith('setup');
-  $('hNo').textContent = N; $('hPar').textContent = 'Par ' + h.par;
+  $('hNo').textContent = N; $('hPar').textContent = h.par;
   place(M.tee, h.tee);
   place(M.gc, S.round.pins[N] && h.green ? h.green : null);
   place(M.pin, pinLL());
