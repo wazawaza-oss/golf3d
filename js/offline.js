@@ -42,3 +42,23 @@ async function offSaveRun() {
   toast(ok ? '端末に保存しました。電波がなくても地図が見られます' : '一部しか保存できませんでした。電波の良い場所でもう一度お試しください');
 }
 
+
+/* the app itself works offline through the service worker (sw.js). When a new version takes over,
+   reload once so the page and its files come from the same release. */
+if ('serviceWorker' in navigator) {
+  const hadWorker = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadWorker && !reloaded) { reloaded = true; location.reload(); } });
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+/* Safari only (not the home-screen app, not Chrome / LINE on iPhone): suggest Add to Home Screen until closed */
+$('a2hsClose').onclick = () => { $('a2hs').hidden = true; saveJSON('golf3d.a2hsClosed', true); };
+(() => {
+  const ua = navigator.userAgent;
+  const iOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const safari = /Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\/|Line\//.test(ua);
+  const app = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  if (!iOS || !safari || app || loadJSON('golf3d.a2hsClosed')) return;
+  $('a2hs').hidden = false;
+})();

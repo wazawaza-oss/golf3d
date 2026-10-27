@@ -1,0 +1,36 @@
+/* golf3d service worker: keeps the app itself (page, CSS, JS, icons, MapLibre) on the phone so it opens with no signal.
+   Bump VERSION with every release: the new worker stores the new files and deletes the old set, so no stale mix remains.
+   Map tiles live in their own cache (golf3d-tiles-v1, filled by 端末に保存) and are never touched here;
+   GSI tiles and Firebase go straight to the network. */
+const VERSION = '2026-10-28.1';
+const APP = 'golf3d-app-' + VERSION;
+const FILES = [
+  './', 'index.html', 'css/app.css',
+  'js/core.js', 'js/map.js', 'js/settings.js', 'js/course.js', 'js/setup.js', 'js/score.js', 'js/share.js', 'js/offline.js', 'js/main.js',
+  'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
+  'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js',
+  'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css'
+];
+
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(APP).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys()
+    .then(keys => Promise.all(keys.filter(k => k.startsWith('golf3d-app-') && k !== APP).map(k => caches.delete(k))))
+    .then(() => self.clients.claim()));
+});
+
+self.addEventListener('fetch', e => {
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  const ours = url.origin === location.origin || url.href.startsWith('https://unpkg.com/maplibre-gl@');
+  if (!ours) return;  // map tiles, Firebase, fonts: network as usual
+  // opening the app (also links like ?r=CODE) always gets the stored page
+  const key = req.mode === 'navigate' ? new URL('index.html', self.registration.scope).href : req;
+  e.respondWith(caches.open(APP)
+    .then(c => c.match(key, { ignoreSearch: true }))
+    .then(hit => hit || fetch(req)));
+});

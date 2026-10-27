@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#1d6638">
 <title>ゴルフ3Dマップ</title>
+<!-- home-screen app: manifest for Android/Chrome, apple-* for iPhone -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ゴルフ3D">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <link rel="stylesheet" href="css/app.css">
@@ -22,6 +30,10 @@
     <div class="dist"><span class="nv"><span class="num" id="dNum">—</span><span class="unit">Y</span></span><span class="lab" id="dLab">ピンまで</span></div>
   </div>
   <div class="sub" id="dSub"></div>
+</div>
+<div class="a2hs" id="a2hs" role="note" hidden>
+  <p><b>ホーム画面に追加すると、電波がなくても開けて、データも消えにくくなります。</b><span>Safari の共有ボタン → 「ホーム画面に追加」</span></p>
+  <button id="a2hsClose" aria-label="この案内を閉じる">✕</button>
 </div>
 <button class="tapreset" id="tapReset" aria-label="マークを消して現在地からの距離に戻す" hidden>リセット</button>
 <div class="side">
