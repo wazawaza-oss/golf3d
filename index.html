@@ -35,6 +35,10 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 .dist .lab{font-size:14px;font-weight:800;margin-left:8px}
 .sub{text-align:center;font-size:14px;font-weight:800;min-height:1.3em;line-height:1.3;font-variant-numeric:tabular-nums;text-shadow:0 0 2px rgba(255,255,255,.9)}
 .sub .up{color:#a3170f;font-weight:900}.sub .down{color:#0750a8;font-weight:900}
+/* while marks are up: one tap back to the plain distance from you (just under the panel, left) */
+.tapreset{position:fixed;top:calc(var(--hudb,190px) + 8px);left:max(10px,env(safe-area-inset-left,0px));z-index:5;display:flex;align-items:center;gap:6px;height:38px;padding:0 14px 0 12px;border-radius:19px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);font-size:14px;font-weight:800;text-shadow:0 0 2px rgba(255,255,255,.95)}
+.tapreset span{font-size:18px;font-weight:900}
+.tapreset b{font-weight:900}
 
 /* right column: settings / GPS / 3D / view / you / pin — fits between the distance panel (--hudb) and the bottom dock */
 .side{position:fixed;right:max(10px,env(safe-area-inset-right,0px));top:calc(var(--hudb,190px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 90px);display:flex;flex-direction:column;justify-content:center;gap:7px;z-index:4;pointer-events:none}
@@ -256,6 +260,7 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
   <div class="dist"><span class="num" id="dNum">—</span><span class="unit">Y</span><span class="lab" id="dLab">ピンまで</span></div>
   <div class="sub" id="dSub"></div>
 </div>
+<button class="tapreset" id="tapReset" hidden><span aria-hidden="true">↺</span> <b id="tapResetText">現在地からの距離</b></button>
 <div class="side">
   <button class="fab" id="bMenu" aria-label="設定（コース登録・高低差・スコア共有）">
     <svg width="20" height="20" viewBox="-14 -14 28 28" aria-hidden="true"><circle r="9.6" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="3.77 3.77"/><circle r="8" fill="currentColor"/><circle r="3.4" fill="#fff"/></svg><small>設定</small>
@@ -754,6 +759,7 @@ function refresh() {
   const BAN = { pin: `${N}番のピン位置に十字を合わせる`, me: 'テスト用の現在地に十字を合わせる' };
   $('banner').hidden = !BAN[S.mode] || !$('setup').hidden; if (BAN[S.mode]) $('bannerText').textContent = BAN[S.mode];
   document.querySelector('.side').hidden = !$('banner').hidden;  // the banner would cover the lower buttons
+  $('tapReset').hidden = !S.tap; $('tapResetText').textContent = S.me ? '現在地からの距離' : 'マークを消す';
   $('bElev').setAttribute('aria-checked', !!S.prefs.elev);
   // GPS button: accuracy while on (green), 'オフ' while off
   $('bGps').setAttribute('aria-pressed', S.watch != null);
@@ -817,7 +823,7 @@ async function readout(quick) {  // quick: distances only (while dragging a mark
     const path = tapPath(pin), legs = path.slice(1).map((p, i) => Math.round(yards(path[i], p)));
     const [a, b] = path, y = yards(a, b);
     $('dNum').textContent = Math.round(y);
-    $('dLab').textContent = legs.length === 1 ? 'マークからピン' : S.me ? 'マークまで' : 'マーク間';
+    $('dLab').textContent = legs.length === 1 ? 'マークからピン' : tapFromMe() ? 'マークまで' : 'マーク間';
     const rest = legs.length === 3 ? `マーク間 ${legs[1]}Y・そこからピン ${legs[2]}Y` : legs.length === 2 ? `そこからピン ${legs[1]}Y` : '';
     sub.textContent = rest;
     if (S.prefs.elev && !quick) {
@@ -873,8 +879,10 @@ $('sPlace').onclick = $('bannerPlace').onclick = () => placeAt(crossLL());
    the first, it splits that leg; farther out, the path now starts there. A 3rd tap starts over.
    Marks clear themselves after a few idle seconds and the display goes back to your position. */
 let tapT = null;
-// the measured path: your position (when known), the marks farthest-first, then the pin
-const tapPath = pin => S.tap && pin ? (S.me ? [S.me.ll] : []).concat(S.tap.slice().sort((a, b) => yards(b, pin) - yards(a, pin)), [pin]) : null;
+// the measured path: the marks farthest-first, then the pin. With one mark it starts from your position
+// (when known); with two the marks alone are the path, so there is no line from you
+const tapFromMe = () => !!(S.me && S.tap && S.tap.length === 1);
+const tapPath = pin => S.tap && pin ? (tapFromMe() ? [S.me.ll] : []).concat(S.tap.slice().sort((a, b) => yards(b, pin) - yards(a, pin)), [pin]) : null;
 const tapLine = () => { const p = tapPath(pinLL()); return p && { type: 'Feature', properties: { kind: 'tap' }, geometry: { type: 'LineString', coordinates: p } }; };
 function tapIdle() {
   clearTimeout(tapT);
@@ -897,6 +905,7 @@ function tapPaint(dragging) {
   });
   if (dragging && mapReady) { const p = tapLine(); map.getSource('lines').setData(fc(p ? [p] : [])); readout(true); }
 }
+$('tapReset').onclick = () => { clearTimeout(tapT); S.tap = null; refresh(); };
 map.on('click', e => {
   if (e.originalEvent && e.originalEvent.target.closest && e.originalEvent.target.closest('.mk.tap')) return;
   const ll = [e.lngLat.lng, e.lngLat.lat];
