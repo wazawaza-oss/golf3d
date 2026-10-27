@@ -238,8 +238,6 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 .mk.tap::after{animation-delay:1.2s}
 @keyframes tapPop{0%{transform:rotate(45deg) scale(0)}100%{transform:rotate(45deg) scale(1)}}
 @keyframes tapRing{0%{transform:rotate(45deg) scale(1);opacity:.9}100%{transform:rotate(45deg) scale(3.2);opacity:0}}
-/* faded through the colour: MapLibre sets an inline opacity on every marker, so CSS opacity has no effect */
-.mk.rl{font:600 11px/1 system-ui,sans-serif;color:rgba(255,255,255,.45);letter-spacing:.02em;white-space:nowrap;text-shadow:0 0 2px rgba(0,0,0,.25)}
 /* leg distance between two marks: small dark pill beside the line */
 .mk.leg{font:800 12.5px/1 system-ui,sans-serif;color:#fff;background:rgba(10,19,34,.62);border:1px solid rgba(198,255,0,.7);border-radius:9px;padding:3px 7px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .mk.num{font:700 11px/1 system-ui,sans-serif;background:rgba(20,34,58,.88);color:#fff;border-radius:10px;padding:4px 7px}
@@ -654,7 +652,7 @@ const TM = [0, 1].map(i => {
   const m = new maplibregl.Marker({ element: Object.assign(mkEl('tap'), { innerHTML: '<span class="dot"></span>' }), draggable: true });
   m.on('dragstart', () => clearTimeout(tapT));  // no auto-clear while a finger is on it
   m.on('drag', () => { if (!S.tap || !S.tap[i]) return; const p = m.getLngLat(); S.tap[i] = [p.lng, p.lat]; tapDraw(true); });
-  m.on('dragend', () => tapIdle());
+  m.on('dragend', () => { cancelAnimationFrame(tapRaf); tapRaf = 0; refresh(); tapIdle(); });  // full redraw with elevation
   m.getElement().addEventListener('click', e => { e.stopPropagation(); tapIdle(); });  // touching a mark keeps it up
   return m;
 });
@@ -678,32 +676,6 @@ function rings(pin, maxY) {
   }
   return out;
 }
-/* faint "50Y", "100Y" … on the rings, on the side facing you (or the tee); when zoomed out
-   the rings crowd together, so only every 100Y or 200Y keeps its label */
-let ringMk = [], ringKey = '';
-function ringLabels(pin, maxY, ref) {
-  const a = pin ? rad(ref ? bearing(pin, ref) : 180) : 0;
-  const key = pin ? [pin, maxY, Math.round(deg(a))].join() : '';
-  if (key === ringKey) return;  // refresh() runs on every GPS fix; rebuild only when something moved
-  ringKey = key; ringMk.forEach(m => m.remove()); ringMk = [];
-  if (!pin) return;
-  const cos = Math.cos(rad(pin[1]));
-  for (let r = 50; r <= maxY; r += 50) {
-    const m = r * YD, ll = [pin[0] + deg(m * Math.sin(a) / (6371008.8 * cos)), pin[1] + deg(m * Math.cos(a) / 6371008.8)];
-    const el = mkEl('rl', `${r}Y`); el.dataset.r = r;
-    ringMk.push(new maplibregl.Marker({ element: el, anchor: 'bottom-left', offset: [5, -2] }).setLngLat(ll).addTo(map));
-  }
-  ringThin();
-}
-function ringThin() {
-  if (!ringMk.length) return;
-  // on-screen gap between the first two rings decides the label spacing
-  const p = ringMk.slice(0, 2).map(m => map.project(m.getLngLat()));
-  const gap = p.length > 1 ? Math.hypot(p[1].x - p[0].x, p[1].y - p[0].y) : 99;
-  const step = gap >= 34 ? 50 : gap >= 17 ? 100 : 200;
-  ringMk.forEach(m => { const e = m.getElement(); e.hidden = e.dataset.r % step !== 0; });
-}
-map.on('zoom', ringThin); map.on('pitch', ringThin);
 let mapReady = false;
 map.on('load', () => {
   map.addSource('rings', { type: 'geojson', data: fc([]) });
@@ -782,7 +754,6 @@ function refresh() {
     // rings reach a little past the tee (or the player, if farther)
     const reach = pin && !setup ? Math.max(h.tee ? yards(h.tee, pin) : 0, S.me ? yards(S.me.ll, pin) : 0, 150) + 25 : 0;
     map.getSource('rings').setData(fc(reach ? rings(pin, Math.min(600, reach)) : []));
-    ringLabels(reach ? pin : null, Math.min(600, reach), S.me ? S.me.ll : h.tee);
   }
   // banner (pin / test position; setup has its own controls in the sheet)
   const BAN = { pin: `${N}番のピン位置に十字を合わせる`, me: 'テスト用の現在地に十字を合わせる' };
@@ -842,7 +813,7 @@ const fmtElev = (d, y) => {
   return [span, `・実質${Math.round(y + d / YD)}Y`];
 };
 let rdTok = 0;
-async function readout() {
+async function readout(quick) {  // quick: distances only (while dragging a mark)
   const tok = ++rdTok, h = hole(), pin = pinLL(), sub = $('dSub');
   sub.textContent = '';
   if (!registered(h)) { $('dNum').textContent = '—'; $('dLab').textContent = '未登録のホール'; sub.textContent = '右の「設定」→「コース登録」で登録できます'; return; }
@@ -852,7 +823,7 @@ async function readout() {
       const y = yards(path[0], pin);
       $('dNum').textContent = Math.round(y); $('dLab').textContent = 'マークからピン';
       sub.textContent = S.me ? `現在地からマークまで ${Math.round(yards(S.me.ll, path[0]))}Y` : '';
-      if (S.prefs.elev) {
+      if (S.prefs.elev && !quick) {
         const [a, b] = await Promise.all([elevAt(path[0]), elevAt(pin)]);
         if (tok !== rdTok || a == null || b == null) return;
         const rest = sub.textContent; sub.textContent = ''; sub.append(...fmtElev(b - a, y)); if (rest) sub.append(`・${rest}`);
@@ -863,7 +834,7 @@ async function readout() {
     const [a, b] = path, y = yards(a, b), rest = `そこからピン ${Math.round(yards(b, pin))}Y`;
     $('dNum').textContent = Math.round(y); $('dLab').textContent = 'マーク間';
     sub.textContent = rest;
-    if (S.prefs.elev) {
+    if (S.prefs.elev && !quick) {
       const [ea, eb] = await Promise.all([elevAt(a), elevAt(b)]);
       if (tok !== rdTok || ea == null || eb == null) return;
       sub.textContent = ''; sub.append(...fmtElev(eb - ea, y), `・${rest}`);
@@ -916,15 +887,22 @@ function tapIdle() {
   clearTimeout(tapT);
   tapT = setTimeout(() => { S.tap = null; refresh(); }, S.tap && S.tap.length > 1 ? 10000 : 5000);
 }
+// while dragging, drag events come faster than the screen redraws: do the work at most once per frame,
+// and leave the elevation lookups for when the finger lifts
+let tapRaf = 0;
 function tapDraw(dragging) {
+  if (dragging) { if (!tapRaf) tapRaf = requestAnimationFrame(() => { tapRaf = 0; tapPaint(true); }); return; }
+  tapPaint(false);
+}
+function tapPaint(dragging) {
   const path = tapPath(pinLL());
   TM.forEach((m, i) => place(m, S.tap && S.tap[i]));
   LM.forEach((m, i) => {
-    const on = path && path.length === 3;
-    if (on) m.getElement().textContent = `${Math.round(yards(path[i], path[i + 1]))}Y`;
+    const on = path && path.length === 3, e = m.getElement();
+    if (on) { const t = `${Math.round(yards(path[i], path[i + 1]))}Y`; if (e.textContent !== t) e.textContent = t; }
     place(m, on ? lerpLL(path[i], path[i + 1], .5) : null);
   });
-  if (dragging && mapReady) { const p = tapLine(); map.getSource('lines').setData(fc(p ? [p] : [])); readout(); }
+  if (dragging && mapReady) { const p = tapLine(); map.getSource('lines').setData(fc(p ? [p] : [])); readout(true); }
 }
 map.on('click', e => {
   if (e.originalEvent && e.originalEvent.target.closest && e.originalEvent.target.closest('.mk.tap')) return;
