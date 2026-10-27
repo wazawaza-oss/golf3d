@@ -1,0 +1,257 @@
+:root{
+  /* high contrast for bright sunlight: near-black text on opaque white panels */
+  --ink:#0a1322; --muted:#36414d; --panel:#fff; --edge:rgba(10,19,34,.28); --line:#b9c2b3;
+  --accent:#16592f; --tee:#2f6fd1;
+  /* map marks: soft colours that sit quietly on the photo, each with its own shape (you: circle, pin: flag, mark: diamond) */
+  --me:#2f8cff; --pin:#ff2bd6; --meas:#ffd84d;
+}
+html,body{height:100%;margin:0}
+[hidden]{display:none!important}
+body{font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;color:var(--ink);background:#dfe6da;overflow:hidden;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+#map{position:fixed;inset:0}
+button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
+
+/* top: distance panel — light frosted glass with dark text (readable in sun); nothing sits at the bottom edge (Safari's bar).
+   [‹] [ 1H · PAR 4 / big distance ] [›], then a hairline and the elevation line */
+.hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));max-width:440px;margin:0 auto;z-index:5;
+  display:grid;grid-template-columns:40px 1fr 40px;grid-template-areas:"prev mid next" "sub sub sub";align-items:center;
+  padding:4px 4px 6px;border-radius:18px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  border:1px solid rgba(10,19,34,.16);box-shadow:0 6px 20px rgba(0,0,0,.22);color:var(--ink);font-weight:800}
+/* hole arrows at the two edges: big tap areas, light chevrons; only a soft highlight while pressed */
+.hole{display:contents}
+.hole .ic{align-self:stretch;min-height:76px;display:grid;place-items:center;border-radius:12px;color:var(--ink)}
+#prevHole{grid-area:prev}#nextHole{grid-area:next}
+.hole .ic:active{background:rgba(10,19,34,.08)}
+.hole .ic svg{display:block}
+/* middle: hole and par on one line, the distance right under it */
+.mid{grid-area:mid;display:flex;flex-direction:column;align-items:stretch}
+.holeline{display:flex;justify-content:center;align-items:baseline;gap:18px;line-height:1;margin-top:2px;text-shadow:0 0 2px rgba(255,255,255,.9)}
+.holeline span{display:flex;align-items:baseline;gap:5px}
+.holeline b{font-size:22px;font-weight:900;font-variant-numeric:tabular-nums}
+.holeline small{font-size:13px;font-weight:800;color:#3a4350;letter-spacing:.04em}
+/* the number sits dead centre; its label takes the space to the right */
+.dist{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;column-gap:6px}
+.dist .nv{grid-column:2;white-space:nowrap}
+.dist .lab{grid-column:3;justify-self:start;padding-bottom:8px;font-size:11.5px;font-weight:800;color:#3a4350;line-height:1.2}
+.dist .num{font-size:52px;font-weight:900;line-height:.95;font-variant-numeric:tabular-nums;letter-spacing:-.03em;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 6px rgba(255,255,255,.6)}
+.dist .unit{font-size:20px;font-weight:900;margin-left:6px}  /* a little air between the number and Y */
+/* elevation / extra line under a hairline; the rise or drop is a small tinted pill */
+.sub{grid-area:sub;margin:2px 6px 0;padding-top:5px;border-top:1px solid rgba(10,19,34,.12);text-align:center;font-size:13px;font-weight:700;min-height:1.35em;line-height:1.35;font-variant-numeric:tabular-nums;text-shadow:0 0 2px rgba(255,255,255,.9)}
+.sub .up,.sub .down{display:inline-block;padding:0 7px;margin-right:4px;border-radius:999px;font-weight:900;text-shadow:none}
+.sub .up{color:#a3170f;background:rgba(163,23,15,.12)}.sub .down{color:#0750a8;background:rgba(7,80,168,.12)}
+/* while marks are up: a rounded リセット button sitting right above スコアボード (same width, same glass);
+   the button column always ends above that spot, so nothing moves when it appears */
+.tapreset{position:fixed;right:max(10px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 86px);z-index:5;width:64px;height:38px;border-radius:12px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);font-size:13px;font-weight:900;text-shadow:0 0 2px rgba(255,255,255,.95)}
+
+/* right column: settings / GPS / 3D / view / you / pin — fits between the distance panel (--hudb) and the bottom dock */
+.side{position:fixed;right:max(10px,env(safe-area-inset-right,0px));top:calc(var(--hudb,190px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 134px);display:flex;flex-direction:column;justify-content:center;gap:7px;z-index:4;pointer-events:none}
+.fab{pointer-events:auto;flex:0 1 50px;min-height:40px;width:52px;border-radius:12px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);font-weight:900;font-size:15px;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);line-height:1.15;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.fab small{display:block;font-size:10.5px;font-weight:800;color:var(--ink);white-space:nowrap}
+.fab svg{display:block}
+.fab[aria-pressed="true"]{background:rgba(22,89,47,.82);text-shadow:none;border-color:var(--accent);color:#fff}
+.fab[aria-pressed="true"] small{color:#fff}
+
+/* floating cards */
+.banner{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 24px);width:min(440px,calc(100% - 20px));border-radius:14px;z-index:6;box-shadow:0 4px 18px rgba(0,0,0,.22);background:#14223a;color:#fff;padding:10px 12px;display:grid;gap:8px;font-weight:700;font-size:15px}
+.banner .bb{display:flex;gap:8px}
+.banner button{background:#fff;color:var(--ink);border-radius:10px;padding:10px 14px;font-size:14px;font-weight:700;flex:none}
+.banner button.go{flex:1;background:var(--meas);color:#14223a;font-size:16px}
+
+/* crosshair for placing points */
+.cross{position:fixed;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;z-index:4;pointer-events:none}
+.cross svg{display:block}
+.cross .cl{position:absolute;left:50%;top:60px;transform:translateX(-50%);white-space:nowrap;background:rgba(20,34,58,.88);color:#fff;font:700 13px/1 system-ui,sans-serif;padding:5px 9px;border-radius:10px;font-variant-numeric:tabular-nums}
+
+/* sheets */
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:78vh;overflow:auto;background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.25);z-index:8;padding:14px max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 18px) max(16px,env(safe-area-inset-left,0px));-webkit-user-select:text;user-select:text}
+.sheet .inner{max-width:560px;margin:0 auto;display:grid;gap:14px}
+.sheet h2{margin:0;font-size:18px;display:flex;justify-content:space-between;align-items:center}
+.sheet h2 button{font-size:14px;font-weight:600;color:var(--muted);padding:6px 8px}
+.sheet h3{margin:0;font-size:13px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.sheet p{margin:0;font-size:13.5px;line-height:1.6;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border-radius:10px;padding:10px 14px;background:#eef2ea;font-weight:700;font-size:14px}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.danger{color:#b3261e}
+.btn:disabled{opacity:.45;cursor:default}
+.btn[aria-pressed="true"]{background:var(--ink);color:#fff}
+.btn.big{flex:1;padding:13px 14px;font-size:17px}
+
+/* settings: full-height grouped list (iOS Settings style), dark text for sunlight */
+#menu{top:calc(env(safe-area-inset-top,0px) + 10px);max-height:none;padding:0;background:#f0f1f4;-webkit-user-select:none;user-select:none}
+.mhead{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:12px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));background:rgba(240,241,244,.94);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid #d9dce1}
+.mhead h2{grid-column:2;margin:0;font-size:22px;font-weight:900;color:var(--ink)}
+.mhead .mback{grid-column:1;justify-self:start;font-size:16px;font-weight:800;color:#0b5cad;padding:8px 4px}
+.mhead .mdone{grid-column:3;justify-self:end;font-size:17px;font-weight:900;color:#0b5cad;padding:8px 4px}
+.mbody{max-width:560px;margin:0 auto;padding:4px max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 32px) max(16px,env(safe-area-inset-left,0px))}
+.grp-t{margin:22px 6px 7px;font-size:13px;font-weight:800;color:#3a4350;letter-spacing:.03em}
+#menu .grp-f{margin:8px 6px 0;font-size:13px;line-height:1.5;font-weight:600;color:#3a4350}
+.grp{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.grp>*+*{border-top:1px solid #e3e5e9}
+.mrow{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 14px;text-align:left;font-size:16px;font-weight:800;color:var(--ink);background:#fff}
+.mrow:active{background:#eceef1}
+.mrow:disabled{opacity:1;cursor:default}
+.mrow:disabled .mval{color:#6b7380}
+.mic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none}
+.mic svg{display:block}
+.mtx{flex:1;min-width:0}
+.mtx small{display:block;margin-top:1px;font-size:12.5px;font-weight:600;color:#3a4350}
+.mval{font-size:15px;font-weight:700;color:#3a4350;white-space:nowrap}
+.chev{font-size:24px;line-height:1;color:#8a909a;margin-left:-4px}
+.mrow.danger{justify-content:center;color:#c8102e;font-weight:900}
+.mrow.center{justify-content:center;color:#0b5cad;font-weight:900}
+.mrow input{flex:1;min-width:0;border:none;padding:6px 0;font-size:16px;background:transparent}
+.grp.wipe,.grp.mgap{margin-top:30px}
+#menu .grp-f.credit{margin-top:14px;text-align:center;font-size:12px}
+/* current course card */
+.mcourse{display:flex;align-items:center;gap:10px;padding:12px 14px}
+.mcourse .cn{flex:1;min-width:0;font-size:22px;font-weight:900;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mcourse input{flex:1;min-width:0;font-size:20px;font-weight:800}
+.cnedit{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;color:#0b5cad;background:#eef3fa;flex:none}
+/* checklist marks: green ✓ when done, yellow ○ when not yet */
+.ck{width:28px;height:28px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:16px;font-weight:900;box-sizing:border-box}
+.ck.ok{background:#1f9d48;color:#fff}
+.ck.ok::after{content:"✓"}
+.ck.no{border:3px solid #e0a800}
+/* iOS-style switch (the whole row is the switch) */
+.sw{position:relative;width:51px;height:31px;border-radius:16px;background:#b8bcc4;flex:none;transition:background .2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.25);transition:transform .2s}
+.mrow[aria-checked="true"] .sw{background:#1f9d48}
+.mrow[aria-checked="true"] .sw::after{transform:translateX(20px)}
+/* in-sheet confirm and the undo bar */
+.mconfirm{position:fixed;inset:0;z-index:20;background:rgba(10,19,34,.45);display:grid;place-items:center;padding:20px}
+.mcard{width:min(320px,100%);background:#fff;border-radius:16px;padding:20px 18px 14px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.mcard p{margin:0;font-size:17px;font-weight:900;color:var(--ink);line-height:1.45}
+.mcard small{display:block;margin-top:6px;font-size:13.5px;font-weight:700;color:#3a4350}
+.mcbtn{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.mcbtn button{height:46px;border-radius:12px;background:#eceef1;font-size:16px;font-weight:900;color:var(--ink)}
+.mcbtn button.red{background:#c8102e;color:#fff}
+.snack{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 24px);z-index:21;width:min(420px,calc(100% - 24px));display:flex;align-items:center;gap:10px;padding:10px 10px 10px 16px;border-radius:14px;background:#14223a;color:#fff;font-size:14.5px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.snack span{flex:1}
+.snack button{padding:10px 14px;border-radius:10px;background:#fff;color:var(--ink);font-weight:900;font-size:14.5px}
+
+/* setup sheet (collapsible) */
+#setup{padding-top:8px}
+#setup .inner{gap:10px}
+.shead{display:flex;align-items:center;gap:6px}
+.stog{flex:1;min-width:0;display:flex;align-items:center;gap:8px;min-height:44px;text-align:left}
+.stog strong{font-size:19px;white-space:nowrap}
+.stog .st{font-size:13px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stog .chev{margin-left:auto;flex:none;border-radius:10px;background:#eef2ea;padding:7px 10px;font-size:13px;font-weight:700}
+.shead .link{font-size:14px;font-weight:600;color:var(--muted);padding:8px 6px;flex:none}
+#setup.collapsed .more{display:none}
+input[type=text],select{font:inherit;font-size:15px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);min-width:0}
+input[type=text]{flex:1 1 200px}
+.chips{display:grid;grid-template-columns:repeat(9,1fr);gap:6px}
+.chips button{height:38px;border-radius:10px;background:#eef2ea;font-weight:700;font-variant-numeric:tabular-nums;position:relative}
+.chips button.done{background:#cfe8d5;color:#0f4a26}
+.chips button.half{background:#fff3c4}
+.chips button[aria-current="true"]{outline:3px solid var(--ink);outline-offset:-1px}
+@media (max-width:420px){.chips{grid-template-columns:repeat(6,1fr)}}
+.progress{height:8px;border-radius:4px;background:#eef2ea;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.toast{position:fixed;left:50%;top:calc(var(--hudb,190px) + 12px);transform:translateX(-50%);background:rgba(20,34,58,.92);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;z-index:9;max-width:calc(100% - 40px);text-align:center}
+.onboard{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(380px,calc(100% - 40px));background:#fff;border-radius:16px;padding:18px;z-index:7;box-shadow:0 8px 30px rgba(0,0,0,.3);display:grid;gap:12px}
+.onboard h2{margin:0;font-size:18px}
+.onboard p{margin:0;font-size:14px;line-height:1.65;color:var(--muted)}
+
+/* side pages: ranking (left of map) and score entry (right of map) */
+/* bottom dock (kept clear of Safari's bar): 順位 | this hole's score − / + | スコアボード */
+.dock{position:fixed;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 14px);max-width:440px;margin:0 auto;display:grid;grid-template-columns:64px 1fr 64px;gap:8px;z-index:5}
+.dk{height:64px;border-radius:14px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);font-weight:900;font-size:11px;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
+.dk svg{display:block}
+.dkstep{height:64px;border-radius:14px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 6px;color:var(--ink)}
+.dkstep>button{width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,.7);border:1.5px solid var(--edge);font-size:26px;font-weight:900;flex:none}
+.dkstep .dv{flex:1;min-width:0;text-align:center;line-height:1.1}
+.dkstep .dv small{display:block;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dkstep .dv b{display:block;font-size:26px;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums}
+.dkstep .dv.under b{color:#a3170f}.dkstep .dv.over b{color:#0750a8}
+.hud{touch-action:pan-y}
+.page{position:fixed;inset:0;z-index:10;background:#f1f4ee;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;transform:translateX(100%);visibility:hidden;transition:transform .25s ease,visibility 0s linear .25s;padding:calc(env(safe-area-inset-top,0px) + 10px) max(14px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 28px) max(14px,env(safe-area-inset-left,0px));box-shadow:0 0 24px rgba(0,0,0,.25)}
+.page.on{visibility:visible;transition:transform .25s ease,visibility 0s}
+.page.drag{transition:none}
+.page .inner{max-width:560px;margin:0 auto;display:grid;gap:12px}
+.page h3{margin:6px 0 0;font-size:13px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.page p{margin:0;font-size:13px;line-height:1.6;color:var(--muted)}
+.ptop{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;min-height:44px}
+.ptop h2{margin:0;font-size:19px}
+.ptop>:first-child{justify-self:start}.ptop>:last-child{justify-self:end}
+.ptop .back{padding:10px 12px;border-radius:10px;background:#fff;font-weight:700;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.mysum{display:flex;align-items:baseline;justify-content:center;gap:12px;background:#fff;border-radius:14px;padding:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);font-variant-numeric:tabular-nums}
+.mysum b{font-size:40px;line-height:1;font-weight:800}
+.mysum span{font-size:14px;color:var(--muted);font-weight:600}
+.sc.my tr.mine td{height:40px;font-size:17px;font-weight:700;cursor:pointer}
+.sc.my tr.mine td:first-child{font-size:12px;font-weight:600;color:var(--muted);cursor:default}
+.sc.my tr.mine td.sum{cursor:default}
+.sc.my td.sel{outline:3px solid var(--accent);outline-offset:-3px;background:#e6f2e9}
+.stepper{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border-radius:14px;padding:10px 12px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.stepper .sh b{display:block;font-size:20px}.stepper .sh span{font-size:13px;color:var(--muted);font-weight:600}
+.stepper .clr{padding:10px 10px;border-radius:10px;background:#eef2ea;font-size:13px;font-weight:700;color:var(--muted)}
+.stepper .clr:disabled{opacity:.4}
+.plist{display:grid;gap:8px}
+.prow .btn{flex:none;padding:10px 12px}
+.prow{background:#fff;border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.prow .who{flex:1;min-width:0}
+.prow .nm{font-weight:700;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prow .tot{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.prow input{flex:1}
+.prow .del{width:44px;height:44px;border-radius:10px;background:#eef2ea;color:#b3261e;font-size:18px}
+.prow .del:disabled{opacity:.35}
+.stp{display:flex;align-items:center;gap:6px}
+.stp>button{width:50px;height:50px;border-radius:12px;background:#eef2ea;font-size:26px;font-weight:700}
+.stp .val{width:60px;text-align:center;padding:2px 0;border-radius:10px}
+.stp .val b{display:block;font-size:30px;line-height:1.05;font-variant-numeric:tabular-nums}
+.stp .val small{display:block;font-size:10.5px;color:var(--muted);font-weight:700;white-space:nowrap}
+.stp .val.under b{color:#b3261e}.stp .val.over b{color:#0b6bcb}
+/* ranking table: about 5 rows tall, scrolls inside when there are more players */
+.rk{background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);max-height:262px;overflow-y:auto;overscroll-behavior:contain}
+.rkt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.rkt th{position:sticky;top:0;background:#f1f4ee;font-size:12px;color:var(--muted);font-weight:700;padding:8px 6px;text-align:center}
+.rkt td{padding:9px 6px;text-align:center;border-top:1px solid #eef2ea;font-size:14px;color:var(--muted)}
+.rkt th:nth-child(2),.rkt td.nm{text-align:left}
+.rkt td.pos{font-size:20px;font-weight:800;color:var(--ink);width:44px}
+.rkt td.nm{font-size:16px;font-weight:700;color:var(--ink);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rkt td.dv{font-size:22px;font-weight:800;color:var(--ink)}
+.rkt tr.top td.pos{color:#b8860b}
+.rkt tr.me td,.sc tr.me td{background:#f3faf4}
+table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;font-size:13px;font-variant-numeric:tabular-nums;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.sc th,.sc td{border:1px solid #e3e8df;padding:6px 0;text-align:center}
+.sc th:first-child,.sc td:first-child{width:58px;text-align:left;padding-left:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sc th{background:#f1f4ee;font-size:12px}
+.sc tr.par td{color:var(--muted);font-size:12px}
+.sc td.under{color:#b3261e;font-weight:800}.sc td.over2{color:#0b6bcb}
+.sc .sum{font-weight:800;background:#f7f9f5}
+/* round sharing */
+.rcode{font-size:34px;font-weight:800;letter-spacing:.18em;text-align:center;background:#f1f4ee;border-radius:14px;padding:10px;font-variant-numeric:tabular-nums}
+#rmCodeIn{text-transform:uppercase;letter-spacing:.12em;font-weight:700}
+.rstat{font-size:13px;font-weight:700;color:var(--muted)}
+.rstat.ok{color:#1e7a3c}
+
+/* map markers */
+.mk{pointer-events:none}
+.mk.tee{width:24px;height:24px;border-radius:50%;background:var(--tee);color:#fff;font:700 12px/24px system-ui,sans-serif;text-align:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+/* pin: fluorescent flag on a dark pole, white-edged (SVG built in mkPin) */
+.mk.pin{width:54px;height:50px}
+.mk.pin svg{display:block;overflow:visible}
+.mk.gc{width:10px;height:10px;border-radius:50%;background:#7ad86a;border:2px solid #fff;box-shadow:0 0 3px rgba(0,0,0,.5)}
+/* you: a calm blue dot with a white ring, breathing out a soft halo (Maps-style) */
+.mk.me{width:16px;height:16px;box-sizing:border-box;border-radius:50%;background:var(--me);border:3px solid #fff;animation:mePulse 2.6s ease-out infinite}
+.mk.me.sim{background:#9b7cf0;animation-name:simPulse}
+/* the halo is a growing shadow, so it always stays outside the dot */
+@keyframes mePulse{0%{box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 0 rgba(47,140,255,.45)}100%{box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 20px rgba(47,140,255,0)}}
+@keyframes simPulse{0%{box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 0 rgba(155,124,240,.45)}100%{box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 20px rgba(155,124,240,0)}}
+/* tapping your own position clears the marks (same as リセット); the invisible ring makes it easy to hit */
+.mk.me{pointer-events:auto;cursor:pointer}
+.mk.me::before{content:"";position:absolute;inset:-14px;border-radius:50%}
+/* markers are positioned absolutely by MapLibre (transform); never override position on .mk, and animate only children */
+.mk.tap{width:40px;height:40px;z-index:2;pointer-events:auto;cursor:grab;touch-action:none}  /* big enough to grab and drag */
+/* measured point: a small soft-yellow diamond with one slow ripple */
+.mk.tap .dot{position:absolute;inset:12px;box-sizing:border-box;border-radius:3px;background:var(--meas);border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);transform:rotate(45deg);animation:tapPop .35s cubic-bezier(.34,1.5,.5,1)}
+.mk.tap::after{content:"";position:absolute;inset:12px;border-radius:3px;border:2px solid var(--meas);opacity:0;transform:rotate(45deg);animation:tapRing 3s ease-out infinite}
+@keyframes tapPop{0%{transform:rotate(45deg) scale(0)}100%{transform:rotate(45deg) scale(1)}}
+@keyframes tapRing{0%{transform:rotate(45deg) scale(1);opacity:.6}100%{transform:rotate(45deg) scale(2.6);opacity:0}}
+/* leg distance between two marks: small dark pill beside the line */
+.mk.leg{font:700 12px/1 system-ui,sans-serif;color:#fff;background:rgba(10,19,34,.45);border:1px solid rgba(255,255,255,.3);border-radius:9px;padding:3px 7px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.mk.num{font:700 11px/1 system-ui,sans-serif;background:rgba(20,34,58,.88);color:#fff;border-radius:10px;padding:4px 7px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
