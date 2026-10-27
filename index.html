@@ -35,10 +35,10 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 .dist .lab{font-size:14px;font-weight:800;margin-left:8px}
 .sub{text-align:center;font-size:14px;font-weight:800;min-height:1.3em;line-height:1.3;font-variant-numeric:tabular-nums;text-shadow:0 0 2px rgba(255,255,255,.9)}
 .sub .up{color:#a3170f;font-weight:900}.sub .down{color:#0750a8;font-weight:900}
-/* while marks are up: one tap back to the plain distance from you (just under the panel, left) */
-.tapreset{position:fixed;top:calc(var(--hudb,190px) + 8px);left:max(10px,env(safe-area-inset-left,0px));z-index:5;display:flex;align-items:center;gap:6px;height:38px;padding:0 14px 0 12px;border-radius:19px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);font-size:14px;font-weight:800;text-shadow:0 0 2px rgba(255,255,255,.95)}
-.tapreset span{font-size:18px;font-weight:900}
-.tapreset b{font-weight:900}
+/* while marks are up: a round リセット button bottom right, just left of the button column above スコアボード */
+.tapreset{position:fixed;right:calc(max(10px,env(safe-area-inset-right,0px)) + 62px);bottom:calc(env(safe-area-inset-bottom,0px) + 90px);z-index:5;width:58px;height:58px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);text-shadow:0 0 2px rgba(255,255,255,.95)}
+.tapreset span{font-size:22px;font-weight:900;line-height:1}
+.tapreset b{font-size:10.5px;font-weight:900;line-height:1.2}
 
 /* right column: settings / GPS / 3D / view / you / pin — fits between the distance panel (--hudb) and the bottom dock */
 .side{position:fixed;right:max(10px,env(safe-area-inset-right,0px));top:calc(var(--hudb,190px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 90px);display:flex;flex-direction:column;justify-content:center;gap:7px;z-index:4;pointer-events:none}
@@ -260,7 +260,7 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
   <div class="dist"><span class="num" id="dNum">—</span><span class="unit">Y</span><span class="lab" id="dLab">ピンまで</span></div>
   <div class="sub" id="dSub"></div>
 </div>
-<button class="tapreset" id="tapReset" hidden><span aria-hidden="true">↺</span> <b id="tapResetText">現在地からの距離</b></button>
+<button class="tapreset" id="tapReset" aria-label="マークを消して現在地からの距離に戻す" hidden><span aria-hidden="true">↺</span><b>リセット</b></button>
 <div class="side">
   <button class="fab" id="bMenu" aria-label="設定（コース登録・高低差・スコア共有）">
     <svg width="20" height="20" viewBox="-14 -14 28 28" aria-hidden="true"><circle r="9.6" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="3.77 3.77"/><circle r="8" fill="currentColor"/><circle r="3.4" fill="#fff"/></svg><small>設定</small>
@@ -759,7 +759,7 @@ function refresh() {
   const BAN = { pin: `${N}番のピン位置に十字を合わせる`, me: 'テスト用の現在地に十字を合わせる' };
   $('banner').hidden = !BAN[S.mode] || !$('setup').hidden; if (BAN[S.mode]) $('bannerText').textContent = BAN[S.mode];
   document.querySelector('.side').hidden = !$('banner').hidden;  // the banner would cover the lower buttons
-  $('tapReset').hidden = !S.tap; $('tapResetText').textContent = S.me ? '現在地からの距離' : 'マークを消す';
+  $('tapReset').hidden = !S.tap;
   $('bElev').setAttribute('aria-checked', !!S.prefs.elev);
   // GPS button: accuracy while on (green), 'オフ' while off
   $('bGps').setAttribute('aria-pressed', S.watch != null);
