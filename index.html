@@ -942,7 +942,15 @@ $('bView').onclick = () => {
 };
 $('bMe').onclick = () => {
   if (!S.me) { toast('現在地がありません。GPSをオンにしてください'); return; }
-  map.easeTo({ center: S.me.ll, zoom: Math.max(map.getZoom(), 17), duration: 700 });
+  const pin = pinLL();
+  if (!pin) { map.easeTo({ center: S.me.ll, zoom: Math.max(map.getZoom(), 17), duration: 700 }); return; }
+  // fit you and the pin between the panels, turned so the pin is straight ahead (up the screen)
+  const top = document.querySelector('.hud').getBoundingClientRect().bottom, low = $('dock').hidden ? innerHeight : $('dock').getBoundingClientRect().top;
+  const cam = map.cameraForBounds([S.me.ll, pin].reduce((b, p) => b.extend(p), new maplibregl.LngLatBounds(S.me.ll, S.me.ll)), {
+    bearing: bearing(S.me.ll, pin), maxZoom: 18,
+    padding: { top: top + 66, bottom: innerHeight - low + 36, left: 48, right: 90 }  // top: room for the flag; right: the button column
+  });
+  if (cam) map.easeTo(Object.assign(cam, { pitch: map.getPitch(), duration: 800 }));
 };
 $('bPin').onclick = () => {
   if (!hole().green) { toast('先にこのホールを登録してください'); return; }
