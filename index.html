@@ -233,6 +233,9 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 /* you: fluorescent circle with a white ring and a thin dark edge */
 .mk.me{width:20px;height:20px;box-sizing:border-box;border-radius:50%;background:var(--me);border:3.5px solid #fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.65),0 0 0 9px rgba(0,229,255,.3),0 1px 5px rgba(0,0,0,.5)}
 .mk.me.sim{background:#c08bff;box-shadow:0 0 0 1.5px rgba(0,0,0,.65),0 0 0 9px rgba(192,139,255,.3),0 1px 5px rgba(0,0,0,.5)}
+/* tapping your own position clears the marks (same as リセット); the invisible ring makes it easy to hit */
+.mk.me{pointer-events:auto;cursor:pointer}
+.mk.me::before{content:"";position:absolute;inset:-14px;border-radius:50%}
 /* markers are positioned absolutely by MapLibre (transform); never override position on .mk, and animate only children */
 /* measured point: fluorescent diamond */
 .mk.tap{width:40px;height:40px;z-index:2;pointer-events:auto;cursor:grab;touch-action:none}  /* big enough to grab and drag */
@@ -904,9 +907,11 @@ function tapPaint(dragging) {
   });
   if (dragging && mapReady) { const p = tapLine(); map.getSource('lines').setData(fc(p ? [p] : [])); readout(true); }
 }
-$('tapReset').onclick = () => { clearTimeout(tapT); S.tap = null; refresh(); };
+const tapClear = () => { clearTimeout(tapT); S.tap = null; refresh(); };
+$('tapReset').onclick = tapClear;
+M.me.getElement().addEventListener('click', e => { e.stopPropagation(); if (S.tap) tapClear(); });
 map.on('click', e => {
-  if (e.originalEvent && e.originalEvent.target.closest && e.originalEvent.target.closest('.mk.tap')) return;
+  if (e.originalEvent && e.originalEvent.target.closest && e.originalEvent.target.closest('.mk.tap, .mk.me')) return;
   const ll = [e.lngLat.lng, e.lngLat.lat];
   // while placing, a tap only brings that spot under the crosshair; the button does the placing
   if (isPlacing()) { centerOn(ll); return; }
