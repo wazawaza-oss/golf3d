@@ -24,8 +24,15 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 
 /* top: distance panel — frosted glass so the map shows through; nothing sits at the bottom edge (Safari's bar) */
 .hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));max-width:440px;margin:0 auto;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 4px 18px rgba(0,0,0,.25);padding:4px 8px 5px;z-index:5;color:var(--ink);font-weight:800}
-.holebar{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.holebar .ic{width:40px;height:30px;border-radius:10px;font-size:22px;font-weight:900;line-height:1;background:rgba(255,255,255,.75);border:1.5px solid var(--edge);color:var(--ink)}
+/* hole arrows: tall buttons down both sides of the hole name and distance, easy to hit with a thumb */
+.hud{display:grid;grid-template-columns:56px 1fr 56px;grid-template-areas:"prev name next" "prev dist next" "sub sub sub";column-gap:6px}
+.holebar{display:contents}
+#prevHole{grid-area:prev}#nextHole{grid-area:next}
+.holename{grid-area:name;justify-self:center}
+.dist{grid-area:dist}
+.sub{grid-area:sub}
+.holebar .ic{width:100%;height:100%;min-height:64px;border-radius:12px;font-size:34px;font-weight:900;line-height:1;background:rgba(255,255,255,.75);border:1.5px solid var(--edge);color:var(--ink);display:grid;place-items:center;padding-bottom:3px}
+.holebar .ic:active{background:rgba(255,255,255,.95)}
 .holename{font-weight:900;font-size:15px;display:flex;align-items:baseline;gap:6px}
 .holename b{font-size:22px}
 .holename .par{font-weight:800;font-size:14px}
