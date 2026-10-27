@@ -238,6 +238,7 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 .mk.tap::after{animation-delay:1.2s}
 @keyframes tapPop{0%{transform:rotate(45deg) scale(0)}100%{transform:rotate(45deg) scale(1)}}
 @keyframes tapRing{0%{transform:rotate(45deg) scale(1);opacity:.9}100%{transform:rotate(45deg) scale(3.2);opacity:0}}
+.mk.rl{font:800 11.5px/1 system-ui,sans-serif;color:#fff;opacity:.8;letter-spacing:.02em;white-space:nowrap;text-shadow:0 0 2px rgba(0,0,0,.85),0 0 5px rgba(0,0,0,.5)}
 .mk.num{font:700 11px/1 system-ui,sans-serif;background:rgba(20,34,58,.88);color:#fff;border-radius:10px;padding:4px 7px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 </style>
@@ -664,6 +665,32 @@ function rings(pin, maxY) {
   }
   return out;
 }
+/* faint "50Y", "100Y" … on the rings, on the side facing you (or the tee); when zoomed out
+   the rings crowd together, so only every 100Y or 200Y keeps its label */
+let ringMk = [], ringKey = '';
+function ringLabels(pin, maxY, ref) {
+  const a = pin ? rad(ref ? bearing(pin, ref) : 180) : 0;
+  const key = pin ? [pin, maxY, Math.round(deg(a))].join() : '';
+  if (key === ringKey) return;  // refresh() runs on every GPS fix; rebuild only when something moved
+  ringKey = key; ringMk.forEach(m => m.remove()); ringMk = [];
+  if (!pin) return;
+  const cos = Math.cos(rad(pin[1]));
+  for (let r = 50; r <= maxY; r += 50) {
+    const m = r * YD, ll = [pin[0] + deg(m * Math.sin(a) / (6371008.8 * cos)), pin[1] + deg(m * Math.cos(a) / 6371008.8)];
+    const el = mkEl('rl', `${r}Y`); el.dataset.r = r;
+    ringMk.push(new maplibregl.Marker({ element: el, anchor: 'bottom-left', offset: [5, -2] }).setLngLat(ll).addTo(map));
+  }
+  ringThin();
+}
+function ringThin() {
+  if (!ringMk.length) return;
+  // on-screen gap between the first two rings decides the label spacing
+  const p = ringMk.slice(0, 2).map(m => map.project(m.getLngLat()));
+  const gap = p.length > 1 ? Math.hypot(p[1].x - p[0].x, p[1].y - p[0].y) : 99;
+  const step = gap >= 34 ? 50 : gap >= 17 ? 100 : 200;
+  ringMk.forEach(m => { const e = m.getElement(); e.hidden = e.dataset.r % step !== 0; });
+}
+map.on('zoom', ringThin); map.on('pitch', ringThin);
 let mapReady = false;
 map.on('load', () => {
   map.addSource('rings', { type: 'geojson', data: fc([]) });
@@ -742,6 +769,7 @@ function refresh() {
     // rings reach a little past the tee (or the player, if farther)
     const reach = pin && !setup ? Math.max(h.tee ? yards(h.tee, pin) : 0, S.me ? yards(S.me.ll, pin) : 0, 150) + 25 : 0;
     map.getSource('rings').setData(fc(reach ? rings(pin, Math.min(600, reach)) : []));
+    ringLabels(reach ? pin : null, Math.min(600, reach), S.me ? S.me.ll : h.tee);
   }
   // banner (pin / test position; setup has its own controls in the sheet)
   const BAN = { pin: `${N}番のピン位置に十字を合わせる`, me: 'テスト用の現在地に十字を合わせる' };
