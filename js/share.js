@@ -3,7 +3,7 @@
 "use strict";
 
 /* ================= round sharing (Firebase Realtime Database) =================
-   rooms/{CODE}/members/{uid} = { players: [{ id, name, strokes[18] (0 = empty) }], t }
+   rooms/{CODE}/members/{uid} = { players: [{ id, name, strokes[ROUND = 18] (0 = empty) }], t }
    Each phone writes only its own node: players[0] is the owner, the rest are people without a phone
    typed in on that phone. The SDK loads only once a round is joined, so solo/offline use never needs it. */
 // Firebase web app config: public by design; access is limited by the database rules (firebase-rules.json)
@@ -68,7 +68,7 @@ function allPlayers() {
     if (uid === room.uid || !m || !m.players) return;
     Object.values(m.players).forEach((p, i) => p && list.push({
       id: `${uid}:${p.id || i}`, name: String(p.name || ''), remote: true,
-      strokes: Array.from({ length: 18 }, (_, h) => +(p.strokes || {})[h] || null)
+      strokes: Array.from({ length: ROUND }, (_, h) => +(p.strokes || {})[h] || null)
     }));
   });
   return list;

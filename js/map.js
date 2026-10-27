@@ -195,7 +195,7 @@ map.on('load', () => {
   mapReady = true;
   refresh();
   if (registered(hole())) camera(S.view, 0);
-  else if (!S.course.holes.some(registered)) $('onboard').hidden = false;
+  else if (!allHoles().some(registered)) $('onboard').hidden = false;
 });
 
 /* camera presets per hole */
@@ -232,7 +232,7 @@ function set3D(on) {
 /* ================= rendering ================= */
 function refresh() {
   const h = hole(), setup = S.mode && S.mode.startsWith('setup');
-  $('hNo').textContent = N; $('hPar').textContent = h.par;
+  $('hNo').textContent = holeNo(); $('hPar').textContent = h.par;
   place(M.tee, h.tee);
   place(M.gc, S.round.pins[N] && h.green ? h.green : null);
   place(M.pin, pinLL());
@@ -240,10 +240,12 @@ function refresh() {
   M.me.getElement().classList.toggle('sim', !!(S.me && S.me.src === 'sim'));
   tapDraw();
   numMarkers.forEach(m => m.remove()); numMarkers = [];
-  if (setup) S.course.holes.forEach(x => { if (x.tee && x.n !== N) numMarkers.push(new maplibregl.Marker({ element: mkEl('num', String(x.n)) }).setLngLat(x.tee).addTo(map)); });
+  // while registering, the other holes of the same nine show their numbers and tee–green lines
+  const setupNine = setup && inSetup() ? nineOf(S.su.nine).holes : [];
+  setupNine.forEach(x => { if (x.tee && x.n !== S.su.n) numMarkers.push(new maplibregl.Marker({ element: mkEl('num', String(x.n)) }).setLngLat(x.tee).addTo(map)); });
   if (mapReady) {
     const f = [], pin = pinLL();
-    if (setup) S.course.holes.forEach(x => { if (registered(x)) f.push(ln(x.tee, x.green, 'setup')); });
+    if (setup) setupNine.forEach(x => { if (registered(x)) f.push(ln(x.tee, x.green, 'setup')); });
     else if (S.tap) { const p = tapLine(); if (p) f.push(p); }  // while marks are up, only their path to the pin
     else if (registered(h) && !S.me) f.push(ln(h.tee, h.green, 'hole'));  // no line from you to the pin until you tap
     map.getSource('lines').setData(fc(f));
@@ -352,12 +354,13 @@ function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = fals
 function placeAt(ll) {
   const h = hole();
   switch (S.mode) {
-    case 'setup-tee': h.tee = ll; S.mode = 'setup-green'; saveCourse(); break;
+    case 'setup-tee': h.tee = ll; h.src = 'manual'; h.ok = registered(h); S.mode = 'setup-green'; saveCourse(); break;
     case 'setup-green':
-      h.green = ll; saveCourse();
-      if (N < 18) { N++; const nx = hole(); S.mode = registered(nx) ? null : nx.tee ? 'setup-green' : 'setup-tee'; }
-      else { S.mode = null; closeSetup(); toast('18ホールの登録が終わりました'); }
-      savePrefs(); break;
+      h.green = ll; h.src = 'manual'; h.ok = registered(h); saveCourse();
+      // on to the next hole of the same nine; the nine's 9th hole ends this registration
+      if (S.su.n < NINE) { S.su.n++; const nx = hole(); S.mode = registered(nx) ? null : nx.tee ? 'setup-green' : 'setup-tee'; }
+      else { S.mode = null; toast(`${nineOf(S.su.nine).name}の${NINE}ホールの登録が終わりました`); closeSetup(); }
+      break;
     case 'pin': S.round.pins[N] = ll; saveRound(); S.mode = null; toast(`${N}番のピンを置きました`); break;
     case 'me': S.me = { ll, acc: null, src: 'sim' }; S.mode = null; break;
     default: return;
@@ -415,15 +418,18 @@ map.on('click', e => {
   dot.style.animation = 'none'; void dot.offsetWidth; dot.style.animation = '';
 });
 function goHole(n) {
-  N = ((n - 1 + 18) % 18) + 1; S.tap = null; savePrefs();
+  // while registering, ‹ › move through the nine being registered (1–9); otherwise through the round (1–18)
+  if (inSetup()) S.su.n = ((n - 1 + NINE) % NINE) + 1;
+  else N = ((n - 1 + ROUND) % ROUND) + 1;
+  S.tap = null; savePrefs();
   if (S.mode === 'pin') S.mode = null;
   camSave = null;  // the new hole gets its own view
-  if (S.mode && S.mode.startsWith('setup') || !$('setup').hidden) { const h = hole(); S.mode = registered(h) ? null : h.tee ? 'setup-green' : 'setup-tee'; }
+  if (inSetup()) { const h = hole(); S.mode = registered(h) ? null : h.tee ? 'setup-green' : 'setup-tee'; }
   refresh();
   if (!(S.mode && S.mode.startsWith('setup'))) camera(S.view);
 }
-$('prevHole').onclick = () => goHole(N - 1);
-$('nextHole').onclick = () => goHole(N + 1);
+$('prevHole').onclick = () => goHole(holeNo() - 1);
+$('nextHole').onclick = () => goHole(holeNo() + 1);
 $('bannerCancel').onclick = () => { if (S.mode && S.mode.startsWith('setup')) closeSetup(); S.mode = null; refresh(); camBack(); };
 
 $('b3d').onclick = () => { if (!mapReady) return; set3D(!S.is3D); refresh(); };

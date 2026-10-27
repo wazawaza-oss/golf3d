@@ -11,28 +11,34 @@ $('jumpGo').onclick = () => {
   S.course.center = ll; saveCourse(); $('menu').hidden = true;
   map.jumpTo({ center: ll, zoom: Math.max(15, Math.min(18, z)), bearing: 0, pitch: S.is3D ? 60 : 0 });
 };
+// export: the nine-based format (v: 2)
 $('exportBtn').onclick = () => {
   const blob = new Blob([JSON.stringify(S.course, null, 1)], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${S.course.name || 'course'}.json`;
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 };
+// a new course (or the same one re-imported) starts a fresh round on its first two nines
+function useCourse(c, msg) {
+  S.course = c; saveCourse();
+  S.round = { pins: {} }; fixRound(); saveRound();
+  S.score.strokes = {}; saveScore();
+  N = 1; S.tap = null; savePrefs(); refresh();
+  if (registered(hole())) camera(S.view); else map.jumpTo({ center: S.course.center, zoom: 16 });
+  toast(msg);
+}
+// import: the nine-based format, or an old 18-hole file (read as OUT / IN)
 $('importBtn').onclick = () => $('importFile').click();
 $('importFile').onchange = async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-  try {
-    const c = JSON.parse(await f.text());
-    if (!Array.isArray(c.holes) || c.holes.length !== 18) throw 0;
-    S.course = { name: String(c.name || 'コース'), center: c.center || DEFAULT_CENTER, holes: c.holes.map((h, i) => ({ n: i + 1, par: [3, 4, 5].includes(+h.par) ? +h.par : 4, tee: h.tee || null, green: h.green || null })) };
-    saveCourse(); S.round = { pins: {} }; saveRound(); N = 1; $('menu').hidden = true; refresh();
-    if (registered(hole())) camera(S.view); else map.jumpTo({ center: S.course.center, zoom: 16 });
-    toast(`「${S.course.name}」を読み込みました`);
-  } catch (err) { toast('このファイルは読み込めませんでした'); }
+  let c = null;
+  try { c = toCourse(JSON.parse(await f.text())); } catch (err) {}
+  if (!c) { toast('このファイルは読み込めませんでした'); return; }
+  const go = () => { $('menu').hidden = true; useCourse(c, `「${c.name}」を読み込みました`); };
+  if (roundHasData()) ask(`「${c.name}」に切り替えますか？`, '今のスコアとピン位置は消えます', '切り替える', go);
+  else go();
 };
-// deleting the course asks inside the sheet (no browser confirm())
-$('wipeBtn').onclick = () => { $('wipeQ').textContent = `「${S.course.name || 'このコース'}」の登録を消しますか？`; $('wipeAsk').hidden = false; $('wipeNo').focus(); };
-$('wipeNo').onclick = () => $('wipeAsk').hidden = true;
-$('wipeYes').onclick = () => {
-  $('wipeAsk').hidden = true;
-  S.course.holes = blankHoles(); saveCourse(); S.round = { pins: {} }; saveRound(); N = 1; S.tap = null; refresh(); renderMenu(); toast('登録を消しました');
-};
-
+// deleting the course asks inside the page (no browser confirm()); it leaves two empty nines, OUT and IN
+$('wipeBtn').onclick = () => ask(`「${S.course.name || 'このコース'}」の登録を消しますか？`, '消すと元に戻せません（スコアとピン位置も消えます）', '消す', () => {
+  const c = blankCourse(); c.name = S.course.name; c.center = S.course.center;
+  useCourse(c, '登録を消しました'); renderMenu();
+});

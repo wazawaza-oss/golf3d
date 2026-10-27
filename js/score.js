@@ -4,10 +4,10 @@
 
 /* ================= score entry ================= */
 const saveScore = () => { saveJSON('golf3d.score', S.score); roomPush(); };
-const strokesOf = p => p.remote ? p.strokes : S.score.strokes[p.id] || (S.score.strokes[p.id] = Array(18).fill(null));
+const strokesOf = p => p.remote ? p.strokes : S.score.strokes[p.id] || (S.score.strokes[p.id] = Array(ROUND).fill(null));
 function totals(p) {
   let tot = 0, par = 0, n = 0;
-  strokesOf(p).forEach((v, i) => { if (v) { tot += v; par += S.course.holes[i].par; n++; } });
+  const ph = playHoles(); strokesOf(p).forEach((v, i) => { if (v) { tot += v; par += ph[i].par; n++; } });
   return { tot, diff: tot - par, n };
 }
 const fmtDiff = d => d === 0 ? '±0' : (d > 0 ? '+' : '') + d;
@@ -26,12 +26,13 @@ function renderScore() {
   const sum = $('scSum'); sum.textContent = '';
   sum.append(el('b', '', t.n ? fmtDiff(t.diff) : '—'), el('span', '', t.n ? `計 ${t.tot}打 ・ ${t.n}ホール` : 'まだ入力がありません'));
   const board = $('scBoard'); board.textContent = '';
-  [['OUT', 0], ['IN', 9]].forEach(([label, from]) => {
+  const ph = playHoles();
+  halves().forEach(({ name: label, from }) => {  // front / back nine, headed by the nine's name
     const tb = el('table', 'sc my'), head = el('tr'), par = el('tr', 'par'), row = el('tr', 'mine');
     head.append(el('th', '', 'H')); par.append(el('td', '', 'Par')); row.append(el('td', '', 'スコア'));
     let parSum = 0, s = 0, any = false;
-    for (let i = from; i < from + 9; i++) {
-      const hp = S.course.holes[i].par, v = a[i];
+    for (let i = from; i < from + NINE; i++) {
+      const hp = ph[i].par, v = a[i];
       head.append(el('th', '', i + 1)); par.append(el('td', '', hp)); parSum += hp;
       const c = el('td', (v == null ? '' : v < hp ? 'under' : v >= hp + 2 ? 'over2' : '') + (i === scHole ? ' sel' : ''), v == null ? '' : v);
       c.setAttribute('role', 'button'); c.setAttribute('aria-label', `${i + 1}番 ${v == null ? '未入力' : v + '打'}`);
@@ -42,11 +43,11 @@ function renderScore() {
     head.append(el('th', 'sum', label)); par.append(el('td', 'sum', parSum)); row.append(el('td', 'sum', any ? s : ''));
     tb.append(head, par, row);
     board.appendChild(tb);
-    if (scHole >= from && scHole < from + 9) board.appendChild(scoreStepper(p, scHole));
+    if (scHole >= from && scHole < from + NINE) board.appendChild(scoreStepper(p, scHole));
   });
 }
 function scoreStepper(p, i) {
-  const hp = S.course.holes[i].par, v = strokesOf(p)[i], box = el('div', 'stepper');
+  const hp = playHoles()[i].par, v = strokesOf(p)[i], box = el('div', 'stepper');
   const set = nv => { strokesOf(p)[i] = nv; saveScore(); renderScore(); };
   const hd = el('div', 'sh'); hd.append(el('b', '', `${i + 1}番`), el('span', '', `Par ${hp}`));
   const stp = el('div', 'stp'), minus = el('button', '', '−'), plus = el('button', '', '＋');
@@ -63,14 +64,14 @@ function scoreStepper(p, i) {
 
 /* bottom dock: your score for the hole on screen, entered with − / ＋ (same rules as the score page) */
 function renderDock() {
-  const i = N - 1, hp = S.course.holes[i].par, v = strokesOf(me())[i];
+  const i = N - 1, hp = playHoles()[i].par, v = strokesOf(me())[i];
   $('dkVal').className = 'dv' + (v == null ? '' : v < hp ? ' under' : v > hp ? ' over' : '');
   $('dkHole').textContent = `${N}番 Par ${hp}`;
   $('dkNum').textContent = v == null ? '—' : v;
   $('dkTerm').textContent = v == null ? '未入力' : termOf(v, hp);
 }
 function dockStep(d) {
-  const a = strokesOf(me()), i = N - 1, hp = S.course.holes[i].par, v = a[i];
+  const a = strokesOf(me()), i = N - 1, hp = playHoles()[i].par, v = a[i];
   a[i] = d < 0 ? (v == null ? hp - 1 : Math.max(1, v - 1)) : (v == null ? hp : Math.min(20, v + 1));
   saveScore(); renderDock();
 }
@@ -132,20 +133,21 @@ function renderRank() {
     tb.append(tr);
   });
   const list = $('rkList'); list.textContent = ''; list.appendChild(tb);
-  // scorecard: OUT (1-9) and IN (10-18)
+  // scorecard: front nine (1-9) and back nine (10-18)
   const card = $('rkCard'); card.textContent = '';
-  [['OUT', 0], ['IN', 9]].forEach(([label, from]) => {
+  const ph = playHoles();
+  halves().forEach(({ name: label, from }) => {  // front / back nine, headed by the nine's name
     const t = el('table', 'sc'), head = el('tr'), par = el('tr', 'par');
     head.append(el('th', '', 'H')); par.append(el('td', '', 'Par'));
     let parSum = 0;
-    for (let i = from; i < from + 9; i++) { head.append(el('th', '', i + 1)); par.append(el('td', '', S.course.holes[i].par)); parSum += S.course.holes[i].par; }
+    for (let i = from; i < from + NINE; i++) { head.append(el('th', '', i + 1)); par.append(el('td', '', ph[i].par)); parSum += ph[i].par; }
     head.append(el('th', 'sum', label)); par.append(el('td', 'sum', parSum));
     t.append(head, par);
     all.forEach(p => {
       const tr = el('tr', p === me() ? 'me' : ''), a = strokesOf(p); let sum = 0, any = false;
       tr.append(el('td', '', p.name || '—'));
-      for (let i = from; i < from + 9; i++) {
-        const v = a[i], hp = S.course.holes[i].par;
+      for (let i = from; i < from + NINE; i++) {
+        const v = a[i], hp = ph[i].par;
         tr.append(el('td', v == null ? '' : v < hp ? 'under' : v >= hp + 2 ? 'over2' : '', v == null ? '' : v));
         if (v != null) { sum += v; any = true; }
       }
@@ -157,9 +159,9 @@ function renderRank() {
 }
 
 /* ================= scorecard image (JPEG) ================= */
-// a simple card to keep or send: course name, date, everyone's OUT / IN, and the ranking
+// a simple card to keep or send: course name, date, everyone's front / back nine, and the ranking
 function scoreCardCanvas() {
-  const players = allPlayers(), rows = rankedRows(), holes = S.course.holes;
+  const players = allPlayers(), rows = rankedRows(), holes = playHoles();
   const W = 1080, M = 40, NAME = 190, CELL = 80, SUM = 90, HH = 44, RH = 50, GAP = 34;
   const FONT = 'system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif';
   const tableH = HH + RH * (players.length + 1);  // hole numbers + par + one row per player
@@ -177,36 +179,36 @@ function scoreCardCanvas() {
   text(fit(S.course.name || 'コース', W - 2 * M, 44, 900), M, M + 26, 44, 900, '#0a1322', 'left');
   text(new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }), M, M + 80, 26, 700, '#36414d', 'left');
   let y = M + 130;
-  const cx = k => M + NAME + k * CELL;  // left edge of hole column k (0..8); k = 9 is the sum column
-  [['OUT', 0], ['IN', 9]].forEach(([label, from]) => {
+  const cx = k => M + NAME + k * CELL;  // left edge of hole column k (0 .. NINE-1); k = NINE is the sum column
+  halves().forEach(({ name: label, from }) => {  // front / back nine, headed by the nine's name
     const top = y;
     g.fillStyle = '#e6ece1'; g.fillRect(M, y, W - 2 * M, HH);
     text('H', M + 14, y + HH / 2, 20, 800, '#36414d', 'left');
-    for (let k = 0; k < 9; k++) text(from + k + 1, cx(k) + CELL / 2, y + HH / 2, 22, 800, '#0a1322');
-    text(label, cx(9) + SUM / 2, y + HH / 2, 22, 900, '#0a1322');
+    for (let k = 0; k < NINE; k++) text(from + k + 1, cx(k) + CELL / 2, y + HH / 2, 22, 800, '#0a1322');
+    text(fit(label, SUM - 8, 22, 900), cx(NINE) + SUM / 2, y + HH / 2, 22, 900, '#0a1322');
     y += HH;
     let parSum = 0;
     text('Par', M + 14, y + RH / 2, 20, 700, '#36414d', 'left');
-    for (let k = 0; k < 9; k++) { const hp = holes[from + k].par; parSum += hp; text(hp, cx(k) + CELL / 2, y + RH / 2, 21, 700, '#36414d'); }
-    text(parSum, cx(9) + SUM / 2, y + RH / 2, 21, 800, '#36414d');
+    for (let k = 0; k < NINE; k++) { const hp = holes[from + k].par; parSum += hp; text(hp, cx(k) + CELL / 2, y + RH / 2, 21, 700, '#36414d'); }
+    text(parSum, cx(NINE) + SUM / 2, y + RH / 2, 21, 800, '#36414d');
     y += RH;
     players.forEach((p, idx) => {
       if (idx % 2 === 0) { g.fillStyle = '#f6f8f3'; g.fillRect(M, y, W - 2 * M, RH); }
       hline(y);
       text(fit(p.name || '名前なし', NAME - 20, 24, 800), M + 14, y + RH / 2, 24, 800, '#0a1322', 'left');
       const a = strokesOf(p); let sum = 0, any = false;
-      for (let k = 0; k < 9; k++) {
+      for (let k = 0; k < NINE; k++) {
         const v = a[from + k], hp = holes[from + k].par;
         if (v == null) continue;
         sum += v; any = true;
         text(v, cx(k) + CELL / 2, y + RH / 2, 26, v < hp ? 900 : 700, v < hp ? '#b3261e' : v >= hp + 2 ? '#0b5cad' : '#0a1322');
       }
-      if (any) text(sum, cx(9) + SUM / 2, y + RH / 2, 26, 900, '#0a1322');
+      if (any) text(sum, cx(NINE) + SUM / 2, y + RH / 2, 26, 900, '#0a1322');
       y += RH;
     });
     // grid
     g.fillStyle = '#c9d0c4';
-    for (let k = 0; k <= 9; k++) g.fillRect(cx(k), top, 1.5, y - top);
+    for (let k = 0; k <= NINE; k++) g.fillRect(cx(k), top, 1.5, y - top);
     g.strokeStyle = '#9aa494'; g.lineWidth = 2; g.strokeRect(M, top, W - 2 * M, y - top);
     y += GAP;
   });

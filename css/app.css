@@ -261,3 +261,11 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 .a2hs b{font-weight:800}
 .a2hs span{display:block;margin-top:2px;font-size:11.5px;font-weight:700;color:#3a4350}
 .a2hs button{flex:none;width:30px;height:30px;border-radius:50%;font-size:14px;font-weight:900;color:#3a4350}
+.sc th.sum{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}  /* nine names (e.g. 東, OUT) head the sum column */
+/* setup: which nine is being registered (OUT, IN, 東 …) and a button to add one */
+.nines{display:flex;flex-wrap:wrap;gap:6px}
+.nines button{height:36px;padding:0 14px;border-radius:10px;background:#eef2ea;font-weight:800;font-size:14px;color:var(--ink)}
+.nines button.done{background:#cfe8d5;color:#0f4a26}
+.nines button[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:-1px}
+.nines button.add{background:#fff;border:1.5px dashed #9aa494;color:#36414d}
+#menu .mrow .pick{width:22px;text-align:center;font-size:18px;font-weight:900;color:#1f9d48}  /* ✓ on the chosen nine */
