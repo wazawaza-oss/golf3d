@@ -2,7 +2,7 @@
    Bump VERSION with every release: the new worker stores the new files and deletes the old set, so no stale mix remains.
    Map tiles live in their own cache (golf3d-tiles-v1, filled by 端末に保存) and are never touched here;
    GSI tiles and Firebase go straight to the network. */
-const VERSION = '2026-10-28.5';
+const VERSION = '2026-10-28.6';
 const APP = 'golf3d-app-' + VERSION;
 const FILES = [
   './', 'index.html', 'css/app.css',
@@ -29,8 +29,10 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   const ours = url.origin === location.origin || url.href.startsWith('https://unpkg.com/maplibre-gl@') || url.href.startsWith('https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/');
   if (!ours) return;  // map tiles, Firebase, fonts: network as usual
-  // opening the app (also links like ?r=CODE) always gets the stored page
-  const key = req.mode === 'navigate' ? new URL('index.html', self.registration.scope).href : req;
+  const page = req.mode === 'navigate';
+  if (page && !/\/(index\.html)?$/.test(url.pathname)) return;  // other pages here (tests/rules.html) come from the network
+  // opening the app (also links like ?c=…&k=…) always gets the stored page
+  const key = page ? new URL('index.html', self.registration.scope).href : req;
   e.respondWith(caches.open(APP)
     .then(c => c.match(key, { ignoreSearch: true }))
     .then(hit => hit || fetch(req)));

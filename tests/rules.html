@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ルールの確認テスト</title>
+<style>
+  body{margin:0;padding:16px;font:15px/1.6 system-ui,-apple-system,"Hiragino Sans",sans-serif;background:#f0f1f4;color:#1b2430}
+  h1{font-size:20px;margin:0 0 8px}
+  p{margin:6px 0;color:#3a4350}
+  button{font:inherit;font-weight:800;padding:12px 18px;border:none;border-radius:12px;background:#16592f;color:#fff;margin:10px 0}
+  button:disabled{background:#8a909a}
+  #sum{font-weight:900;font-size:17px;margin:8px 0}
+  #sum.ok{color:#1f7a3a} #sum.ng{color:#b3261e}
+  h2{font-size:14px;margin:18px 0 6px;color:#3a4350}
+  .row{display:flex;gap:8px;align-items:baseline;background:#fff;padding:7px 10px;border-top:1px solid #e3e5e9;font-size:14px}
+  .row .m{flex:none;width:20px;font-weight:900}
+  .row .l{flex:1}
+  .row .r{flex:none;font-size:12.5px;color:#3a4350}
+  .row.ng{background:#fdecec}
+  .row.ng .m{color:#b3261e} .row.ok .m{color:#1f7a3a}
+</style>
+</head>
+<body>
+<h1>データベースのルール確認</h1>
+<p>本物のFirebaseに、テスト用の小さなコンペを作ります。主催者・カート代表・参加者・部外者として順に操作し、許されるべき操作は通り、禁止されるべき操作は断られるかを確かめます。</p>
+<p>2分ほどかかります。最後にテスト用のコンペとテスト用の利用者は自動で消えます（途中で閉じても、コンペは数分で期限切れになり、アプリが片付けます）。</p>
+<button id="run">テストを始める</button>
+<div id="sum"></div>
+<div id="log"></div>
+
+<script type="module">
+// tests firebase-rules.json as published: separate anonymous users act each role against a short-lived competition
+const SDK = 'https://www.gstatic.com/firebasejs/12.4.0/';
+const CFG = {  // same as js/comp.js
+  apiKey: 'AIzaSyD4ZvWQsx_0xXq7KJL4V123kdl8L3N2xPM',
+  authDomain: 'golfscoreapp-f2d31.firebaseapp.com',
+  databaseURL: 'https://golfscoreapp-f2d31-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId: 'golfscoreapp-f2d31',
+  appId: '1:513780302035:web:155d3e482323ebebf2d426'
+};
+const LIFE = 75000;  // the test competition expires this long after it is made, so the expiry rules can be tried too
+const B62 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+const rid = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => B62[b % 62]).join('');
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const timeout = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), ms))]);
+
+let A, Au, D, pass = 0, fail = 0;
+const users = [];
+async function user(name) {
+  const app = A.initializeApp(CFG, `${name}-${rid(6)}`);
+  const auth = Au.initializeAuth(app, { persistence: Au.inMemoryPersistence });  // each one is a separate phone
+  const cred = await Au.signInAnonymously(auth);
+  const u = { name, app, uid: cred.user.uid, user: cred.user, db: D.getDatabase(app) };
+  users.push(u); return u;
+}
+const ref = (u, p) => p ? D.ref(u.db, p) : D.ref(u.db);  // '' = the database root
+
+function section(t) { $('log').appendChild(Object.assign(document.createElement('h2'), { textContent: t })); }
+async function check(label, expect, fn) {
+  let got;
+  try { await timeout(fn(), 12000); got = 'allow'; }
+  catch (e) { got = /permission/i.test(String(e.code || e.message)) ? 'deny' : 'エラー: ' + e.message; }
+  const ok = got === expect; ok ? pass++ : fail++;
+  const row = document.createElement('div'); row.className = 'row ' + (ok ? 'ok' : 'ng');
+  row.innerHTML = `<span class="m">${ok ? '✔' : '✖'}</span><span class="l"></span><span class="r"></span>`;
+  row.querySelector('.l').textContent = label;
+  row.querySelector('.r').textContent = `期待: ${expect === 'allow' ? '通る' : '断られる'}／結果: ${got === 'allow' ? '通った' : got === 'deny' ? '断られた' : got}`;
+  $('log').appendChild(row);
+  $('sum').textContent = `確認中… ${pass + fail}件`;
+}
+const allow = (l, fn) => check(l, 'allow', fn), deny = (l, fn) => check(l, 'deny', fn);
+
+async function run() {
+  [A, Au, D] = await Promise.all(['app', 'auth', 'database'].map(m => import(`${SDK}firebase-${m}.js`)));
+  $('sum').textContent = 'テスト用の利用者を準備中…';
+  const [org, org2, cart1, cart2, p1, p2, out] = await Promise.all(['主催者', '主催者2', 'カート1組', 'カート2組', '参加者1', '参加者2', '部外者'].map(user));
+  const cid = rid(10), now = Date.now(), exp = now + LIFE, C = `comps/${cid}`;
+  const pa = 'pTeam1Aaa', pb = 'pTeam1Bbb', pc = 'pTeam2Ccc';
+  const kP = rid(22), kC1 = rid(22), kC2 = rid(22), kO = rid(22);
+  const meta = { name: 'ルール確認テスト', date: '2026-01-01', owner: org.uid, created: now, expires: exp };
+  const score = (u, v = 4) => ({ v, by: u.uid, t: Date.now() });
+  const join = (u, key, role, team) => D.update(ref(u, `${C}/members/${u.uid}`), Object.assign({ role, key, t: Date.now() }, team ? { team } : {}));
+  const pick = (u, pid) => D.update(ref(u, C), { [`taken/${pid}`]: u.uid, [`members/${u.uid}/player`]: pid });
+
+  section('コンペを作る');
+  const cx = rid(10);
+  await deny('コンペの期限と違う日付で片付け用の記録を作る', () => D.update(ref(out, ''), { [`comps/${cx}/meta`]: Object.assign({}, meta, { owner: out.uid }), [`expiry/${cx}`]: exp + 864e5 }));
+  await allow('主催者がコンペを作る', () => D.update(ref(org, ''), { [`${C}/meta`]: meta, [`${C}/members/${org.uid}`]: { role: 'org', key: 'owner', t: now }, [`expiry/${cid}`]: exp }));
+  await deny('部外者がそのコンペの名前を変える', () => D.set(ref(out, `${C}/meta/name`), '乗っ取り'));
+  await deny('部外者が「作った人」として主催者になる', () => join(out, 'owner', 'org'));
+  await allow('主催者がコース・名簿・招待キーを入れる', () => D.update(ref(org, C), {
+    course: { club: 'テスト', nines: [0, 1].map(k => ({ name: k ? 'IN' : 'OUT', holes: Array.from({ length: 9 }, () => ({ par: 4 })) })) },
+    [`roster/${pa}`]: { name: '青木', team: 1 }, [`roster/${pb}`]: { name: '馬場', team: 1 }, [`roster/${pc}`]: { name: '千葉', team: 2 },
+    [`invites/${kP}`]: { role: 'player', t: now }, [`invites/${kC1}`]: { role: 'cart', team: 1, t: now },
+    [`invites/${kC2}`]: { role: 'cart', team: 2, t: now }, [`invites/${kO}`]: { role: 'org', t: now }
+  }));
+
+  section('部外者（リンクを持っていない人）');
+  await deny('コンペの情報を読む', () => D.get(ref(out, `${C}/meta`)));
+  await deny('名簿を読む', () => D.get(ref(out, `${C}/roster`)));
+  await deny('スコアを読む', () => D.get(ref(out, `${C}/scores`)));
+  await deny('招待キーを読む', () => D.get(ref(out, `${C}/invites`)));
+  await deny('でたらめなキーで参加する', () => join(out, rid(22), 'player'));
+  await deny('参加者用のキーでカート代表になる', () => join(out, kP, 'cart', 1));
+  await deny('参加者用のキーで主催者になる', () => join(out, kP, 'org'));
+  await deny('1組のキーで2組のカート代表になる', () => join(out, kC1, 'cart', 2));
+  await deny('スコアを書く', () => D.set(ref(out, `${C}/scores/${pa}/h01`), score(out)));
+
+  section('リンクから参加する');
+  await allow('1組のカート代表が参加する', () => join(cart1, kC1, 'cart', 1));
+  await allow('2組のカート代表が参加する', () => join(cart2, kC2, 'cart', 2));
+  await allow('参加者1が参加する', () => join(p1, kP, 'player'));
+  await allow('参加者2が参加する', () => join(p2, kP, 'player'));
+  await allow('引き継ぎリンクで2台目の主催者が参加する', () => join(org2, kO, 'org'));
+
+  section('カート代表（1組）');
+  await allow('コンペ・名簿・スコアを読む', () => Promise.all(['meta', 'roster', 'scores', 'course', 'pins'].map(p => D.get(ref(cart1, `${C}/${p}`)))));
+  await allow('自分の組の人のスコアを書く', () => D.set(ref(cart1, `${C}/scores/${pa}/h01`), score(cart1, 5)));
+  await allow('自分の組の人のスコアを消す', () => D.remove(ref(cart1, `${C}/scores/${pa}/h01`)));
+  await deny('ほかの組の人のスコアを書く', () => D.set(ref(cart1, `${C}/scores/${pc}/h01`), score(cart1)));
+  await deny('入力した人を別人と偽ってスコアを書く', () => D.set(ref(cart1, `${C}/scores/${pa}/h02`), { v: 4, by: org.uid, t: Date.now() }));
+  await deny('ありえない打数（25）を書く', () => D.set(ref(cart1, `${C}/scores/${pa}/h02`), score(cart1, 25)));
+  await deny('招待キーを読む', () => D.get(ref(cart1, `${C}/invites`)));
+  await deny('参加している人の一覧を読む', () => D.get(ref(cart1, `${C}/members`)));
+  await deny('名簿を書きかえる', () => D.set(ref(cart1, `${C}/roster/${pa}/name`), '改名'));
+  await deny('ピン位置を置く', () => D.set(ref(cart1, `${C}/pins/h01`), [139, 35]));
+  await deny('コンペ名を変える', () => D.set(ref(cart1, `${C}/meta/name`), '改名'));
+  await deny('自分を2組に変える', () => D.update(ref(cart1, `${C}/members/${cart1.uid}`), { team: 2 }));
+  await deny('自分を主催者にする', () => D.update(ref(cart1, `${C}/members/${cart1.uid}`), { role: 'org' }));
+  await deny('参加者として名前を選ぶ', () => pick(cart1, pb));
+
+  section('参加者');
+  await deny('名前を選ぶ前にスコアを書く', () => D.set(ref(p1, `${C}/scores/${pa}/h01`), score(p1)));
+  await allow('参加者1が「青木」を選ぶ', () => pick(p1, pa));
+  await deny('参加者2も「青木」を選ぶ', () => pick(p2, pa));
+  await allow('参加者2が「馬場」を選ぶ', () => pick(p2, pb));
+  await allow('参加者1が自分のスコアを書く', () => D.set(ref(p1, `${C}/scores/${pa}/h01`), score(p1, 4)));
+  await allow('参加者1が自分のスコアを消す', () => D.remove(ref(p1, `${C}/scores/${pa}/h01`)));
+  await deny('参加者1がほかの人のスコアを書く', () => D.set(ref(p1, `${C}/scores/${pb}/h01`), score(p1)));
+  await deny('参加者1が「千葉」に乗りかえる', () => pick(p1, pc));
+  await deny('参加者1が「千葉」の名前だけ取る', () => D.set(ref(p1, `${C}/taken/${pc}`), p1.uid));
+  await deny('参加者1が自分の選んだ名前を消す', () => D.remove(ref(p1, `${C}/members/${p1.uid}/player`)));
+  await deny('参加者1が「青木」を手放す', () => D.remove(ref(p1, `${C}/taken/${pa}`)));
+  await allow('参加者1がリンクを開き直す（名前はそのまま）', () => join(p1, kP, 'player'));
+  await deny('開き直したついでに名前を消す', () => D.set(ref(p1, `${C}/members/${p1.uid}`), { role: 'player', key: kP, t: Date.now() }));
+  await deny('参加者1がカート代表になる', () => join(p1, kP, 'cart', 1));
+  await deny('参加者1が名簿を書きかえる', () => D.set(ref(p1, `${C}/roster/${pa}/name`), '改名'));
+  await deny('参加者1がピン位置を置く', () => D.set(ref(p1, `${C}/pins/h01`), [139, 35]));
+  await deny('参加者1が招待キーを読む', () => D.get(ref(p1, `${C}/invites`)));
+  await deny('ずっと先の時刻でスコアを書く', () => D.set(ref(p1, `${C}/scores/${pa}/h03`), { v: 4, by: p1.uid, t: Date.now() + 864e5 }));
+
+  section('主催者');
+  await allow('誰のスコアでも書ける', () => D.set(ref(org, `${C}/scores/${pc}/h01`), score(org, 6)));
+  await allow('ピン位置を配る', () => D.set(ref(org, `${C}/pins/h01`), [139.1, 35.2]));
+  await allow('2台目の主催者も名簿を直せる', () => D.set(ref(org2, `${C}/roster/${pc}/name`), '千葉さん'));
+  await allow('参加している人の一覧と招待キーを読む', () => Promise.all([D.get(ref(org, `${C}/members`)), D.get(ref(org, `${C}/invites`))]));
+  await allow('「青木」の選択を解除する', () => D.update(ref(org, C), { [`taken/${pa}`]: null, [`members/${p1.uid}/player`]: null }));
+  await deny('解除された参加者1は、もうスコアを書けない', () => D.set(ref(p1, `${C}/scores/${pa}/h02`), score(p1)));
+  await allow('参加者1が「千葉」を選び直す', () => pick(p1, pc));
+  await deny('コンペの期限を延ばす', () => D.update(ref(org, `${C}/meta`), { expires: exp + 864e5 }));
+  await deny('コンペの基本情報を消す', () => D.remove(ref(org, `${C}/meta`)));
+  await deny('期限前にコンペごと消す', () => D.remove(ref(org, C)));
+  await deny('部外者が期限前にコンペを消す', () => D.update(ref(out, ''), { [C]: null, [`expiry/${cid}`]: null }));
+
+  section('期限が過ぎたあと');
+  const wait = exp - Date.now() + 3000;
+  for (let left = wait; left > 0; left -= 1000) { $('sum').textContent = `期限切れを待っています… あと${Math.ceil(left / 1000)}秒`; await sleep(Math.min(1000, left)); }
+  await deny('主催者が名簿を直す', () => D.set(ref(org, `${C}/roster/${pa}/name`), '改名'));
+  await deny('主催者がコンペ名を変える', () => D.set(ref(org, `${C}/meta/name`), '改名'));
+  await deny('主催者がスコアを書く', () => D.set(ref(org, `${C}/scores/${pa}/h05`), score(org)));
+  await deny('カート代表がスコアを書く', () => D.set(ref(cart1, `${C}/scores/${pa}/h05`), score(cart1)));
+  await deny('参加者がスコアを書く', () => D.set(ref(p1, `${C}/scores/${pc}/h05`), score(p1)));
+  await deny('新しい人がリンクで参加する', () => join(out, kP, 'player'));
+  await allow('参加者はまだ結果を読める', () => D.get(ref(p1, `${C}/scores`)));
+  await allow('誰でも期限切れのコンペを片付けられる', () => D.update(ref(out, ''), { [C]: null, [`expiry/${cid}`]: null }));
+}
+
+async function cleanup() {
+  for (const u of users) { try { await u.user.delete(); } catch (e) {} try { await A.deleteApp(u.app); } catch (e) {} }
+  users.length = 0;
+}
+
+$('run').onclick = async () => {
+  $('run').disabled = true; $('log').textContent = ''; pass = fail = 0; $('sum').className = '';
+  try { await run(); } catch (e) { fail++; $('log').appendChild(Object.assign(document.createElement('p'), { textContent: '途中で止まりました: ' + e.message })); }
+  await cleanup();
+  $('sum').textContent = fail ? `✖ ${fail}件がおかしい（${pass + fail}件中）` : `✔ すべて期待どおり（${pass}件）`;
+  $('sum').className = fail ? 'ng' : 'ok';
+  $('run').disabled = false;
+};
+</script>
+</body>
+</html>
