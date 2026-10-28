@@ -1,5 +1,5 @@
 /* golf3d — compui: competition screens inside settings
-   create · overview (everyone) · organizer: names and teams, links (LINE / copy / QR) · player: choosing your name
+   create · overview (everyone) · organizer: names, teams and leads, links (LINE / copy / QR) · choosing your name
    Plain scripts loaded in order from index.html (no build step); they share top-level names. */
 "use strict";
 
@@ -14,7 +14,7 @@ function renderCompRow() {
   const t = $('cpRowT'); t.textContent = '';
   if (!comp) { t.append('コンペを作る', el('small', '', '参加者にリンクを送って、全員のスコアを集めます')); $('cpRowV').textContent = ''; return; }
   t.append((comp.meta && comp.meta.name) || 'コンペ', el('small', '', comp.meta && comp.meta.date ? comp.meta.date.replace(/-/g, '/') : ''));
-  $('cpRowV').textContent = comp.role === 'cart' ? `${ROLE_NAME.cart} ${comp.team}組` : ROLE_NAME[comp.role];
+  $('cpRowV').textContent = roleLabel();
 }
 $('goComp').onclick = () => {
   if (comp) { renderComp(); mShow('mComp'); return; }
@@ -42,7 +42,8 @@ function renderComp() {
   const m = comp.meta || {}, pl = comp.player && (comp.roster || {})[comp.player];
   $('cpTitle').textContent = m.name || 'コンペ';
   $('cpDateV').textContent = (m.date || '').replace(/-/g, '/');
-  $('cpRoleV').textContent = comp.role === 'cart' ? `${ROLE_NAME.cart}（${comp.team}組）` : comp.role === 'player' ? `${ROLE_NAME.player}${pl ? '（' + pl.name + '）' : ''}` : ROLE_NAME.org;
+  $('cpRoleV').textContent = `${roleLabel()}${pl ? '（' + pl.name + '）' : ''}`;
+  $('cpMyNameV').textContent = pl ? pl.name : '選ばない';
   $('cpCourseV').textContent = comp.course ? `${comp.course.club}（${playNines().map(x => x.name).join('・')}）` : '未設定';
   $('cpLiveV').textContent = compLive ? '● つながっています' : '○ オフライン（入力は電波が戻ったら送ります）';
   if (document.activeElement !== $('cpNameE')) $('cpNameE').value = m.name || '';
@@ -61,49 +62,69 @@ $('cpDateE').onchange = () => { if ($('cpDateE').value) setMeta({ date: $('cpDat
 $('cpNine').onclick = () => { renderNinePick(); mShow('mNine'); };
 $('cpRoster').onclick = () => { renderRoster(); mShow('mRoster'); };
 $('cpLinks').onclick = () => { renderLinks(); mShow('mLinks'); };
+$('cpMyName').onclick = () => { renderPick(); mShow('mPick'); };  // the organizer may also play under a roster name
 $('cpLeave').onclick = () => ask(`「${(comp.meta && comp.meta.name) || 'コンペ'}」から抜けますか？`,
   comp.role === 'org' ? '主催者が抜けると、このスマホではコンペを管理できなくなります（主催者の引き継ぎ用リンクを開けば戻れます）' : 'もう一度リンクを開けば、また参加できます',
   '抜ける', () => { compLeave(); mShow('mMain'); renderMenu(); toast('コンペから抜けました'); });
 
-/* organizer: names and teams */
+/* organizer: names, teams and each team's lead (changes reach everyone at once, also mid-round) */
+const rosterExtra = new Set();  // teams added (or emptied) on this screen that nobody is in yet
+function rosterTeams() {
+  const ts = [...new Set(teams().concat([...rosterExtra]))].sort((a, b) => a - b);
+  return ts.length ? ts : [1];
+}
 function renderRoster() {
-  const box = $('rosterList'); if (box.contains(document.activeElement)) return;  // don't redraw under the keyboard
+  const box = $('rosterList'); if (box.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') return;  // don't redraw under the keyboard
   box.textContent = '';
-  const list = rosterList(), maxTeam = Math.max(1, ...list.map(r => r.team)) + 1;
-  teams().forEach(t => {
-    box.appendChild(el('div', 'grp-t', `${t}組`));
-    const g = el('div', 'grp');
-    list.filter(r => r.team === t).forEach(r => {
-      const row = el('div', 'mrow rrow'), inp = el('input'), sel = el('select');
+  const list = rosterList(), shown = rosterTeams(), taken = comp.taken || {};
+  shown.forEach(t => {
+    const lead = list.find(r => r.id === leadOf(t));
+    box.appendChild(el('div', 'grp-t', `${t}組${lead ? ` ・ 代表 ${lead.name}` : ''}`));
+    const g = el('div', 'grp'), people = list.filter(r => r.team === t);
+    people.forEach(r => {
+      const row = el('div', 'mrow rrow'), l1 = el('div', 'r1'), l2 = el('div', 'r2');
+      const inp = el('input'), sel = el('select'), on = leadOf(t) === r.id;
       inp.type = 'text'; inp.value = r.name; inp.maxLength = 12; inp.setAttribute('aria-label', '名前');
       inp.onchange = () => { const v = inp.value.trim(); if (v) compRosterSet(r.id, { name: v.slice(0, 12), team: r.team }); else inp.value = r.name; };
-      for (let k = 1; k <= Math.max(maxTeam, r.team); k++) { const o = el('option', '', `${k}組`); o.value = k; sel.appendChild(o); }
-      sel.value = r.team; sel.setAttribute('aria-label', '組');
-      sel.onchange = () => { compRosterSet(r.id, { name: r.name, team: +sel.value }); renderRoster(); };
-      row.append(inp, sel);
-      if ((comp.taken || {})[r.id]) {
-        const rel = el('button', 'tag', '解除'); rel.setAttribute('aria-label', `${r.name}は選択済み。選択を解除する`);
-        rel.onclick = () => ask(`「${r.name}」の選択を解除しますか？`, '選んだ人のスマホに、名前の選び直しを出します', '解除する', () => compRelease(r.id).catch(() => toast(offlineMsg)));
-        row.appendChild(rel);
-      }
       const del = el('button', 'x', '✕'); del.setAttribute('aria-label', `${r.name}を名簿から外す`);
       del.onclick = () => ask(`「${r.name}」を名簿から外しますか？`, 'この人のスコアも消えます', '外す', () => { compRosterDel(r.id); renderRoster(); });
-      row.appendChild(del);
+      l1.append(inp, del);
+      shown.forEach(k => { const o = el('option', '', `${k}組`); o.value = k; sel.appendChild(o); });
+      sel.value = r.team; sel.setAttribute('aria-label', '組');
+      sel.onchange = () => {
+        if (people.length === 1) rosterExtra.add(t);  // the team being emptied stays on screen until it is deleted
+        rosterExtra.delete(+sel.value); compMoveTeam(r.id, +sel.value); renderRoster();
+      };
+      const lb = el('button', 'lead' + (on ? ' on' : ''), on ? '★ 代表' : '代表にする');
+      lb.setAttribute('aria-pressed', on);
+      lb.onclick = () => { compSetLead(t, on ? null : r.id); renderRoster(); toast(on ? `${t}組の代表を外しました` : `${r.name}さんを${t}組の代表にしました`); };
+      l2.append(sel, lb);
+      if (taken[r.id]) {
+        const rel = el('button', 'tag', '参加中・解除'); rel.setAttribute('aria-label', `${r.name}は名前を選び済み。選択を解除する`);
+        rel.onclick = () => ask(`「${r.name}」の選択を解除しますか？`, '選んだ人のスマホに、名前の選び直しを出します', '解除する', () => compRelease(r.id).catch(() => toast(offlineMsg)));
+        l2.appendChild(rel);
+      } else l2.appendChild(el('span', 'st', '未参加'));
+      row.append(l1, l2);
       g.appendChild(row);
     });
+    const add = el('button', 'mrow add', '＋ この組に追加'); add.onclick = () => rosterAddTo(t);
+    g.appendChild(add);
+    if (!people.length && shown.length > 1) {
+      const rm = el('button', 'mrow danger', 'この組を消す'); rm.onclick = () => { rosterExtra.delete(t); renderRoster(); };
+      g.appendChild(rm);
+    }
     box.appendChild(g);
   });
-  if (!list.length) box.appendChild(el('p', 'grp-f', 'まだ誰もいません。「＋ 参加者を追加」から入れてください。'));
 }
-$('rosterAdd').onclick = () => {
-  const list = rosterList(), last = list.length ? list[list.length - 1].team : 1;
-  const team = list.filter(r => r.team === last).length >= 4 ? last + 1 : last;  // 4 to a cart, then the next team
-  const pid = 'p' + rid(8);
-  compRosterSet(pid, { name: `参加者${list.length + 1}`, team });
+function rosterAddTo(team) {
+  const n = rosterList().length + 1, pid = 'p' + rid(8);
+  rosterExtra.delete(team);
+  compRosterSet(pid, { name: `参加者${n}`, team });
   renderRoster();
-  const ins = $('rosterList').querySelectorAll('input'), i = [...ins].find(x => x.closest('.rrow') && x.value === `参加者${list.length + 1}`);
+  const i = [...$('rosterList').querySelectorAll('.rrow input')].find(x => x.value === `参加者${n}`);
   if (i) { i.focus(); i.select(); }
-};
+}
+$('rosterAdd').onclick = () => { rosterExtra.add(Math.max(0, ...rosterTeams()) + 1); renderRoster(); };
 
 /* organizer: links — LINE (share sheet), copy, QR */
 const QR_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
@@ -111,14 +132,12 @@ let qrP = null;
 const loadQr = () => qrP || (qrP = new Promise((ok, no) => { const s = document.createElement('script'); s.src = QR_LIB; s.onload = ok; s.onerror = () => { qrP = null; no(); }; document.head.appendChild(s); }));
 function renderLinks() {
   const box = $('linkList'); box.textContent = '';
-  const items = [{ label: '参加者用（全員共通）', role: 'player', note: '開いた人は名簿から自分の名前を選び、自分のスコアだけ入力できます' }]
-    .concat(teams().map(t => ({ label: `カート代表用（${t}組）`, role: 'cart', team: t, note: `${t}組の全員のスコアを入力できます` })))
-    .concat([{ label: '主催者の引き継ぎ用', role: 'org', note: '開いたスマホも主催者になります。スマホを替えるときや、手伝ってもらうときに使います' }]);
-  items.forEach(it => {
+  [{ label: '参加者用（全員に送る）', role: 'player', note: '開いた人は名簿から自分の名前を選びます。組と代表は「参加者と組」で決めた内容になります' },
+   { label: '主催者の引き継ぎ用', role: 'org', note: '開いたスマホも主催者になります。スマホを替えるときや、手伝ってもらうときに使います' }].forEach(it => {
     box.appendChild(el('div', 'grp-t', it.label));
     const g = el('div', 'grp'), row = el('div', 'mrow lbtns');
     const mk = (txt, fn) => { const b = el('button', '', txt); b.onclick = async () => {
-      let url; try { url = linkFor(await ensureInvite(it.role, it.team), it.role, it.team); } catch (e) { toast(offlineMsg); return; }
+      let url; try { url = linkFor(await ensureInvite(it.role), it.role); } catch (e) { toast(offlineMsg); return; }
       fn(url);
     }; return b; };
     row.append(
@@ -128,7 +147,6 @@ function renderLinks() {
     g.append(row, el('p', 'lnote', it.note));
     box.appendChild(g);
   });
-  if (!teams().length) box.appendChild(el('p', 'grp-f', 'カート代表用のリンクは、「参加者と組」で組を入れると出ます。'));
 }
 async function copyText(s) { try { await navigator.clipboard.writeText(s); toast('リンクをコピーしました'); } catch (e) { toast(s); } }
 async function showQr(label, url) {
@@ -139,7 +157,7 @@ async function showQr(label, url) {
 }
 $('qrClose').onclick = () => $('qr').hidden = true;
 
-/* player: choosing your own name from the roster */
+/* choosing your own name from the roster (players must; the organizer may, to play too) */
 function renderPick() {
   const box = $('pickList'); box.textContent = '';
   const taken = comp.taken || {};
@@ -151,7 +169,11 @@ function renderPick() {
       const b = el('button', 'mrow'); b.disabled = other || !!comp.player;
       b.append(el('span', 'mtx', r.name), el('span', 'mval', mine ? 'あなた' : other ? '選択済み' : ''));
       b.onclick = async () => {
-        try { await compPick(r.id); $('menu').hidden = true; refresh(); toast(`「${r.name}」で参加しました`); }
+        try {
+          await compPick(r.id); refresh();
+          const lt = compLeadTeam(); toast(`「${r.name}」で参加しました${lt ? `（${lt}組のカート代表）` : ''}`);
+          if (comp.role === 'org') $('mBack').click(); else $('menu').hidden = true;  // the organizer came from the competition screen
+        }
         catch (e) { toast(denied(e) ? 'その名前は選べません（ほかの人が選んだか、期限切れです）' : offlineMsg); }
       };
       g.appendChild(b);

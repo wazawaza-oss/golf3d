@@ -23,7 +23,7 @@ function renderScore() {
   const p = scWho(), sum = $('scSum'), board = $('scBoard');
   sum.textContent = ''; board.textContent = '';
   if (!p) { $('scTitle').textContent = 'マイスコア'; sum.append(el('span', '', '設定 → コンペ で自分の名前を選ぶと入力できます')); return; }
-  const a = strokesOf(p), t = totals(p), isMe = comp ? comp.role === 'player' : p === me(), edit = canEdit(p.id);
+  const a = strokesOf(p), t = totals(p), isMe = comp ? p.id === comp.player : p === me(), edit = canEdit(p.id);
   $('scTitle').textContent = isMe ? 'マイスコア' : `${p.name || '名前なし'} のスコア`;
   sum.append(el('b', '', t.n ? fmtDiff(t.diff) : '—'), el('span', '', t.n ? `計 ${t.tot}打 ・ ${t.n}ホール` : 'まだ入力がありません'));
   const ph = playHoles();
@@ -34,22 +34,34 @@ function renderScore() {
     for (let i = from; i < from + NINE; i++) {
       const hp = ph[i].par, v = a[i];
       head.append(el('th', '', i + 1)); par.append(el('td', '', hp)); parSum += hp;
-      const c = el('td', (v == null ? '' : v < hp ? 'under' : v >= hp + 2 ? 'over2' : '') + (i === scHole ? ' sel' : ''), v == null ? '' : v);
-      c.setAttribute('role', 'button'); c.setAttribute('aria-label', `${i + 1}番 ${v == null ? '未入力' : v + '打'}`);
-      c.onclick = () => { scHole = i; renderScore(); };
+      const c = scoreCell(p, i, i === scHole);
+      c.setAttribute('role', 'button');
+      c.onclick = () => { fixNote(p, i); scHole = i; renderScore(); };
       row.append(c);
       if (v != null) { s += v; any = true; }
     }
     head.append(el('th', 'sum', label)); par.append(el('td', 'sum', parSum)); row.append(el('td', 'sum', any ? s : ''));
     tb.append(head, par, row);
     board.appendChild(tb);
-    if (edit && scHole >= from && scHole < from + NINE) board.appendChild(scoreStepper(p, scHole));  // view only when not yours to enter
+    if (edit && scHole >= from && scHole < from + NINE) board.appendChild(scoreStepper(p, scHole, renderScore));  // view only when not yours to enter
   });
 }
-function scoreStepper(p, i) {
+// one score cell: colored against par; a small mark when someone else changed it (tap for who and when)
+function scoreCell(p, i, sel) {
+  const v = strokesOf(p)[i], hp = playHoles()[i].par, fx = comp && compFix(p.id, i);
+  const c = el('td', (v == null ? '' : v < hp ? 'under' : v >= hp + 2 ? 'over2' : '') + (fx ? ' fx' : '') + (sel ? ' sel' : ''), v == null ? '' : v);
+  c.setAttribute('aria-label', `${i + 1}番 ${v == null ? '未入力' : v + '打'}${fx ? `（${fx.who}が修正）` : ''}`);
+  return c;
+}
+function fixNote(p, i) {
+  const fx = comp && compFix(p.id, i); if (!fx) return;
+  const d = new Date(fx.t);
+  toast(`${i + 1}番：${fx.who}が修正（${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}）`);
+}
+function scoreStepper(p, i, after, title) {
   const hp = playHoles()[i].par, v = strokesOf(p)[i], box = el('div', 'stepper');
-  const set = nv => { setStroke(p, i, nv); renderScore(); };
-  const hd = el('div', 'sh'); hd.append(el('b', '', `${i + 1}番`), el('span', '', `Par ${hp}`));
+  const set = nv => { setStroke(p, i, nv); after(); };
+  const hd = el('div', 'sh'); hd.append(el('b', '', `${title ? title + ' ' : ''}${i + 1}番`), el('span', '', `Par ${hp}`));
   const stp = el('div', 'stp'), minus = el('button', '', '−'), plus = el('button', '', '＋');
   const val = el('div', 'val' + (v == null ? '' : v < hp ? ' under' : v > hp ? ' over' : ''));
   val.append(el('b', '', v == null ? '—' : v), el('small', '', v == null ? '未入力' : termOf(v, hp)));
@@ -63,10 +75,10 @@ function scoreStepper(p, i) {
 }
 
 /* bottom dock: the score for the hole on screen, entered with − / ＋ (same rules as the score page).
-   In a competition it is the player's own name, or — for a cart representative / the organizer — the person
+   In a competition it is the player's own name, or — for a team lead / the organizer — the person
    shown in the dock; tapping that name moves to the next person they may enter for. */
 function renderDock() {
-  const p = me(), i = N - 1, hp = playHoles()[i].par, v = p ? strokesOf(p)[i] : null, many = comp && comp.role !== 'player';
+  const p = me(), i = N - 1, hp = playHoles()[i].par, v = p ? strokesOf(p)[i] : null, many = comp && roleKind() !== 'player';
   $('dkMinus').disabled = $('dkPlus').disabled = !p;
   $('dkVal').className = 'dv' + (v == null ? '' : v < hp ? ' under' : v > hp ? ' over' : '') + (many ? ' who' : '');
   $('dkHole').textContent = !p ? '名前を選んでください' : comp ? `${p.name}${many ? ' ▸' : ''} ・ ${N}番 P${hp}` : `${N}番 Par ${hp}`;
@@ -138,9 +150,10 @@ function renderRank() {
     tb.append(tr);
   });
   const list = $('rkList'); list.textContent = ''; list.appendChild(tb);
-  // scorecard: front nine (1-9) and back nine (10-18)
+  // scorecard: front nine (1-9) and back nine (10-18); in a competition, cells you may enter open -/+ below that half
   const card = $('rkCard'); card.textContent = '';
   const ph = playHoles();
+  if (rkSel && !all.some(p => p.id === rkSel.pid && canEdit(p.id))) rkSel = null;
   halves().forEach(({ name: label, from }) => {  // front / back nine, headed by the nine's name
     const t = el('table', 'sc'), head = el('tr'), par = el('tr', 'par');
     head.append(el('th', '', 'H')); par.append(el('td', '', 'Par'));
@@ -152,16 +165,29 @@ function renderRank() {
       const tr = el('tr', p.id === myId() ? 'me' : ''), a = strokesOf(p); let sum = 0, any = false;
       tr.append(el('td', '', p.name || '—'));
       for (let i = from; i < from + NINE; i++) {
-        const v = a[i], hp = ph[i].par;
-        tr.append(el('td', v == null ? '' : v < hp ? 'under' : v >= hp + 2 ? 'over2' : '', v == null ? '' : v));
+        const v = a[i], ed = comp && canEdit(p.id), c = scoreCell(p, i, rkSel && rkSel.pid === p.id && rkSel.i === i);
+        if (ed) c.classList.add('ed');
+        if (ed || c.classList.contains('fx')) {
+          c.setAttribute('role', 'button');
+          c.onclick = () => {
+            fixNote(p, i);
+            if (ed) { rkSel = rkSel && rkSel.pid === p.id && rkSel.i === i ? null : { pid: p.id, i }; renderRank(); }
+          };
+        }
+        tr.append(c);
         if (v != null) { sum += v; any = true; }
       }
       tr.append(el('td', 'sum', any ? sum : ''));
       t.append(tr);
     });
     card.appendChild(t);
+    if (rkSel && rkSel.i >= from && rkSel.i < from + NINE) {
+      const p = all.find(x => x.id === rkSel.pid);
+      card.appendChild(scoreStepper(p, rkSel.i, renderRank, p.name));
+    }
   });
 }
+let rkSel = null;  // the scoreboard cell being changed: { pid, i }
 
 /* ================= scorecard image (JPEG) ================= */
 // a simple card to keep or send: course name, date, everyone's front / back nine, and the ranking

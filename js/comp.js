@@ -1,17 +1,20 @@
-/* golf3d — comp: competitions on Firebase Realtime Database, with three roles (organizer / cart / player)
+/* golf3d — comp: competitions on Firebase Realtime Database, with three roles (organizer / team lead / player)
    Plain scripts loaded in order from index.html (no build step); they share top-level names.
 
    comps/{cid}
      meta            { name, date, owner, created, expires }          members read · organizer writes
      course          { club, nines: [{ name, holes: [{ par, tee, green }] } × 2] }   (the organizer's two nines)
      roster/{pid}    { name, team }                                    members read · organizer writes
+     leads/t{team}   pid of that team's lead (one per team)              members read · organizer writes
      pins/{hNN}      [lng, lat]  pins handed out by the organizer
-     invites/{key}   { role, team? }                                   organizer only (others never see keys)
-     members/{uid}   { role, team?, key, player?, t }                  the phone itself and the organizer
+     invites/{key}   { role: player | org }                            organizer only (others never see keys)
+     members/{uid}   { role: player | org, key, player?, t }           the phone itself and the organizer
      taken/{pid}     uid of the phone that chose that name
-     scores/{pid}/{hNN}  { v, by, t }   newest write wins; who and when are kept
+     scores/{pid}/{hNN}  { v, by, bp, t, fix? }   newest write wins; who (phone, name) and when are kept;
+                     fix: someone else changed a value already there (shown as a small mark)
    expiry/{cid}      expires; any app may delete competitions past it
-   Links carry ?c=<cid>&k=<invite key>&r=<role>[&t=<team>]; the database rules check the key, so editing a link gains nothing.
+   Links carry ?c=<cid>&k=<invite key>&r=player|org; everyone joins as a player and picks their name; the organizer's
+   roster decides teams and leads. The database rules check the key and the roster, so editing a link gains nothing.
    Nothing here loads until a competition is created or joined: solo and offline use never need Firebase. */
 "use strict";
 
@@ -25,7 +28,7 @@ const FB_CONFIG = {
 };
 const FB_SDK = 'https://www.gstatic.com/firebasejs/12.4.0/';
 const COMP_DAYS = 7;  // a competition can be changed for a week; after that any app may delete it
-const ROLE_NAME = { org: '主催者', cart: 'カート代表', player: '参加者' };
+const ROLE_NAME = { org: '主催者', player: '参加者' };  // what a link makes you; a team lead is a player the organizer marked
 const B62 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 const rid = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => B62[b % 62]).join('');
 const hk = i => 'h' + String(i + 1).padStart(2, '0');  // hole index 0..17 → 'h01'..'h18' (plain 1..18 keys would become an array)
@@ -72,6 +75,21 @@ const compPin = n => { const p = comp && comp.pins && comp.pins[hk(n - 1)]; retu
 const rosterList = () => Object.entries((comp && comp.roster) || {}).map(([id, r]) => ({ id, name: String(r.name || ''), team: +r.team || 1 }))
   .sort((a, b) => a.team - b.team || a.name.localeCompare(b.name, 'ja'));
 const compStrokes = pid => { const s = ((comp && comp.scores) || {})[pid] || {}; return Array.from({ length: ROUND }, (_, i) => (s[hk(i)] && +s[hk(i)].v) || null); };
+// who changed someone's score (the small mark on that cell): { who, t }, or null
+function compFix(pid, i) {
+  const e = (((comp && comp.scores) || {})[pid] || {})[hk(i)];
+  if (!e || !e.fix || e.bp === pid) return null;
+  const r = (comp.roster || {})[e.bp];
+  return { who: r ? `${r.name}さん` : ROLE_NAME.org, t: e.t };
+}
+// teams and leads, as the organizer set them in the roster
+const leadOf = t => ((comp && comp.leads) || {})['t' + t] || null;
+const myTeam = () => { const r = comp && comp.player && (comp.roster || {})[comp.player]; return r ? +r.team || 1 : null; };
+// the team this phone leads: its chosen name is that team's lead (and the name really is this phone's)
+function compLeadTeam() {
+  const t = myTeam();
+  return t && leadOf(t) === comp.player && (comp.taken || {})[comp.player] === comp.uid ? t : null;
+}
 // everyone in the round: the competition's roster, or this phone's own players when solo
 function allPlayers() {
   if (!comp) return S.score.players;
@@ -81,18 +99,25 @@ const teams = () => [...new Set(rosterList().map(r => r.team))].sort((a, b) => a
 
 /* ---------- writing scores (offline-safe) ---------- */
 // entries go to an outbox on the phone first and are sent when connected; a newer value on the server wins
+// a score as stored: the value, this phone, the name it writes as (its chosen name, or 'org'), when, and
+// fix when it changes a value someone else had already put there
+const scoreRec = e => Object.assign({ v: e.v, by: comp.uid, bp: e.bp || comp.player || 'org', t: e.t }, e.fix ? { fix: true } : {});
 function compSetScore(pid, i, v) {
   if (!canEdit(pid)) return;
-  const t = Date.now(), k = hk(i);
+  const t = Date.now(), k = hk(i), bp = comp.player || 'org';
   comp.scores = comp.scores || {};
-  comp.scores[pid] = Object.assign({}, comp.scores[pid], { [k]: v == null ? null : { v, by: comp.uid, t } });
-  (comp.outbox = comp.outbox || {})[`${pid}/${k}`] = { v: v == null ? null : v, t };
+  // a correction: replacing a value someone else entered (stepping your own entry with -/+ is not); it stays marked while you adjust it
+  const prev = (comp.scores[pid] || {})[k];
+  const fix = v != null && bp !== pid && !!prev && prev.v != null && (prev.bp !== bp ? +prev.v !== v : !!prev.fix);
+  const e = { v: v == null ? null : v, t, bp, fix };
+  comp.scores[pid] = Object.assign({}, comp.scores[pid], { [k]: v == null ? null : scoreRec(e) });
+  (comp.outbox = comp.outbox || {})[`${pid}/${k}`] = e;
   saveComp(); compSend();
 }
 function overlayOutbox() {  // keep unsent entries on screen when the server's copy arrives
   Object.entries(comp.outbox || {}).forEach(([path, e]) => {
     const [pid, k] = path.split('/');
-    comp.scores[pid] = Object.assign({}, comp.scores[pid], { [k]: e.v == null ? null : { v: e.v, by: comp.uid, t: e.t } });
+    comp.scores[pid] = Object.assign({}, comp.scores[pid], { [k]: e.v == null ? null : scoreRec(e) });
   });
 }
 let sending = false;
@@ -106,7 +131,7 @@ async function compSend() {
       const r = f.D.ref(f.db, cp('scores/' + path));
       try {
         const cur = (await withTimeout(f.D.get(r), 10000)).val();
-        if (!cur || !cur.t || cur.t <= e.t) await withTimeout(f.D.set(r, e.v == null ? null : { v: e.v, by: comp.uid, t: e.t }), 10000);
+        if (!cur || !cur.t || cur.t <= e.t) await withTimeout(f.D.set(r, e.v == null ? null : scoreRec(e)), 10000);
         delete comp.outbox[path];
       } catch (err) { if (denied(err)) delete comp.outbox[path]; else break; }
     }
@@ -134,8 +159,8 @@ async function compClearRound() {
 }
 
 /* ---------- create, join, connect, leave ---------- */
-const blankComp = (cid, uid, key, role, team) => ({ cid, uid, key, role, team: team || null, player: null, meta: null, course: null,
-  roster: {}, scores: {}, pins: {}, taken: {}, invites: {}, outbox: {}, dock: null });
+const blankComp = (cid, uid, key, role) => ({ cid, uid, key, role, player: null, meta: null, course: null,
+  roster: {}, leads: {}, scores: {}, pins: {}, taken: {}, invites: {}, outbox: {}, dock: null, seen: null });
 async function compCreate(name, date) {
   const f = await withTimeout(fb(), 15000), cid = rid(10), now = Date.now(), exp = now + COMP_DAYS * 864e5;
   const meta = { name, date, owner: f.uid, created: now, expires: exp };
@@ -148,11 +173,10 @@ async function compCreate(name, date) {
   await compPublishCourse();
   compConnect();
 }
-async function compJoin(cid, key, role, team) {
+async function compJoin(cid, key, role) {
   const f = await withTimeout(fb(), 15000);
-  const m = { role, key, t: Date.now() }; if (role === 'cart') m.team = team;
-  await withTimeout(f.D.update(f.D.ref(f.db, `comps/${cid}/members/${f.uid}`), m), 15000);  // keeps a name chosen earlier
-  comp = blankComp(cid, f.uid, key, role, role === 'cart' ? team : null); saveComp();
+  await withTimeout(f.D.update(f.D.ref(f.db, `comps/${cid}/members/${f.uid}`), { role, key, t: Date.now() }), 15000);  // keeps a name chosen earlier
+  comp = blankComp(cid, f.uid, key, role); saveComp();
   compConnect();
 }
 async function compConnect() {
@@ -168,10 +192,11 @@ async function compConnect() {
     on('meta', v => { if (v) comp.meta = v; }),
     on('course', v => { comp.course = v; }),
     on('roster', v => { comp.roster = v || {}; }),
+    on('leads', v => { comp.leads = v || {}; }),
     on('pins', v => { comp.pins = v || {}; }),
     on('taken', v => { comp.taken = v || {}; }),
     on('scores', v => { comp.scores = v || {}; overlayOutbox(); }),
-    on(`members/${comp.uid}`, v => { if (v) { comp.role = v.role; comp.team = v.team || null; comp.player = v.player || null; } })
+    on(`members/${comp.uid}`, v => { if (v && ROLE_NAME[v.role]) { comp.role = v.role; comp.player = v.player || null; } })
   ];
   if (comp.role === 'org') offs.push(on('invites', v => { comp.invites = v || {}; }));
   offs.push(D.onValue(D.ref(f.db, '.info/connected'), s => { compLive = !!s.val(); if (compLive) compSend(); compRefresh(); }));
@@ -196,6 +221,7 @@ function compRefresh() {
   if (S.page === 'rank') renderRank();
   if (S.page === 'score') renderScore();
   if (!$('menu').hidden) { renderMenu(); renderCompScreens(); }
+  roleNotice();
   // a player who has not chosen a name yet (or whose choice the organizer released) is asked first
   if (comp && comp.role === 'player' && !comp.player && comp.roster && Object.keys(comp.roster).length && $('menu').hidden) openPick();
 }
@@ -217,31 +243,65 @@ function compRosterSet(pid, r) {
   comp.roster = Object.assign({}, comp.roster, { [pid]: r }); saveComp();
   fb().then(f => f.D.set(f.D.ref(f.db, cp('roster/' + pid)), r)).catch(() => toast('保存できませんでした。電波を確認してください'));
 }
+const saveFail = () => toast('保存できませんでした。電波を確認してください');
+const compUpdate = u => fb().then(f => f.D.update(f.D.ref(f.db, `comps/${comp.cid}`), u)).catch(saveFail);
 function compRosterDel(pid) {
+  const r = comp.roster[pid], u = { [`roster/${pid}`]: null, [`scores/${pid}`]: null, [`taken/${pid}`]: null };
+  if (r && leadOf(r.team) === pid) { u[`leads/t${r.team}`] = null; delete comp.leads['t' + r.team]; }
   delete comp.roster[pid]; if (comp.scores) delete comp.scores[pid]; saveComp();
-  fb().then(f => f.D.update(f.D.ref(f.db, `comps/${comp.cid}`), { [`roster/${pid}`]: null, [`scores/${pid}`]: null, [`taken/${pid}`]: null })).catch(() => {});
+  compUpdate(u);
 }
-// one key per link: players share one, each team's cart has its own, and one hands the organizer role to another phone
-async function ensureInvite(role, team) {
-  const hit = Object.entries(comp.invites || {}).find(([, v]) => v.role === role && (role !== 'cart' || +v.team === +team));
+// moving someone to another team: if they led their old team, that team has no lead until the organizer picks one
+function compMoveTeam(pid, team) {
+  const r = comp.roster[pid]; if (!r || +r.team === team) return;
+  const u = { [`roster/${pid}`]: { name: r.name, team } };
+  if (leadOf(r.team) === pid) { u[`leads/t${r.team}`] = null; delete comp.leads['t' + r.team]; }
+  comp.roster = Object.assign({}, comp.roster, { [pid]: { name: r.name, team } }); saveComp();
+  compUpdate(u);
+}
+// one lead per team: naming a new one replaces the old; pid null leaves the team without a lead
+function compSetLead(team, pid) {
+  comp.leads = Object.assign({}, comp.leads, { ['t' + team]: pid }); if (!pid) delete comp.leads['t' + team];
+  saveComp(); compUpdate({ [`leads/t${team}`]: pid });
+}
+// one key per link: everyone shares the players' one, and one hands the organizer role to another phone
+async function ensureInvite(role) {
+  const hit = Object.entries(comp.invites || {}).find(([, v]) => v.role === role);
   if (hit) return hit[0];
-  const key = rid(22), v = Object.assign({ role, t: Date.now() }, role === 'cart' ? { team: +team } : {});
+  const key = rid(22), v = { role, t: Date.now() };
   const f = await withTimeout(fb(), 15000); await withTimeout(f.D.set(f.D.ref(f.db, cp('invites/' + key)), v), 15000);
   (comp.invites = comp.invites || {})[key] = v; saveComp();
   return key;
 }
-const linkFor = (key, role, team) => `${location.origin}${location.pathname}?c=${comp.cid}&k=${key}&r=${role}${role === 'cart' ? '&t=' + team : ''}`;
+const linkFor = (key, role) => `${location.origin}${location.pathname}?c=${comp.cid}&k=${key}&r=${role}`;
+
+/* ---------- this phone's role, and a short notice when it changes ---------- */
+const roleKind = () => !comp ? 'solo' : comp.role === 'org' ? 'org' : compLeadTeam() ? 'lead' : 'player';
+const roleLabel = () => { const k = roleKind(); return k === 'lead' ? `${compLeadTeam()}組の代表` : ROLE_NAME[k] || ''; };
+function roleNotice() {
+  if (!comp || !comp.meta || !comp.roster) return;
+  const k = roleKind(), t = myTeam(), now = `${k}:${t || ''}`, was = comp.seen;
+  if (now === was) return;
+  comp.seen = now; saveComp();
+  if (!was) return;  // the first look after joining: nothing has changed yet
+  const [wk, wt] = was.split(':');
+  const msg = k === 'org' ? '主催者になりました'
+    : k === 'lead' ? `${t}組のカート代表になりました`
+    : wk === 'lead' ? `カート代表から外れました${t && String(t) !== wt ? `（${t}組に移りました）` : ''}`
+    : t && wt && String(t) !== wt ? `${t}組に移りました` : '';
+  if (msg) toast(msg);
+}
 
 /* ---------- opening a link ---------- */
 (() => {
   const q = new URLSearchParams(location.search), c = q.get('c');
   if (!c) return;
-  const k = q.get('k') || '', r = q.get('r'), t = +q.get('t') || null;
+  const k = q.get('k') || '', r = q.get('r');
   history.replaceState(null, '', location.pathname + location.hash);
-  if (!/^[A-Za-z0-9]{10}$/.test(c) || !/^[A-Za-z0-9]{22}$/.test(k) || !ROLE_NAME[r] || (r === 'cart' && !t)) { toast('このリンクは正しくありません'); return; }
+  if (!/^[A-Za-z0-9]{10}$/.test(c) || !/^[A-Za-z0-9]{22}$/.test(k) || !ROLE_NAME[r]) { toast('このリンクは正しくありません'); return; }
   if (comp && comp.cid === c && comp.key === k) return;  // already in with this link
-  const go = () => compJoin(c, k, r, t)
-    .then(() => toast(`コンペに${ROLE_NAME[r]}${r === 'cart' ? `（${t}組）` : ''}として参加しました`))
+  const go = () => compJoin(c, k, r)
+    .then(() => toast(r === 'org' ? 'コンペに主催者として参加しました' : 'コンペに参加しました'))
     .catch(e => toast(denied(e) ? 'このリンクは使えません（期限切れか、無効になっています）' : '接続できませんでした。電波のある所でもう一度リンクを開いてください'));
   if (comp) ask('別のコンペに参加しますか？', `今のコンペ「${(comp.meta && comp.meta.name) || ''}」からは抜けます`, '参加する', () => { compLeave(); go(); });
   else go();

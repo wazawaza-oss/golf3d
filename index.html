@@ -158,21 +158,22 @@
       <div class="mrow field"><span class="mtx">コンペ名</span><input type="text" id="cpNameE" maxlength="40"></div>
       <div class="mrow field"><span class="mtx">日付</span><input type="date" id="cpDateE"></div>
       <button class="mrow" id="cpNine"><span class="mtx">使うナイン<small>このコースとパーを全員に配ります</small></span><span class="mval" id="cpNineV"></span><span class="chev">›</span></button>
-      <button class="mrow" id="cpRoster"><span class="mtx">参加者と組</span><span class="mval" id="cpRosterV"></span><span class="chev">›</span></button>
-      <button class="mrow" id="cpLinks"><span class="mtx">リンクを送る<small>参加者用・カート代表用・主催者の引き継ぎ用</small></span><span class="chev">›</span></button>
+      <button class="mrow" id="cpRoster"><span class="mtx">参加者と組<small>組分けとカート代表もここで決めます</small></span><span class="mval" id="cpRosterV"></span><span class="chev">›</span></button>
+      <button class="mrow" id="cpLinks"><span class="mtx">リンクを送る<small>参加者用・主催者の引き継ぎ用</small></span><span class="chev">›</span></button>
+      <button class="mrow" id="cpMyName"><span class="mtx">自分もプレーする<small>名簿から自分の名前を選ぶ（選ばなくてもよい）</small></span><span class="mval" id="cpMyNameV"></span><span class="chev">›</span></button>
     </div>
     <p class="grp-f" id="cpNote"></p>
     <div class="grp wipe"><button class="mrow danger" id="cpLeave">このコンペから抜ける</button></div>
   </div>
 
   <div class="mbody" id="mRoster" hidden>
-    <p class="grp-f">名前と組を入れます。参加者がリンクから名前を選ぶと「選択済み」になります。選び間違えたときは「解除」で戻せます。</p>
+    <p class="grp-f">名前・組・カート代表を決めます。代表は1組に1人で、自分の組の全員のスコアを入力できます。ラウンドの途中でも変えられ、すぐに全員に届きます。「未参加」はまだ名前を選んでいない人です。</p>
     <div id="rosterList"></div>
-    <div class="grp mgap"><button class="mrow center" id="rosterAdd">＋ 参加者を追加</button></div>
+    <div class="grp mgap"><button class="mrow center" id="rosterAdd">＋ 組を追加</button></div>
   </div>
 
   <div class="mbody" id="mLinks" hidden>
-    <p class="grp-f">リンクを受け取った人は、開くだけで参加できます。役割はリンクごとに決まっています。カート代表用は組ごとに別のリンクです。</p>
+    <p class="grp-f">参加者には全員同じ「参加者用」を送ります。開いた人は名簿から自分の名前を選び、組とカート代表は名簿の設定で決まります。</p>
     <div id="linkList"></div>
   </div>
 
