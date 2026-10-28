@@ -45,8 +45,8 @@ function fb() {
 }
 const denied = e => /permission/i.test(String(e && (e.code || e.message)));
 
-// this phone's copy of the competition (kept for offline use): { cid, uid, key, role, team, player, meta, course,
-// roster, scores, pins, taken, invites, outbox (entries not yet sent), dock (whose score the dock enters) }
+// this phone's copy of the competition (kept for offline use): { cid, uid, key, role, player, meta, course,
+// roster, leads, scores, pins, taken, invites, outbox (entries not yet sent), dock (whose score the dock enters), seen (last role, for the notice) }
 let comp = loadJSON('golf3d.comp');
 if (!comp || !comp.cid || !ROLE_NAME[comp.role]) comp = null;
 let compLive = false, compOff = null;

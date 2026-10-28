@@ -86,7 +86,7 @@ function goHole(n) {
 }
 $('prevHole').onclick = () => goHole(holeNo() - 1);
 $('nextHole').onclick = () => goHole(holeNo() + 1);
-$('bannerCancel').onclick = () => { if (S.mode && S.mode.startsWith('setup')) closeSetup(); S.mode = null; refresh(); camBack(); };
+$('bannerCancel').onclick = () => { S.mode = null; refresh(); camBack(); };  // pin / test position (setup has its own controls)
 
 $('b3d').onclick = () => { if (!mapReady) return; set3D(!S.is3D); refresh(); };
 $('bView').onclick = () => {

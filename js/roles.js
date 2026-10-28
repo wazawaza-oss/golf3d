@@ -20,7 +20,8 @@ function me() {
   const id = kind === 'player' ? comp.player : comp.dock || comp.player;
   return mine.find(p => p.id === id) || (kind === 'player' ? null : mine.find(p => p.id === comp.player) || mine[0]) || null;
 }
-const myId = () => { const p = me(); return p ? p.id : null; };  // highlighted row in the ranking
+// the highlighted row in the ranking: your own name (in a competition only once you picked one; not the dock's person)
+const myId = () => { if (comp) return comp.player || null; const p = me(); return p ? p.id : null; };
 // lead / organizer: tapping the name in the dock moves to the next person they may enter for
 function dockNext() {
   if (!comp || roleKind() === 'player') return;

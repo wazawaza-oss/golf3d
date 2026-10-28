@@ -67,6 +67,8 @@ let rkSel = null;  // the scoreboard cell being changed: { pid, i }
 
 /* ================= scorecard image (JPEG) ================= */
 // a simple card to keep or send: course name, date, everyone's front / back nine, and the ranking
+// the card's title: in a competition the organizer's club, otherwise this phone's course
+const cardName = () => (comp && comp.course && comp.course.club) || S.course.name;
 function scoreCardCanvas() {
   const players = allPlayers(), rows = rankedRows(), holes = playHoles();
   const W = 1080, M = 40, NAME = 190, CELL = 80, SUM = 90, HH = 44, RH = 50, GAP = 34;
@@ -83,7 +85,7 @@ function scoreCardCanvas() {
   const hline = (y, x1 = M, x2 = W - M) => { g.fillStyle = '#c9d0c4'; g.fillRect(x1, y, x2 - x1, 1.5); };
   g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
   // header
-  text(fit(S.course.name || 'コース', W - 2 * M, 44, 900), M, M + 26, 44, 900, '#0a1322', 'left');
+  text(fit(cardName() || 'コース', W - 2 * M, 44, 900), M, M + 26, 44, 900, '#0a1322', 'left');
   text(new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }), M, M + 80, 26, 700, '#36414d', 'left');
   let y = M + 130;
   const cx = k => M + NAME + k * CELL;  // left edge of hole column k (0 .. NINE-1); k = NINE is the sum column
@@ -143,7 +145,7 @@ async function saveScoreCard() {
   const url = scoreCardCanvas().toDataURL('image/jpeg', 0.92), bin = atob(url.split(',')[1]);
   const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   const d = new Date(), ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-  const name = `${(S.course.name || 'score').replace(/[\/:*?"<>|\s]+/g, '_')}_${ymd}.jpg`;
+  const name = `${(cardName() || 'score').replace(/[\/:*?"<>|\s]+/g, '_')}_${ymd}.jpg`;
   const file = new File([bytes], name, { type: 'image/jpeg' });
   // on a phone the share sheet offers 「画像を保存」 (Photos); elsewhere it is a normal download
   if (matchMedia('(pointer: coarse)').matches && navigator.canShare && navigator.canShare({ files: [file] })) {
