@@ -1,7 +1,7 @@
 /* golf3d — roles: who may do what, and showing only what fits the role
    solo (no competition: everything, as before) · org (organizer: everything, everyone's scores)
    lead (the player the organizer made their team's lead: scores of their own team) · player (their own chosen name only)
-   roleKind() / roleLabel() live in js/comp.js, next to the roster they are read from.
+   roleKind() / roleLabel() live in js/roster.js, next to the roster they are read from.
    The database rules enforce the same limits on the server; these only shape the screens.
    Plain scripts loaded in order from index.html (no build step); they share top-level names. */
 "use strict";

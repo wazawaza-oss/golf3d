@@ -2,11 +2,11 @@
    Bump VERSION with every release: the new worker stores the new files and deletes the old set, so no stale mix remains.
    Map tiles live in their own cache (golf3d-tiles-v1, filled by 端末に保存) and are never touched here;
    GSI tiles and Firebase go straight to the network. */
-const VERSION = '2026-10-28.7';
+const VERSION = '2026-10-28.8';
 const APP = 'golf3d-app-' + VERSION;
 const FILES = [
-  './', 'index.html', 'css/app.css',
-  'js/core.js', 'js/map.js', 'js/settings.js', 'js/course.js', 'js/setup.js', 'js/score.js', 'js/comp.js', 'js/roles.js', 'js/compui.js', 'js/offline.js', 'js/main.js',
+  './', 'index.html', 'css/style.css',
+  'js/state.js', 'js/geo.js', 'js/tiles.js', 'js/map.js', 'js/hud.js', 'js/interactions.js', 'js/menu.js', 'js/course.js', 'js/setup.js', 'js/score.js', 'js/rank.js', 'js/pages.js', 'js/share.js', 'js/roster.js', 'js/roles.js', 'js/compui.js', 'js/offline.js', 'js/main.js',
   'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
   'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js',
   'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css',

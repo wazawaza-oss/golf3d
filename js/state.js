@@ -1,4 +1,4 @@
-/* golf3d — core: shared helpers, geo math and app state
+/* golf3d — state: shared state S, saving / loading, the course model, and small helpers ($, el, toast)
    Plain scripts loaded in order from index.html (no build step); they share top-level names. */
 "use strict";
 
@@ -7,24 +7,6 @@ const GSI = 'https://cyberjapandata.gsi.go.jp/xyz/';
 const CACHE_NAME = 'golf3d-tiles-v1';
 const YD = 0.9144;
 const DEFAULT_CENTER = [139.101508, 35.223713];
-
-/* ================= geo math ================= */
-const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
-function distM(a, b) {
-  const R = 6371008.8, p1 = rad(a[1]), p2 = rad(b[1]), dp = p2 - p1, dl = rad(b[0] - a[0]);
-  const h = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
-}
-const yards = (a, b) => distM(a, b) / YD;
-function bearing(a, b) {
-  const p1 = rad(a[1]), p2 = rad(b[1]), dl = rad(b[0] - a[0]);
-  const y = Math.sin(dl) * Math.cos(p2), x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
-  return (deg(Math.atan2(y, x)) + 360) % 360;
-}
-const lerpLL = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
-const lng2x = (lng, z) => (lng + 180) / 360 * 2 ** z;
-const lat2y = (lat, z) => { const r = rad(lat); return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z; };
-
 
 /* ================= course: golf club → nines → holes 1–9 =================
    course = { v: 2, name, center, nines: [{ id, name, holes: [{ n: 1..9, par, tee, green, src: 'manual'|'osm'|'ai', ok }] }] }
@@ -82,7 +64,7 @@ function fixRound() {
 }
 fixRound();
 const localNines = () => [nineOf(S.round.front), nineOf(S.round.back)];  // this phone's own course
-// in a competition everyone plays the organizer's two nines (compNines, js/comp.js); otherwise this phone's
+// in a competition everyone plays the organizer's two nines (compNines, js/share.js); otherwise this phone's
 const playNines = () => compNines() || localNines();
 const playHoles = () => playNines().flatMap(x => x.holes);  // holes 1–18 of this round (the course's own hole objects)
 const allHoles = () => S.course.nines.flatMap(x => x.holes);
@@ -98,3 +80,7 @@ const saveRound = () => saveJSON('golf3d.round', S.round);
 const savePrefs = () => { S.prefs.n = N; saveJSON('golf3d.prefs', S.prefs); };
 const registered = h => !!(h.tee && h.green);
 
+/* small shared helpers: a short message at the top of the screen; making an element */
+let toastT = null;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };

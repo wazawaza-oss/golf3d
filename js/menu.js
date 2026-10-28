@@ -1,4 +1,4 @@
-/* golf3d — settings: the settings sheet (grouped list) and its sub-screens
+/* golf3d — menu: the settings sheet (grouped list) and its sub-screens
    Plain scripts loaded in order from index.html (no build step); they share top-level names. */
 "use strict";
 
