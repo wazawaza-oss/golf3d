@@ -3,7 +3,8 @@
 "use strict";
 
 /* settings */
-const openSheet = id => { $('menu').hidden = $('setup').hidden = $('players').hidden = true; $(id).hidden = false; };
+let fromMenu = false;  // the sheet now open was opened from settings: closing it goes back there
+const openSheet = id => { fromMenu = id !== 'menu' && !$('menu').hidden; $('menu').hidden = $('setup').hidden = $('players').hidden = true; $(id).hidden = false; };
 // in-page confirm: ask('question', 'note', 'button', () => { ...done on yes })
 function ask(q, note, yes, onYes) {
   $('askQ').textContent = q; $('askNote').textContent = note; $('askYes').textContent = yes;
@@ -22,11 +23,26 @@ const courseSig = () => JSON.stringify((comp ? playHoles() : allHoles()).map(h =
 const offSaved = () => { const o = loadJSON(OFF_KEY); return !!(o && o.sig === courseSig()); };
 let offState = null;  // { pct } while the map is being saved
 const M_TITLE = { mMain: '設定', mJump: 'コースの切り替え', mNine: 'ナインの選択', mTest: 'テスト用の機能' };
-function mShow(id) {  // the main list, or one of its sub-screens
+const M_RENDER = { mMain: () => renderMenu(), mNine: () => renderNinePick() };  // redraw a screen when coming back to it
+let mStack = ['mMain'];  // the screens passed through to get here; ‹ goes back one
+function mShow(id, replace) {  // the main list, or one of its sub-screens
+  if (id === 'mMain') mStack = ['mMain'];
+  else { const i = mStack.indexOf(id); if (i >= 0) mStack.length = i + 1; else { if (replace && mStack.length > 1) mStack.pop(); mStack.push(id); } }
+  mPaint();
+}
+function mPaint() {
+  const id = mStack[mStack.length - 1], prev = mStack[mStack.length - 2];
   Object.keys(M_TITLE).forEach(x => $(x).hidden = x !== id);
-  $('mBack').hidden = id === 'mMain'; $('menuTitle').textContent = M_TITLE[id];
+  $('mBack').hidden = !prev; $('mBack').textContent = prev ? `‹ ${M_TITLE[prev]}` : '';
+  $('menuTitle').textContent = M_TITLE[id];
   $('menu').scrollTop = 0;
 }
+// open settings at the top, or (keep) back on the screen that opened another sheet
+function openMenu(keep) {
+  if (!keep) mStack = ['mMain'];
+  openSheet('menu'); mStack.forEach(x => M_RENDER[x] && M_RENDER[x]()); mPaint();
+}
+const backToMenu = () => { if (fromMenu) { fromMenu = false; openMenu(true); } };
 function renderMenu() {
   $('cnText').textContent = (comp && comp.course && comp.course.club) || S.course.name || '名前なし';  // in a competition: the organizer's course
   renderCompRow(); applyRoles();
@@ -43,9 +59,9 @@ function renderMenu() {
   $('mvPins').textContent = pins ? `${pins}ホール設定中` : 'なし'; $('pinReset').disabled = !pins;
   $('bElev').setAttribute('aria-checked', !!S.prefs.elev);
 }
-$('bMenu').onclick = () => { mShow('mMain'); renderMenu(); openSheet('menu'); };
+$('bMenu').onclick = () => openMenu();
 $('menuClose').onclick = () => { cnDone(); $('menu').hidden = true; };
-$('mBack').onclick = () => mShow('mMain');
+$('mBack').onclick = () => { mStack.pop(); const id = mStack[mStack.length - 1]; if (M_RENDER[id]) M_RENDER[id](); mPaint(); };
 // course name: pencil turns the name into a text field
 function cnDone() {
   const inp = $('courseName'); if (inp.hidden) return;

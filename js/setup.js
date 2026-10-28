@@ -57,7 +57,7 @@ $('goSetup').onclick = openSetup;
 $('obStart').onclick = () => { $('onboard').hidden = true; openSetup(); };
 $('obLater').onclick = () => $('onboard').hidden = true;
 // the organizer's registrations reach everyone in the competition when the sheet is closed
-$('setupDone').onclick = () => { closeSetup(); refresh(); if (registered(hole())) camera(S.view); if (comp && comp.role === 'org') compPublishCourse().catch(() => {}); };
+$('setupDone').onclick = () => { closeSetup(); refresh(); if (registered(hole())) camera(S.view); if (comp && comp.role === 'org') compPublishCourse().catch(() => {}); backToMenu(); };
 $('sPar').onchange = () => { hole().par = +$('sPar').value; saveCourse(); refresh(); };
 $('sTee').onclick = () => { S.mode = 'setup-tee'; refresh(); if (hole().tee) centerOn(hole().tee); };
 $('sGreen').onclick = () => { S.mode = 'setup-green'; refresh(); if (hole().green) centerOn(hole().green); };

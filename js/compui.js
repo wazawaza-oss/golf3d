@@ -4,6 +4,7 @@
 "use strict";
 
 Object.assign(M_TITLE, { mCompNew: 'コンペを作る', mComp: 'コンペ', mRoster: '参加者と組', mLinks: 'リンクを送る', mPick: '名前を選ぶ' });
+Object.assign(M_RENDER, { mCompNew: () => renderCompNew(), mComp: () => renderComp(), mRoster: () => renderRoster(), mLinks: () => renderLinks(), mPick: () => comp && renderPick() });
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const compEnded = () => comp && comp.meta && comp.meta.expires < Date.now();
 const offlineMsg = '接続できませんでした。電波のある所でもう一度お試しください';
@@ -17,17 +18,20 @@ function renderCompRow() {
 }
 $('goComp').onclick = () => {
   if (comp) { renderComp(); mShow('mComp'); return; }
+  renderCompNew();
   if (!$('cpName').value) $('cpName').value = `${S.course.name || ''}コンペ`.slice(0, 40);
   $('cpDate').value = $('cpDate').value || today();
   mShow('mCompNew');
 };
+const renderCompNew = () => $('cpNewNineV').textContent = localNines().map(x => x.name).join(' → ');
+$('cpNewNine').onclick = () => { renderNinePick(); mShow('mNine'); };
 $('cpCreate').onclick = async () => {
   const name = $('cpName').value.trim();
   if (!name) { toast('コンペ名を入れてください'); $('cpName').focus(); return; }
   $('cpCreate').disabled = true; toast('作成中…');
   try {
     await compCreate(name.slice(0, 40), $('cpDate').value || today());
-    renderMenu(); renderComp(); mShow('mComp'); toast(`「${name}」を作りました。次は参加者と組を入れてください`);
+    renderMenu(); renderComp(); mShow('mComp', true); toast(`「${name}」を作りました。次は参加者と組を入れてください`);
   } catch (e) { toast(offlineMsg); }
   $('cpCreate').disabled = false;
 };
@@ -156,7 +160,7 @@ function renderPick() {
   });
   if (!rosterList().length) box.appendChild(el('p', 'grp-f', '主催者がまだ名簿を作っていません。少し待ってから開き直してください。'));
 }
-function openPick() { openSheet('menu'); renderMenu(); renderPick(); mShow('mPick'); }
+function openPick() { openSheet('menu'); renderMenu(); renderPick(); mShow('mMain'); mShow('mPick'); }
 
 // keep whichever competition screen is open in step with the server
 function renderCompScreens() {

@@ -101,7 +101,7 @@ function renderPlayers() {
   $('plAdd').disabled = S.score.players.length >= 8;
 }
 $('goPlayers').onclick = () => { renderPlayers(); openSheet('players'); };
-$('plClose').onclick = () => $('players').hidden = true;
+$('plClose').onclick = () => { $('players').hidden = true; backToMenu(); };
 $('plAdd').onclick = () => {
   S.score.players.push({ id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: `参加者${S.score.players.length + 1}` });
   saveScore(); renderPlayers();
@@ -273,7 +273,7 @@ function goPage(name) {
   if (name === 'map') renderDock();
   S.page = name; pageView(PAGE_POS[name]);
 }
-const canSwipe = () => S.page !== 'map' || (!S.mode && $('menu').hidden && $('setup').hidden && $('players').hidden && $('share').hidden && $('onboard').hidden);
+const canSwipe = () => S.page !== 'map' || (!S.mode && $('menu').hidden && $('setup').hidden && $('players').hidden && $('onboard').hidden);
 let sw = null, swallowClick = false;
 function swipeStart(e) {
   if ((e.pointerType === 'mouse' && e.button) || !canSwipe() || e.target.closest('input,select')) return;
