@@ -269,3 +269,22 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 .nines button[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:-1px}
 .nines button.add{background:#fff;border:1.5px dashed #9aa494;color:#36414d}
 #menu .mrow .pick{width:22px;text-align:center;font-size:18px;font-weight:900;color:#1f9d48}  /* ✓ on the chosen nine */
+/* competition: role label under the distance panel */
+.rolebadge{position:fixed;top:calc(var(--hudb,190px) + 6px);left:50%;transform:translateX(-50%);z-index:5;max-width:calc(100% - 150px);padding:3px 10px;border-radius:999px;background:rgba(22,89,47,.82);color:#fff;font-size:11.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.rolebadge.off{background:rgba(90,100,112,.85)}
+.a2hs{top:calc(var(--hudb,190px) + 34px)}  /* below the role label */
+/* competition screens in settings */
+#menu .mrow.field .mtx{flex:none;width:84px}
+#menu .mrow select{flex:none;width:76px;font:inherit;font-size:15px;font-weight:700;border:1px solid #d9dce1;border-radius:9px;padding:6px 8px;background:#fff;color:var(--ink)}
+#menu .rrow input{font-weight:800}
+#menu .rrow .tag{flex:none;padding:6px 8px;border-radius:8px;background:#fff3c4;font-size:11.5px;font-weight:800;color:#7a5a00}
+#menu .rrow .x{flex:none;width:34px;height:34px;border-radius:9px;background:#f3e9e9;color:#b3261e;font-weight:900}
+#menu .mrow:disabled .mtx{color:#8a909a}
+#menu .lbtns{gap:8px;flex-wrap:wrap}
+#menu .lbtns button{flex:1;min-width:88px;height:42px;border-radius:10px;background:#eef3fa;color:#0b5cad;font-size:14px;font-weight:900}
+#menu .lnote{margin:0;padding:0 14px 10px;font-size:12px;font-weight:600;color:#3a4350;line-height:1.45}
+.qrcard #qrBox{width:min(240px,70vw);margin:12px auto 4px}
+.qrcard #qrBox svg{display:block;width:100%;height:auto}
+.mcbtn.one{grid-template-columns:1fr}
+.dkstep .dv.who{cursor:pointer}
+#menu .rrow input{min-width:0}

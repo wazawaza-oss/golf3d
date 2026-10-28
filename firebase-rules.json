@@ -1,32 +1,112 @@
 {
   "rules": {
-    "rooms": {
-      "$code": {
-        ".read": "auth != null && $code.matches(/^[A-Z2-9]{5}$/)",
-        "created": {
-          ".write": "auth != null && !data.exists()",
-          ".validate": "newData.isNumber() && $code.matches(/^[A-Z2-9]{5}$/)"
+    "expiry": {
+      ".read": "auth != null",
+      "$cid": {
+        ".write": "auth != null && ((!data.exists() && newData.isNumber() && newData.parent().parent().child('comps/' + $cid + '/meta/owner').val() === auth.uid) || (data.exists() && !newData.exists() && data.val() < now))"
+      }
+    },
+    "comps": {
+      "$cid": {
+        ".write": "auth != null && data.exists() && !newData.exists() && data.child('meta/expires').val() < now",
+        "meta": {
+          ".read": "auth != null && root.child('comps/' + $cid + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && ((!data.exists() && $cid.matches(/^[A-Za-z0-9]{10}$/) && newData.child('owner').val() === auth.uid) || (root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'org' && data.child('expires').val() > now))",
+          ".validate": "newData.hasChildren(['name', 'date', 'owner', 'created', 'expires']) && newData.child('expires').val() <= newData.child('created').val() + 1209600000 && (data.exists() ? newData.child('owner').val() === data.child('owner').val() && newData.child('created').val() === data.child('created').val() && newData.child('expires').val() === data.child('expires').val() : newData.child('created').val() <= now + 60000)",
+          "name": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40" },
+          "date": { ".validate": "newData.isString() && newData.val().length <= 10" },
+          "owner": { ".validate": "newData.isString()" },
+          "created": { ".validate": "newData.isNumber()" },
+          "expires": { ".validate": "newData.isNumber()" },
+          "$other": { ".validate": false }
         },
-        "members": {
-          "$uid": {
-            ".write": "auth != null && auth.uid === $uid && root.child('rooms/' + $code + '/created').exists()",
-            ".validate": "newData.hasChildren(['players', 't'])",
-            "players": {
-              "$i": {
-                ".validate": "$i.matches(/^[0-7]$/) && newData.hasChildren(['id', 'name', 'strokes'])",
-                "id": { ".validate": "newData.isString() && newData.val().length <= 40" },
-                "name": { ".validate": "newData.isString() && newData.val().length <= 12" },
-                "strokes": {
-                  "$h": { ".validate": "$h.matches(/^([0-9]|1[0-7])$/) && newData.isNumber() && newData.val() >= 0 && newData.val() <= 20" }
-                },
-                "$other": { ".validate": false }
-              }
-            },
+        "course": {
+          ".read": "auth != null && root.child('comps/' + $cid + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'org' && root.child('comps/' + $cid + '/meta/expires').val() > now",
+          ".validate": "newData.hasChildren(['club', 'nines'])",
+          "club": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "nines": {
+            "$k": {
+              ".validate": "$k.matches(/^[01]$/) && newData.hasChildren(['name', 'holes'])",
+              "name": { ".validate": "newData.isString() && newData.val().length <= 12" },
+              "holes": {
+                "$i": {
+                  ".validate": "$i.matches(/^[0-8]$/) && newData.hasChildren(['par'])",
+                  "par": { ".validate": "newData.isNumber() && newData.val() >= 3 && newData.val() <= 6" },
+                  "tee": { "$j": { ".validate": "$j.matches(/^[01]$/) && newData.isNumber()" } },
+                  "green": { "$j": { ".validate": "$j.matches(/^[01]$/) && newData.isNumber()" } },
+                  "$other": { ".validate": false }
+                }
+              },
+              "$other": { ".validate": false }
+            }
+          },
+          "$other": { ".validate": false }
+        },
+        "roster": {
+          ".read": "auth != null && root.child('comps/' + $cid + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'org' && root.child('comps/' + $cid + '/meta/expires').val() > now",
+          "$pid": {
+            ".validate": "$pid.matches(/^p[A-Za-z0-9]{8}$/) && newData.hasChildren(['name', 'team'])",
+            "name": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12" },
+            "team": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 50" },
+            "$other": { ".validate": false }
+          }
+        },
+        "pins": {
+          ".read": "auth != null && root.child('comps/' + $cid + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'org' && root.child('comps/' + $cid + '/meta/expires').val() > now",
+          "$h": {
+            ".validate": "$h.matches(/^h(0[1-9]|1[0-8])$/) && newData.hasChildren(['0', '1'])",
+            "$j": { ".validate": "$j.matches(/^[01]$/) && newData.isNumber()" }
+          }
+        },
+        "invites": {
+          ".read": "auth != null && root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'org'",
+          ".write": "auth != null && root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'org' && root.child('comps/' + $cid + '/meta/expires').val() > now",
+          "$key": {
+            ".validate": "$key.matches(/^[A-Za-z0-9]{22}$/) && newData.hasChildren(['role', 't']) && (newData.child('role').val() !== 'cart' || newData.hasChild('team'))",
+            "role": { ".validate": "newData.val() === 'org' || newData.val() === 'cart' || newData.val() === 'player'" },
+            "team": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 50" },
             "t": { ".validate": "newData.isNumber()" },
             "$other": { ".validate": false }
           }
         },
-        "$other": { ".validate": false }
+        "members": {
+          ".read": "auth != null && root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'org'",
+          "$uid": {
+            ".read": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && (root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'org' || (auth.uid === $uid && newData.exists() && ((newData.child('role').val() === 'org' && newData.child('key').val() === 'owner' && (root.child('comps/' + $cid + '/meta/owner').val() === auth.uid || newData.parent().parent().child('meta/owner').val() === auth.uid)) || (root.child('comps/' + $cid + '/meta/expires').val() > now && root.child('comps/' + $cid + '/invites/' + newData.child('key').val() + '/role').val() === newData.child('role').val() && (newData.child('role').val() !== 'cart' || root.child('comps/' + $cid + '/invites/' + newData.child('key').val() + '/team').val() === newData.child('team').val())))))",
+            ".validate": "newData.hasChildren(['role', 'key', 't'])",
+            "role": { ".validate": "newData.val() === 'org' || newData.val() === 'cart' || newData.val() === 'player'" },
+            "key": { ".validate": "newData.isString() && newData.val().length <= 22" },
+            "team": { ".validate": "newData.isNumber()" },
+            "t": { ".validate": "newData.isNumber()" },
+            "player": { ".validate": "newData.isString() && newData.parent().parent().parent().child('taken/' + newData.val()).val() === $uid" },
+            "$other": { ".validate": false }
+          }
+        },
+        "taken": {
+          ".read": "auth != null && root.child('comps/' + $cid + '/members/' + auth.uid).exists()",
+          "$pid": {
+            ".write": "auth != null && (root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'org' || (newData.val() === auth.uid && (!data.exists() || data.val() === auth.uid) && root.child('comps/' + $cid + '/members/' + auth.uid).exists() && root.child('comps/' + $cid + '/roster/' + $pid).exists() && root.child('comps/' + $cid + '/meta/expires').val() > now) || (data.val() === auth.uid && !newData.exists()))",
+            ".validate": "newData.isString()"
+          }
+        },
+        "scores": {
+          ".read": "auth != null && root.child('comps/' + $cid + '/members/' + auth.uid).exists()",
+          ".write": "auth != null && root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'org'",
+          "$pid": {
+            "$h": {
+              ".write": "auth != null && root.child('comps/' + $cid + '/meta/expires').val() > now && root.child('comps/' + $cid + '/roster/' + $pid).exists() && ((root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'cart' && root.child('comps/' + $cid + '/roster/' + $pid + '/team').val() === root.child('comps/' + $cid + '/members/' + auth.uid + '/team').val()) || (root.child('comps/' + $cid + '/members/' + auth.uid + '/player').val() === $pid && root.child('comps/' + $cid + '/taken/' + $pid).val() === auth.uid))",
+              ".validate": "$h.matches(/^h(0[1-9]|1[0-8])$/) && newData.hasChildren(['v', 'by', 't'])",
+              "v": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 20" },
+              "by": { ".validate": "newData.val() === auth.uid" },
+              "t": { ".validate": "newData.isNumber() && newData.val() <= now + 300000" },
+              "$other": { ".validate": false }
+            }
+          }
+        }
       }
     }
   }

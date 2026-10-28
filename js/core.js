@@ -81,14 +81,17 @@ function fixRound() {
   if (!ids.includes(S.round.back)) S.round.back = ids.find(i => i !== S.round.front) || ids[0];
 }
 fixRound();
-const playNines = () => [nineOf(S.round.front), nineOf(S.round.back)];
+const localNines = () => [nineOf(S.round.front), nineOf(S.round.back)];  // this phone's own course
+// in a competition everyone plays the organizer's two nines (compNines, js/comp.js); otherwise this phone's
+const playNines = () => compNines() || localNines();
 const playHoles = () => playNines().flatMap(x => x.holes);  // holes 1–18 of this round (the course's own hole objects)
 const allHoles = () => S.course.nines.flatMap(x => x.holes);
 const halves = () => playNines().map((x, k) => ({ name: x.name, from: k * NINE }));  // score-card blocks: front, back
 // while the setup sheet is open, "the hole" is the one being registered (any nine), not the round's hole N
 const inSetup = () => !!S.su && !$('setup').hidden;
 const hole = () => inSetup() ? nineOf(S.su.nine).holes[S.su.n - 1] : playHoles()[N - 1];
-const pinLL = () => (!inSetup() && S.round.pins[N]) || hole().green;
+// a pin you placed yourself, else the one the organizer handed out, else the green's centre
+const pinLL = () => (!inSetup() && (S.round.pins[N] || compPin(N))) || hole().green;
 const holeNo = () => inSetup() ? S.su.n : N;  // the number shown in the panel
 const saveCourse = () => saveJSON('golf3d.course', S.course);
 const saveRound = () => saveJSON('golf3d.round', S.round);

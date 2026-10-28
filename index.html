@@ -31,6 +31,7 @@
   </div>
   <div class="sub" id="dSub"></div>
 </div>
+<div class="rolebadge" id="roleBadge" hidden></div>
 <div class="a2hs" id="a2hs" role="note" hidden>
   <p><b>ホーム画面に追加すると、電波がなくても開けて、データも消えにくくなります。</b><span>Safari の共有ボタン → 「ホーム画面に追加」</span></p>
   <button id="a2hsClose" aria-label="この案内を閉じる">✕</button>
@@ -72,18 +73,22 @@
       <div class="mcourse">
         <span id="cnText" class="cn"></span>
         <input type="text" id="courseName" maxlength="40" aria-label="コース名" hidden>
-        <button class="cnedit" id="cnEdit" aria-label="コース名を変更"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button>
+        <button class="cnedit" id="cnEdit" data-show="solo org" aria-label="コース名を変更"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button>
       </div>
-      <button class="mrow" id="ckSetup"><span class="ck" id="ckSetupMark"></span><span class="mtx">コース登録</span><span class="mval" id="ckSetupVal"></span><span class="chev">›</span></button>
+      <button class="mrow" id="ckSetup" data-show="solo org"><span class="ck" id="ckSetupMark"></span><span class="mtx">コース登録</span><span class="mval" id="ckSetupVal"></span><span class="chev">›</span></button>
       <button class="mrow" id="ckOff"><span class="ck" id="ckOffMark"></span><span class="mtx">電波なしで使う準備</span><span class="mval" id="ckOffVal"></span><span class="chev">›</span></button>
     </div>
     <p class="grp-f">ラウンド前にこの2つがそろっていれば準備完了です。</p>
 
+    <div class="grp-t">コンペ</div>
+    <div class="grp">
+      <button class="mrow" id="goComp"><span class="mic" style="background:#b8860b"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></svg></span><span class="mtx" id="cpRowT">コンペを作る<small>参加者にリンクを送って、全員のスコアを集めます</small></span><span class="mval" id="cpRowV"></span><span class="chev">›</span></button>
+    </div>
+
     <div class="grp-t">今日のラウンド</div>
     <div class="grp">
-      <button class="mrow" id="goNine"><span class="mic" style="background:#16592f"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V3"/><path d="M6 4l12 4.5L6 13"/></svg></span><span class="mtx">前半・後半のナイン<small>このラウンドで回る2つ</small></span><span class="mval" id="mvNine"></span><span class="chev">›</span></button>
-      <button class="mrow" id="goPlayers"><span class="mic" style="background:#2f6fd1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.5c2.6.4 4.5 2.4 4.5 5.5"/></svg></span><span class="mtx">参加者とスコア</span><span class="mval" id="mvPlayers"></span><span class="chev">›</span></button>
-      <button class="mrow" id="goShare"><span class="mic" style="background:#1f9d48"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" aria-hidden="true"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/></svg></span><span class="mtx">スコアを共有</span><span class="mval" id="mvShare"></span><span class="chev">›</span></button>
+      <button class="mrow" id="goNine" data-show="solo org"><span class="mic" style="background:#16592f"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V3"/><path d="M6 4l12 4.5L6 13"/></svg></span><span class="mtx">前半・後半のナイン<small>このラウンドで回る2つ</small></span><span class="mval" id="mvNine"></span><span class="chev">›</span></button>
+      <button class="mrow" id="goPlayers" data-show="solo"><span class="mic" style="background:#2f6fd1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.5c2.6.4 4.5 2.4 4.5 5.5"/></svg></span><span class="mtx">参加者とスコア</span><span class="mval" id="mvPlayers"></span><span class="chev">›</span></button>
       <button class="mrow" id="pinReset"><span class="mic" style="background:#d63c8e"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v5h5"/></svg></span><span class="mtx">ピン位置をリセット</span><span class="mval" id="mvPins"></span></button>
       <button class="mrow" id="saveCard"><span class="mic" style="background:#0e8a8a"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10M15 10v10"/></svg></span><span class="mtx">スコア表をJPEGで保存<small>コース名・日付・全員のスコアを1枚の画像に</small></span><span class="chev">›</span></button>
     </div>
@@ -95,24 +100,24 @@
 
     <div class="grp-t">コース</div>
     <div class="grp">
-      <button class="mrow" id="goSetup"><span class="mic" style="background:#1f9d48"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V3"/><path d="M6 4l12 4.5L6 13"/></svg></span><span class="mtx">ティー・グリーンを登録</span><span class="chev">›</span></button>
+      <button class="mrow" id="goSetup" data-show="solo org"><span class="mic" style="background:#1f9d48"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V3"/><path d="M6 4l12 4.5L6 13"/></svg></span><span class="mtx">ティー・グリーンを登録</span><span class="chev">›</span></button>
       <button class="mrow" id="offSave"><span class="mic" style="background:#2f6fd1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M12 6v8M9 11l3 3 3-3"/></svg></span><span class="mtx">端末に保存<small id="offInfo">電波がなくても地図が見られる</small></span><span class="mval" id="offVal"></span></button>
-      <button class="mrow" id="goJump"><span class="mic" style="background:#7a4fd6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg></span><span class="mtx">別のコースに切り替え</span><span class="chev">›</span></button>
+      <button class="mrow" id="goJump" data-show="solo org"><span class="mic" style="background:#7a4fd6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg></span><span class="mtx">別のコースに切り替え</span><span class="chev">›</span></button>
     </div>
 
-    <div class="grp-t">バックアップ</div>
-    <div class="grp">
+    <div class="grp-t" data-show="solo org">バックアップ</div>
+    <div class="grp" data-show="solo org">
       <button class="mrow" id="exportBtn"><span class="mic" style="background:#5b6573"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 14v6h14v-6"/></svg></span><span class="mtx">コースデータを書き出す</span><span class="chev">›</span></button>
       <button class="mrow" id="importBtn"><span class="mic" style="background:#5b6573"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 14v6h14v-6"/></svg></span><span class="mtx">コースデータを読み込む</span><span class="chev">›</span></button>
       <input type="file" id="importFile" accept="application/json,.json" hidden>
     </div>
 
-    <div class="grp-t">その他</div>
-    <div class="grp">
+    <div class="grp-t" data-show="solo org">その他</div>
+    <div class="grp" data-show="solo org">
       <button class="mrow" id="goTest"><span class="mic" style="background:#8a8f96"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6M10 3v6L5 19a1.5 1.5 0 0 0 1.3 2h11.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/></svg></span><span class="mtx">テスト用の機能</span><span class="chev">›</span></button>
     </div>
 
-    <div class="grp wipe"><button class="mrow danger" id="wipeBtn">このコースの登録を消す</button></div>
+    <div class="grp wipe" data-show="solo org"><button class="mrow danger" id="wipeBtn">このコースの登録を消す</button></div>
     <p class="grp-f credit">出典：地理院タイル（国土地理院）</p>
   </div>
 
@@ -130,6 +135,51 @@
     <div class="grp" id="nineBack"></div>
   </div>
 
+  <div class="mbody" id="mCompNew" hidden>
+    <p class="grp-f">コンペを作ると、あなたが主催者になります。今の「前半・後半のナイン」のコースとパーが全員に配られます（あとから変えられます）。</p>
+    <div class="grp">
+      <div class="mrow field"><span class="mtx">コンペ名</span><input type="text" id="cpName" maxlength="40" placeholder="例：秋の月例会"></div>
+      <div class="mrow field"><span class="mtx">日付</span><input type="date" id="cpDate"></div>
+    </div>
+    <div class="grp mgap"><button class="mrow center" id="cpCreate">コンペを作る</button></div>
+  </div>
+
+  <div class="mbody" id="mComp" hidden>
+    <div class="grp">
+      <div class="mcourse"><span class="cn" id="cpTitle"></span></div>
+      <div class="mrow"><span class="mtx">日付</span><span class="mval" id="cpDateV"></span></div>
+      <div class="mrow"><span class="mtx">あなたの役割</span><span class="mval" id="cpRoleV"></span></div>
+      <div class="mrow"><span class="mtx">コース</span><span class="mval" id="cpCourseV"></span></div>
+      <div class="mrow"><span class="mtx">接続</span><span class="mval" id="cpLiveV"></span></div>
+    </div>
+    <div class="grp-t" data-show="org">主催者の設定</div>
+    <div class="grp" data-show="org">
+      <div class="mrow field"><span class="mtx">コンペ名</span><input type="text" id="cpNameE" maxlength="40"></div>
+      <div class="mrow field"><span class="mtx">日付</span><input type="date" id="cpDateE"></div>
+      <button class="mrow" id="cpNine"><span class="mtx">使うナイン<small>このコースとパーを全員に配ります</small></span><span class="mval" id="cpNineV"></span><span class="chev">›</span></button>
+      <button class="mrow" id="cpRoster"><span class="mtx">参加者と組</span><span class="mval" id="cpRosterV"></span><span class="chev">›</span></button>
+      <button class="mrow" id="cpLinks"><span class="mtx">リンクを送る<small>参加者用・カート代表用・主催者の引き継ぎ用</small></span><span class="chev">›</span></button>
+    </div>
+    <p class="grp-f" id="cpNote"></p>
+    <div class="grp wipe"><button class="mrow danger" id="cpLeave">このコンペから抜ける</button></div>
+  </div>
+
+  <div class="mbody" id="mRoster" hidden>
+    <p class="grp-f">名前と組を入れます。参加者がリンクから名前を選ぶと「選択済み」になります。選び間違えたときは「解除」で戻せます。</p>
+    <div id="rosterList"></div>
+    <div class="grp mgap"><button class="mrow center" id="rosterAdd">＋ 参加者を追加</button></div>
+  </div>
+
+  <div class="mbody" id="mLinks" hidden>
+    <p class="grp-f">リンクを受け取った人は、開くだけで参加できます。役割はリンクごとに決まっています。カート代表用は組ごとに別のリンクです。</p>
+    <div id="linkList"></div>
+  </div>
+
+  <div class="mbody" id="mPick" hidden>
+    <p class="grp-f">名簿から自分の名前を選んでください。入力できるのは、選んだ名前のスコアだけです（間違えたときは主催者に解除してもらえます）。</p>
+    <div id="pickList"></div>
+  </div>
+
   <div class="mbody" id="mTest" hidden>
     <p class="grp-f">開発・確認用の機能です。普段のラウンドでは使いません。</p>
     <div class="grp">
@@ -139,6 +189,15 @@
 
 </div>
 <!-- in-page confirm (no browser confirm()), used by settings, course import and the setup sheet -->
+<!-- QR code for a link, shown over everything -->
+<div class="mconfirm" id="qr" hidden>
+  <div class="mcard qrcard" role="dialog" aria-labelledby="qrT">
+    <p id="qrT"></p>
+    <div id="qrBox"></div>
+    <small>相手のカメラで読み取ってもらいます</small>
+    <div class="mcbtn one"><button id="qrClose">閉じる</button></div>
+  </div>
+</div>
 <div class="mconfirm" id="ask" hidden>
   <div class="mcard" role="alertdialog" aria-labelledby="askQ">
     <p id="askQ"></p>
@@ -204,29 +263,6 @@
   </div>
 </div>
 
-<div class="sheet" id="share" hidden>
-  <div class="inner">
-    <h2><span>スコアを共有</span><button id="rmClose">閉じる</button></h2>
-    <div id="rmOut" class="inner">
-      <p>同じラウンドに入ると、各自が自分のスマホで入れたスコアが、全員のランキングにすぐ出ます。入らなくても、この端末だけで今までどおり使えます。</p>
-      <div class="row"><input type="text" id="rmName" maxlength="12" placeholder="あなたの名前" aria-label="あなたの名前"></div>
-      <h3>新しく始める（組の1人だけ）</h3>
-      <div class="row"><button class="btn primary" id="rmCreate">ラウンドを作成</button></div>
-      <h3>コードで参加する</h3>
-      <div class="row"><input type="text" id="rmCodeIn" maxlength="5" placeholder="例 K7P3Q" aria-label="ラウンドのコード" autocomplete="off"><button class="btn primary" id="rmJoin">参加</button></div>
-    </div>
-    <div id="rmIn" class="inner" hidden>
-      <p>このコードかリンクを、同じ組の人に送ってください。</p>
-      <div class="rcode" id="rmCode"></div>
-      <div class="row"><button class="btn primary" id="rmShareLink">リンクを送る</button><span class="rstat" id="rmStat"></span></div>
-      <h3>参加している人</h3>
-      <p id="rmMembers"></p>
-      <p>スマホを持っていない人は「参加者とスコア」で追加すると、その人のスコアも全員に届きます（同じ人を2台で追加しないでください）。</p>
-      <div class="row"><button class="btn danger" id="rmLeave">ラウンドから抜ける</button></div>
-    </div>
-    <p id="rmMsg" style="color:#b3261e"></p>
-  </div>
-</div>
 
 <section class="page" id="pRank" aria-label="ランキング">
   <div class="inner">
@@ -254,7 +290,9 @@
 <script src="js/course.js"></script>
 <script src="js/setup.js"></script>
 <script src="js/score.js"></script>
-<script src="js/share.js"></script>
+<script src="js/comp.js"></script>
+<script src="js/roles.js"></script>
+<script src="js/compui.js"></script>
 <script src="js/offline.js"></script>
 <script src="js/main.js"></script>
 </body>

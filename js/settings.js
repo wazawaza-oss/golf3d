@@ -3,7 +3,7 @@
 "use strict";
 
 /* settings */
-const openSheet = id => { $('menu').hidden = $('setup').hidden = $('players').hidden = $('share').hidden = true; $(id).hidden = false; };
+const openSheet = id => { $('menu').hidden = $('setup').hidden = $('players').hidden = true; $(id).hidden = false; };
 // in-page confirm: ask('question', 'note', 'button', () => { ...done on yes })
 function ask(q, note, yes, onYes) {
   $('askQ').textContent = q; $('askNote').textContent = note; $('askYes').textContent = yes;
@@ -18,7 +18,7 @@ function clearRound() {
   S.score.strokes = {}; saveScore();
 }
 const OFF_KEY = 'golf3d.offline';  // { sig } of the course whose map was last saved to this phone
-const courseSig = () => JSON.stringify(allHoles().map(h => [h.tee, h.green]));
+const courseSig = () => JSON.stringify((comp ? playHoles() : allHoles()).map(h => [h.tee, h.green]));
 const offSaved = () => { const o = loadJSON(OFF_KEY); return !!(o && o.sig === courseSig()); };
 let offState = null;  // { pct } while the map is being saved
 const M_TITLE = { mMain: '設定', mJump: 'コースの切り替え', mNine: 'ナインの選択', mTest: 'テスト用の機能' };
@@ -28,7 +28,8 @@ function mShow(id) {  // the main list, or one of its sub-screens
   $('menu').scrollTop = 0;
 }
 function renderMenu() {
-  $('cnText').textContent = S.course.name || '名前なし';
+  $('cnText').textContent = (comp && comp.course && comp.course.club) || S.course.name || '名前なし';  // in a competition: the organizer's course
+  renderCompRow(); applyRoles();
   const all = allHoles(), n = all.filter(registered).length;  // every nine of the course
   $('ckSetupMark').className = 'ck ' + (n === all.length ? 'ok' : 'no'); $('ckSetupVal').textContent = `${n} / ${all.length}ホール`;
   const saved = offSaved() && !offState, busy = offState && `保存中 ${offState.pct}%`;
@@ -36,10 +37,9 @@ function renderMenu() {
   $('ckOffVal').textContent = busy || (saved ? '保存済み' : '保存する');
   $('offVal').textContent = busy || (saved ? '保存済み' : '未保存');
   $('offInfo').textContent = `約${Math.max(1, Math.round(offTiles().list.length * 25 / 1024))}MB・電波がなくても地図が見られる`;
-  $('mvNine').textContent = playNines().map(x => x.name).join(' → ');
+  $('mvNine').textContent = localNines().map(x => x.name).join(' → ');
   $('mvPlayers').textContent = `${allPlayers().length}人`;
-  $('mvShare').textContent = room ? room.code : '';
-  const pins = Object.keys(S.round.pins).length;
+  const pins = new Set(Object.keys(S.round.pins).map(Number).concat(comp && comp.role === 'org' ? Object.keys(comp.pins || {}).map(k => +k.slice(1)) : [])).size;  // yours + handed out
   $('mvPins').textContent = pins ? `${pins}ホール設定中` : 'なし'; $('pinReset').disabled = !pins;
   $('bElev').setAttribute('aria-checked', !!S.prefs.elev);
 }
@@ -79,13 +79,17 @@ function renderNinePick() {
 }
 // changing a nine re-numbers the round, so entered scores and pins would no longer fit: ask first
 function setNine(side, id) {
-  const apply = () => {
-    if (roundHasData()) clearRound();
+  // in a competition the organizer's nines are everyone's course: changing one clears everyone's scores and pins
+  const org = comp && comp.role === 'org';
+  const has = org ? Object.keys(comp.scores || {}).length > 0 || Object.keys(comp.pins || {}).length > 0 : roundHasData();
+  const apply = async () => {
+    if (has) { if (org) await compClearRound().catch(() => {}); else clearRound(); }
     S.round[side] = id; saveRound();
+    if (org) compPublishCourse().catch(() => toast('配れませんでした。電波のある所でもう一度選んでください'));
     N = 1; S.tap = null; savePrefs(); refresh(); renderNinePick(); renderMenu();
     if (registered(hole())) camera(S.view);
   };
-  if (roundHasData()) ask(`${side === 'front' ? '前半' : '後半'}を「${nineOf(id).name}」に変えますか？`, '今のスコアとピン位置は消えます', '変える', apply);
+  if (has) ask(`${side === 'front' ? '前半' : '後半'}を「${nineOf(id).name}」に変えますか？`, org ? '全員のスコアと配ったピン位置が消えます' : '今のスコアとピン位置は消えます', '変える', apply);
   else apply();
 }
 $('goNine').onclick = () => { renderNinePick(); mShow('mNine'); };
@@ -100,6 +104,9 @@ function snack(text, undo) {
 }
 $('pinReset').onclick = () => {
   const prev = S.round.pins, n = Object.keys(prev).length;
-  S.round = { pins: {} }; saveRound(); refresh(); renderMenu();
-  snack(`ピン位置を消しました（${n}ホール）`, () => { S.round.pins = prev; saveRound(); refresh(); if (!$('menu').hidden) renderMenu(); });
+  // the organizer's reset also takes back the pins handed out in the competition (undo puts them back)
+  const org = comp && comp.role === 'org', prevComp = org ? comp.pins || {} : null;
+  const setCompPins = p => { comp.pins = p; saveComp(); fb().then(f => f.D.set(f.D.ref(f.db, cp('pins')), Object.keys(p).length ? p : null)).catch(() => {}); };
+  S.round.pins = {}; saveRound(); if (org) setCompPins({}); refresh(); renderMenu();  // keep the round's front / back nines
+  snack(`ピン位置を消しました（${n}ホール）`, () => { S.round.pins = prev; saveRound(); if (org && comp) setCompPins(prevComp); refresh(); if (!$('menu').hidden) renderMenu(); });
 };

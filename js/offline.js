@@ -4,7 +4,8 @@
 
 /* offline save */
 function offTiles() {
-  const pts = []; allHoles().forEach(h => { if (h.tee) pts.push(h.tee); if (h.green) pts.push(h.green); });
+  // in a competition: the organizer's course; otherwise every nine of this phone's course
+  const pts = []; (comp ? playHoles() : allHoles()).forEach(h => { if (h.tee) pts.push(h.tee); if (h.green) pts.push(h.green); });
   let w, s, e, n;
   if (pts.length) {
     w = Math.min(...pts.map(p => p[0])); e = Math.max(...pts.map(p => p[0])); s = Math.min(...pts.map(p => p[1])); n = Math.max(...pts.map(p => p[1]));

@@ -50,13 +50,14 @@ function renderSetup() {
 function openSetup() {
   openSheet('setup'); $('onboard').hidden = true;
   if (S.is3D) set3D(false);
-  setupGo(playNines()[N > NINE ? 1 : 0].id, ((N - 1) % NINE) + 1);
+  setupGo(localNines()[N > NINE ? 1 : 0].id, ((N - 1) % NINE) + 1);
 }
 function closeSetup() { $('setup').hidden = true; S.su = null; if (S.mode && S.mode.startsWith('setup')) S.mode = null; }
 $('goSetup').onclick = openSetup;
 $('obStart').onclick = () => { $('onboard').hidden = true; openSetup(); };
 $('obLater').onclick = () => $('onboard').hidden = true;
-$('setupDone').onclick = () => { closeSetup(); refresh(); if (registered(hole())) camera(S.view); };
+// the organizer's registrations reach everyone in the competition when the sheet is closed
+$('setupDone').onclick = () => { closeSetup(); refresh(); if (registered(hole())) camera(S.view); if (comp && comp.role === 'org') compPublishCourse().catch(() => {}); };
 $('sPar').onchange = () => { hole().par = +$('sPar').value; saveCourse(); refresh(); };
 $('sTee').onclick = () => { S.mode = 'setup-tee'; refresh(); if (hole().tee) centerOn(hole().tee); };
 $('sGreen').onclick = () => { S.mode = 'setup-green'; refresh(); if (hole().green) centerOn(hole().green); };
@@ -65,7 +66,7 @@ $('sNineName').oninput = () => { const v = $('sNineName').value.trim(); if (v) {
 $('sNineName').onblur = () => renderSetup();
 // deleting a nine asks first; if today's round uses it, its scores and pins go too
 $('sNineDel').onclick = () => {
-  const nine = nineOf(S.su.nine), used = playNines().some(x => x.id === nine.id), placed = nine.holes.some(x => x.tee || x.green);
+  const nine = nineOf(S.su.nine), used = localNines().some(x => x.id === nine.id), placed = nine.holes.some(x => x.tee || x.green);
   const note = [placed && '登録したティーとグリーンも消えます', used && '今日のラウンドで使っているので、スコアとピン位置も消えます'].filter(Boolean).join('。') || 'このナインには何も登録されていません';
   ask(`「${nine.name}」を削除しますか？`, note, '削除', () => {
     S.course.nines = S.course.nines.filter(x => x !== nine); saveCourse();

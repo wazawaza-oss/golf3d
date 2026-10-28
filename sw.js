@@ -2,14 +2,15 @@
    Bump VERSION with every release: the new worker stores the new files and deletes the old set, so no stale mix remains.
    Map tiles live in their own cache (golf3d-tiles-v1, filled by 端末に保存) and are never touched here;
    GSI tiles and Firebase go straight to the network. */
-const VERSION = '2026-10-28.2';
+const VERSION = '2026-10-28.3';
 const APP = 'golf3d-app-' + VERSION;
 const FILES = [
   './', 'index.html', 'css/app.css',
-  'js/core.js', 'js/map.js', 'js/settings.js', 'js/course.js', 'js/setup.js', 'js/score.js', 'js/share.js', 'js/offline.js', 'js/main.js',
+  'js/core.js', 'js/map.js', 'js/settings.js', 'js/course.js', 'js/setup.js', 'js/score.js', 'js/comp.js', 'js/roles.js', 'js/compui.js', 'js/offline.js', 'js/main.js',
   'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
   'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js',
-  'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css'
+  'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css',
+  'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'  // QR codes for competition links
 ];
 
 self.addEventListener('install', e => {
@@ -26,7 +27,7 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  const ours = url.origin === location.origin || url.href.startsWith('https://unpkg.com/maplibre-gl@');
+  const ours = url.origin === location.origin || url.href.startsWith('https://unpkg.com/maplibre-gl@') || url.href.startsWith('https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/');
   if (!ours) return;  // map tiles, Firebase, fonts: network as usual
   // opening the app (also links like ?r=CODE) always gets the stored page
   const key = req.mode === 'navigate' ? new URL('index.html', self.registration.scope).href : req;

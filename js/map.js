@@ -270,6 +270,7 @@ function refresh() {
   if (!$('setup').hidden) renderSetup();
   placeCross();
   readout();
+  renderBadge(); applyRoles();
 }
 
 /* crosshair: sits in the middle of the map area left visible between the HUD and the bottom panel */
@@ -315,7 +316,7 @@ let rdTok = 0;
 async function readout(quick) {  // quick: distances only (while dragging a mark)
   const tok = ++rdTok, h = hole(), pin = pinLL(), sub = $('dSub');
   sub.textContent = '';
-  if (!registered(h)) { $('dNum').textContent = '—'; $('dLab').textContent = '未登録のホール'; sub.textContent = '右の「設定」→「コース登録」で登録できます'; return; }
+  if (!registered(h)) { $('dNum').textContent = '—'; $('dLab').textContent = '未登録のホール'; sub.textContent = comp && comp.role !== 'org' ? '主催者がこのホールをまだ登録していません' : '右の「設定」→「コース登録」で登録できます'; return; }
   if (S.tap) {
     // the big number is the first leg (from you, or from the farthest mark); the rest of the legs follow below
     const path = tapPath(pin), legs = path.slice(1).map((p, i) => Math.round(yards(path[i], p)));
@@ -361,7 +362,10 @@ function placeAt(ll) {
       if (S.su.n < NINE) { S.su.n++; const nx = hole(); S.mode = registered(nx) ? null : nx.tee ? 'setup-green' : 'setup-tee'; }
       else { S.mode = null; toast(`${nineOf(S.su.nine).name}の${NINE}ホールの登録が終わりました`); closeSetup(); }
       break;
-    case 'pin': S.round.pins[N] = ll; saveRound(); S.mode = null; toast(`${N}番のピンを置きました`); break;
+    case 'pin':  // the organizer's pin is handed out to everyone in the competition
+      S.round.pins[N] = ll; saveRound(); S.mode = null;
+      if (comp && comp.role === 'org') { compSetPin(N, ll); toast(`${N}番のピンを全員に配りました`); } else toast(`${N}番のピンを置きました`);
+      break;
     case 'me': S.me = { ll, acc: null, src: 'sim' }; S.mode = null; break;
     default: return;
   }

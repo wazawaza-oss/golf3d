@@ -3,7 +3,7 @@
 "use strict";
 
 /* ================= score entry ================= */
-const saveScore = () => { saveJSON('golf3d.score', S.score); roomPush(); };
+const saveScore = () => saveJSON('golf3d.score', S.score);  // this phone's own players (solo); a competition's scores go through setStroke
 const strokesOf = p => p.remote ? p.strokes : S.score.strokes[p.id] || (S.score.strokes[p.id] = Array(ROUND).fill(null));
 function totals(p) {
   let tot = 0, par = 0, n = 0;
@@ -16,16 +16,16 @@ const termOf = (v, par) => v === 1 ? 'ホールインワン' : TERM[v - par] || 
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 /* score page: one player's 18-hole card (you, unless opened from the participants sheet);
    tapping a score cell opens -/+ right under that half of the card */
-const me = () => S.score.players[0];
 let scPlayer = null, scHole = 0;  // scPlayer: id of another player, null = you
-const scWho = () => S.score.players.find(p => p.id === scPlayer) || me();
+const scWho = () => allPlayers().find(p => p.id === scPlayer) || me();  // me(): js/roles.js
 function scoreEnter() { if (S.page !== 'score') scHole = N - 1; }
 function renderScore() {
-  const p = scWho(), a = strokesOf(p), t = totals(p), isMe = p === me();
+  const p = scWho(), sum = $('scSum'), board = $('scBoard');
+  sum.textContent = ''; board.textContent = '';
+  if (!p) { $('scTitle').textContent = 'マイスコア'; sum.append(el('span', '', '設定 → コンペ で自分の名前を選ぶと入力できます')); return; }
+  const a = strokesOf(p), t = totals(p), isMe = comp ? comp.role === 'player' : p === me(), edit = canEdit(p.id);
   $('scTitle').textContent = isMe ? 'マイスコア' : `${p.name || '名前なし'} のスコア`;
-  const sum = $('scSum'); sum.textContent = '';
   sum.append(el('b', '', t.n ? fmtDiff(t.diff) : '—'), el('span', '', t.n ? `計 ${t.tot}打 ・ ${t.n}ホール` : 'まだ入力がありません'));
-  const board = $('scBoard'); board.textContent = '';
   const ph = playHoles();
   halves().forEach(({ name: label, from }) => {  // front / back nine, headed by the nine's name
     const tb = el('table', 'sc my'), head = el('tr'), par = el('tr', 'par'), row = el('tr', 'mine');
@@ -43,12 +43,12 @@ function renderScore() {
     head.append(el('th', 'sum', label)); par.append(el('td', 'sum', parSum)); row.append(el('td', 'sum', any ? s : ''));
     tb.append(head, par, row);
     board.appendChild(tb);
-    if (scHole >= from && scHole < from + NINE) board.appendChild(scoreStepper(p, scHole));
+    if (edit && scHole >= from && scHole < from + NINE) board.appendChild(scoreStepper(p, scHole));  // view only when not yours to enter
   });
 }
 function scoreStepper(p, i) {
   const hp = playHoles()[i].par, v = strokesOf(p)[i], box = el('div', 'stepper');
-  const set = nv => { strokesOf(p)[i] = nv; saveScore(); renderScore(); };
+  const set = nv => { setStroke(p, i, nv); renderScore(); };
   const hd = el('div', 'sh'); hd.append(el('b', '', `${i + 1}番`), el('span', '', `Par ${hp}`));
   const stp = el('div', 'stp'), minus = el('button', '', '−'), plus = el('button', '', '＋');
   const val = el('div', 'val' + (v == null ? '' : v < hp ? ' under' : v > hp ? ' over' : ''));
@@ -62,21 +62,26 @@ function scoreStepper(p, i) {
   return box;
 }
 
-/* bottom dock: your score for the hole on screen, entered with − / ＋ (same rules as the score page) */
+/* bottom dock: the score for the hole on screen, entered with − / ＋ (same rules as the score page).
+   In a competition it is the player's own name, or — for a cart representative / the organizer — the person
+   shown in the dock; tapping that name moves to the next person they may enter for. */
 function renderDock() {
-  const i = N - 1, hp = playHoles()[i].par, v = strokesOf(me())[i];
-  $('dkVal').className = 'dv' + (v == null ? '' : v < hp ? ' under' : v > hp ? ' over' : '');
-  $('dkHole').textContent = `${N}番 Par ${hp}`;
+  const p = me(), i = N - 1, hp = playHoles()[i].par, v = p ? strokesOf(p)[i] : null, many = comp && comp.role !== 'player';
+  $('dkMinus').disabled = $('dkPlus').disabled = !p;
+  $('dkVal').className = 'dv' + (v == null ? '' : v < hp ? ' under' : v > hp ? ' over' : '') + (many ? ' who' : '');
+  $('dkHole').textContent = !p ? '名前を選んでください' : comp ? `${p.name}${many ? ' ▸' : ''} ・ ${N}番 P${hp}` : `${N}番 Par ${hp}`;
   $('dkNum').textContent = v == null ? '—' : v;
   $('dkTerm').textContent = v == null ? '未入力' : termOf(v, hp);
 }
 function dockStep(d) {
-  const a = strokesOf(me()), i = N - 1, hp = playHoles()[i].par, v = a[i];
-  a[i] = d < 0 ? (v == null ? hp - 1 : Math.max(1, v - 1)) : (v == null ? hp : Math.min(20, v + 1));
-  saveScore(); renderDock();
+  const p = me(); if (!p) return;
+  const i = N - 1, hp = playHoles()[i].par, v = strokesOf(p)[i];
+  setStroke(p, i, d < 0 ? (v == null ? hp - 1 : Math.max(1, v - 1)) : (v == null ? hp : Math.min(20, v + 1)));
+  renderDock();
 }
 $('dkMinus').onclick = () => dockStep(-1);
 $('dkPlus').onclick = () => dockStep(1);
+$('dkVal').onclick = () => dockNext();
 
 /* participants sheet (menu): names, adding/removing, and entering other people's scores */
 function renderPlayers() {
@@ -122,13 +127,13 @@ function renderRank() {
   const all = allPlayers(), rows = rankedRows();
   const maxN = Math.max(0, ...rows.map(r => r.n));
   $('rkInfo').textContent = maxN ? `${maxN}ホールまでの成績（パーとの差で順位）` : 'スコアを入力すると、ここに順位が出ます。';
-  if (room) $('rkInfo').textContent += `　共有中：${room.code}${roomLive ? '' : '（オフライン）'}`;
+  if (comp) $('rkInfo').textContent += `　${(comp.meta && comp.meta.name) || 'コンペ'}${compLive ? '' : '（オフライン）'}`;
   // ranking table (scrolls inside its box when there are many players)
   const tb = el('table', 'rkt'), hd = el('tr');
   ['順位', '名前', 'スコア', '打数', 'H'].forEach(x => hd.append(el('th', '', x)));
   tb.append(hd);
   rows.forEach(r => {
-    const tr = el('tr', (r.pos === 1 ? 'top' : '') + (r.p === me() ? ' me' : ''));
+    const tr = el('tr', (r.pos === 1 ? 'top' : '') + (r.p.id === myId() ? ' me' : ''));
     tr.append(el('td', 'pos', r.pos || '—'), el('td', 'nm', r.p.name || '名前なし'), el('td', 'dv', r.n ? fmtDiff(r.diff) : '—'), el('td', '', r.n ? r.tot : '—'), el('td', '', r.n));
     tb.append(tr);
   });
@@ -144,7 +149,7 @@ function renderRank() {
     head.append(el('th', 'sum', label)); par.append(el('td', 'sum', parSum));
     t.append(head, par);
     all.forEach(p => {
-      const tr = el('tr', p === me() ? 'me' : ''), a = strokesOf(p); let sum = 0, any = false;
+      const tr = el('tr', p.id === myId() ? 'me' : ''), a = strokesOf(p); let sum = 0, any = false;
       tr.append(el('td', '', p.name || '—'));
       for (let i = from; i < from + NINE; i++) {
         const v = a[i], hp = ph[i].par;
@@ -261,10 +266,10 @@ function pageView(v, dragging) {
   });
 }
 function goPage(name) {
-  if (S.page === 'score' && name !== 'score') roomSendNow();
+
   if (name === 'score') { scoreEnter(); renderScore(); }
   else scPlayer = null;  // swiping to the score page always shows your own card
-  if (name === 'rank') { renderRank(); if (S.page !== 'rank') roomPull(); }
+  if (name === 'rank') renderRank();
   if (name === 'map') renderDock();
   S.page = name; pageView(PAGE_POS[name]);
 }
