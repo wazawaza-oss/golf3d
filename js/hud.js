@@ -83,19 +83,6 @@ function centerOn(ll, extra = {}) {
 map.on('move', () => { if (isPlacing()) crossLabel(); });
 addEventListener('resize', placeCross);
 if ('ResizeObserver' in window) { const ro = new ResizeObserver(placeCross); ro.observe($('setup')); ro.observe($('banner')); }
-/* iPhone home-screen app: iOS sometimes reports the window shorter than the screen (by the status bar's height)
-   and leaves that strip empty at the bottom. Measure it and lower the map and the bottom buttons into it.
-   0 in Safari, on Android and whenever the window already fills the screen (or the keyboard is up). */
-function fitScreen() {
-  const app = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
-  const full = innerWidth > innerHeight ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
-  const gap = app && /iPhone|iPod/.test(navigator.userAgent) ? Math.round(full - innerHeight) : 0;
-  const px = gap > 0 && gap <= 80 ? gap : 0;
-  if (document.documentElement.style.getPropertyValue('--gapb') === px + 'px') return;
-  document.documentElement.style.setProperty('--gapb', px + 'px');
-  map.resize();
-}
-fitScreen(); addEventListener('resize', fitScreen); addEventListener('orientationchange', () => setTimeout(fitScreen, 300));
 // the button column and toast start just below the distance panel
 const hudEdge = () => document.documentElement.style.setProperty('--hudb', Math.round(document.querySelector('.hud').getBoundingClientRect().bottom) + 'px');
 hudEdge(); addEventListener('resize', hudEdge);

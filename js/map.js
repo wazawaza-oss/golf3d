@@ -97,10 +97,15 @@ function camera(view, duration = 900, settle = true) {
   const lat = (t[1] + h.green[1]) / 2;
   const base = Math.log2(156543.03 * Math.cos(rad(lat)) * (H * .5) / len);
   const pitch3 = S.is3D;
+  // flat views: tee to green fits between the distance panel and the bottom buttons, centred in that band
+  // (+ 44: room for the flag drawn above the pin)
+  const top = document.querySelector('.hud').getBoundingClientRect().bottom + 44, low = $('dock').hidden ? innerHeight : $('dock').getBoundingClientRect().top;
+  const band = Math.max(200, low - top), flat = Math.log2(78271.5 * Math.cos(rad(lat)) * band * .86 / len), mid = [0, Math.round((top + low) / 2 - H / 2)];
   let opt;
-  if (view === 'top') opt = { center: lerpLL(t, h.green, .5), bearing: brg, pitch: 0, zoom: base };
-  else if (view === 'green') opt = { center: lerpLL(t, h.green, pitch3 ? .45 : .5), bearing: (brg + 180) % 360, pitch: pitch3 ? 62 : 0, zoom: base + (pitch3 ? .35 : 0) };
-  else opt = { center: lerpLL(t, h.green, pitch3 ? .6 : .5), bearing: brg, pitch: pitch3 ? 62 : 0, zoom: base + (pitch3 ? .35 : 0) };
+  if (view === 'top') opt = { center: lerpLL(t, h.green, .5), bearing: brg, pitch: 0, zoom: flat, offset: mid };
+  else if (!pitch3) opt = { center: lerpLL(t, h.green, .5), bearing: view === 'green' ? (brg + 180) % 360 : brg, pitch: 0, zoom: flat, offset: mid };
+  else if (view === 'green') opt = { center: lerpLL(t, h.green, .45), bearing: (brg + 180) % 360, pitch: 62, zoom: base + .35 };
+  else opt = { center: lerpLL(t, h.green, .6), bearing: brg, pitch: 62, zoom: base + .35 };
   map.easeTo(Object.assign(opt, { duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : duration }));
   // in 3D the ground height under the new view is known only after its elevation tiles load;
   // aim again once they have, otherwise the camera can end up inside the hillside (looks hugely zoomed in)
