@@ -44,8 +44,8 @@
   <button class="fab" id="bGps" aria-pressed="false">GPS<small id="gpsInfo">オフ</small></button>
   <button class="fab" id="b3d" aria-pressed="false">3D<small>立体</small></button>
   <button class="fab" id="bView">視点<small id="viewName">ティー</small></button>
-  <button class="fab" id="bPin" aria-pressed="false" aria-label="ピン位置を置く">
-    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M6 21V2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M7 2L19 7L7 12Z" fill="#ff2bd6" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><small>ピン位置</small>
+  <button class="fab" id="bPin" aria-pressed="false" aria-label="今日のピンとティーの位置を置く">
+    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M6 21V2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M7 2L19 7L7 12Z" fill="#ff2bd6" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><small>ピン&amp;<br>ティー</small>
   </button>
   <button class="fab" id="bMe" aria-label="現在地とピンが収まるように表示">◎<small>現在地</small></button>
 </div>
@@ -58,7 +58,9 @@
   <span class="cl" id="crossLab" hidden></span>
 </div>
 
-<div class="banner" id="banner" hidden><span id="bannerText"></span><div class="bb"><button id="bannerCancel">やめる</button><button class="go" id="bannerPlace">＋ ここに置く</button></div></div>
+<div class="banner" id="banner" hidden>
+  <div class="bsel" id="bannerSel"><button id="banPin" aria-pressed="true">ピン</button><button id="banTee" aria-pressed="false">ティー</button><button class="undo" id="bannerReset">登録位置に戻す</button></div>
+  <span id="bannerText"></span><div class="bb"><button id="bannerCancel">やめる</button><button class="go" id="bannerPlace">＋ ここに置く</button></div></div>
 
 <!-- settings: grouped list like iOS Settings; sub-screens slide in place of the main list -->
 <div class="sheet" id="menu" hidden>
@@ -89,7 +91,7 @@
     <div class="grp">
       <button class="mrow" id="goNine" data-show="solo org"><span class="mic" style="background:#16592f"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V3"/><path d="M6 4l12 4.5L6 13"/></svg></span><span class="mtx">前半・後半のナイン<small>このラウンドで回る2つ</small></span><span class="mval" id="mvNine"></span><span class="chev">›</span></button>
       <button class="mrow" id="goPlayers" data-show="solo"><span class="mic" style="background:#2f6fd1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.5c2.6.4 4.5 2.4 4.5 5.5"/></svg></span><span class="mtx">参加者とスコア</span><span class="mval" id="mvPlayers"></span><span class="chev">›</span></button>
-      <button class="mrow" id="pinReset"><span class="mic" style="background:#d63c8e"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v5h5"/></svg></span><span class="mtx">ピン位置をリセット</span><span class="mval" id="mvPins"></span></button>
+      <button class="mrow" id="pinReset"><span class="mic" style="background:#d63c8e"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v5h5"/></svg></span><span class="mtx">ピン・ティー位置をリセット<small>登録したグリーン中心とティーに戻します</small></span><span class="mval" id="mvPins"></span></button>
       <button class="mrow" id="saveCard"><span class="mic" style="background:#0e8a8a"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10M15 10v10"/></svg></span><span class="mtx">スコア表をJPEGで保存<small>コース名・日付・全員のスコアを1枚の画像に</small></span><span class="chev">›</span></button>
     </div>
 

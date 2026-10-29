@@ -56,7 +56,7 @@ localStorage (per browser; Safari and the home-screen app are separate):
 | `golf3d.course` | `{v:2, name, center, nines:[{id, name, holes:[{n, par, tee, green, src, ok, yd:{teeId:yards}}×9]}], tees:[{id,name,color}], baseTee, area:{bbox,osm,name}}` — `tee` is the base colour's; older data gets blue/white/red, base white |
 | `golf3d.courseDraft` | course registration in progress: `{course, cand:{greens,tees}, fresh, named}`; removed on 確定 / 下書きを捨てる |
 | `golf3d.course.v1backup` | the old 18-hole course, kept once when migrated |
-| `golf3d.round` | `{pins:{1..18:[lng,lat]}, front, back}` (nine ids) |
+| `golf3d.round` | `{pins:{1..18:[lng,lat]}, tees:{1..18:[lng,lat]}, front, back}` (nine ids); `tees` = today's tee moved with ピン＆ティー (this phone only, never sent) |
 | `golf3d.prefs` | `{elev, gps, n, setupMin}` |
 | `golf3d.score` | solo: `{players:[{id,name}], strokes:{id:[18]}}` |
 | `golf3d.offline` | `{sig, at}` of the course whose tiles were saved |

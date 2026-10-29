@@ -10,6 +10,10 @@ function placeAt(ll) {
       S.round.pins[N] = ll; saveRound(); S.mode = null;
       if (comp && comp.role === 'org') { compSetPin(N, ll); toast(`${N}番のピンを全員に配りました`); } else toast(`${N}番のピンを置きました`);
       break;
+    case 'tee':  // today's tee: this phone only, the registered course stays as it is
+      S.round.tees[N] = ll; saveRound(); S.mode = null;
+      toast(`${N}番のティーを置きました（今日のラウンドだけ）`);
+      break;
     case 'me': S.me = { ll, acc: null, src: 'sim' }; S.mode = null; break;
     default: return;
   }
@@ -71,7 +75,7 @@ function goHole(n) {
   if (inSetup()) { guideGo(S.su.nine, ((n - 1 + NINE) % NINE) + 1, 'green'); return; }
   N = ((n - 1 + ROUND) % ROUND) + 1;
   S.tap = null; savePrefs();
-  if (S.mode === 'pin') S.mode = null;
+  if (S.mode === 'pin' || S.mode === 'tee') S.mode = null;
   camSave = null;  // the new hole gets its own view
   refresh();
   camera(S.view);
@@ -98,12 +102,29 @@ $('bMe').onclick = () => {
   });
   if (cam) map.easeTo(Object.assign(cam, { pitch: map.getPitch(), duration: 800 }));
 };
-$('bPin').onclick = () => {
-  if (!hole().green) { toast('先にこのホールを登録してください'); return; }
-  S.mode = S.mode === 'pin' ? null : 'pin'; S.tap = null;
+/* ピン＆ティー: today's pin (handed out to everyone by the organizer) or today's tee (this phone only).
+   The banner switches between the two; 登録位置に戻す goes back to the green's centre / the registered tee. */
+function pinTeeMode(kind) {
+  S.mode = kind; S.tap = null;
   refresh();
-  if (S.mode === 'pin') { camKeep(); centerOn(S.round.pins[N] || hole().green, { zoom: Math.max(map.getZoom(), 18.3), duration: 700 }); }
-  else camBack();
+  const ll = kind === 'pin' ? pinLL() : roundTee();
+  centerOn(ll, { zoom: Math.max(map.getZoom(), kind === 'pin' ? 18.3 : 18), duration: 700 });
+}
+$('bPin').onclick = () => {
+  if (!registered(hole())) { toast('先にこのホールを登録してください'); return; }
+  if (S.mode === 'pin' || S.mode === 'tee') { S.mode = null; refresh(); camBack(); return; }
+  camKeep(); pinTeeMode('pin');
+};
+$('banPin').onclick = () => { if (S.mode !== 'pin') pinTeeMode('pin'); };
+$('banTee').onclick = () => { if (S.mode !== 'tee') pinTeeMode('tee'); };
+$('bannerReset').onclick = () => {
+  if (S.mode === 'tee') { delete S.round.tees[N]; toast(`${N}番のティーを登録した位置に戻しました`); }
+  else {
+    delete S.round.pins[N];
+    if (comp && comp.role === 'org' && compPin(N)) { compSetPin(N, null); toast(`${N}番の配ったピンを取り消しました`); }
+    else toast(hasPin() ? `${N}番は主催者が配ったピンに戻しました` : `${N}番のピンを消しました（グリーン中心までの距離になります）`);
+  }
+  saveRound(); S.mode = null; refresh(); camBack();
 };
 
 /* GPS */

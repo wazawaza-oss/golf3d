@@ -94,7 +94,7 @@ function loadJSON(k) { try { return JSON.parse(localStorage.getItem(k)); } catch
 function saveJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 const S = {
   course: loadCourse(),
-  round: loadJSON('golf3d.round') || { pins: {} },  // { pins: { 1..18: [lng, lat] }, front, back } (nine ids)
+  round: loadJSON('golf3d.round') || { pins: {} },  // { pins: { 1..18: [lng, lat] }, tees: { 1..18: [lng, lat] }, front, back } (nine ids)
   su: null,  // guide in progress: { nine: id, n: 1..9, step: 'green'|'tee', only } (only: opened for one hole from the list)
   draft: null,  // course registration in progress (see DRAFT_KEY)
   prefs: Object.assign({ elev: true, gps: false, n: 1, setupMin: matchMedia('(max-width:700px)').matches }, loadJSON('golf3d.prefs') || {}),
@@ -109,6 +109,8 @@ function fixRound() {
   const ids = S.course.nines.map(x => x.id);
   if (!ids.includes(S.round.front)) S.round.front = ids[0];
   if (!ids.includes(S.round.back)) S.round.back = ids.find(i => i !== S.round.front) || ids[0];
+  if (!S.round.pins) S.round.pins = {};
+  if (!S.round.tees) S.round.tees = {};  // rounds saved before tees could be moved
 }
 fixRound();
 const localNines = () => [nineOf(S.round.front), nineOf(S.round.back)];  // this phone's own course
@@ -127,6 +129,10 @@ const inSetup = () => !!S.su && !!S.draft && !$('setup').hidden;
 const hole = () => inSetup() ? draftNine(S.su.nine).holes[S.su.n - 1] : playHoles()[N - 1];
 // a pin you placed yourself, else the one the organizer handed out, else the green's centre
 const pinLL = () => (!inSetup() && (S.round.pins[N] || compPin(N))) || hole().green;
+const hasPin = () => !inSetup() && !!(S.round.pins[N] || compPin(N));  // otherwise distances go to the green's centre
+const target = () => hasPin() ? 'ピン' : 'グリーン';  // what the distances are measured to (the green's centre without a pin), for labels
+// today's tee: one you moved for this round (this phone only), else the registered one
+const roundTee = () => (!inSetup() && S.round.tees[N]) || hole().tee;
 const holeNo = () => inSetup() ? S.su.n : N;  // the number shown in the panel
 const saveCourse = () => saveJSON('golf3d.course', S.course);
 const saveRound = () => saveJSON('golf3d.round', S.round);

@@ -4,10 +4,11 @@
 
 /* ================= rendering ================= */
 function refresh() {
-  const h = hole(), setup = inSetup();  // the guide draws its own (draggable) tee and green
+  const h = hole(), setup = inSetup(), tee = roundTee();  // the guide draws its own (draggable) tee and green
   $('hNo').textContent = holeNo(); $('hPar').textContent = h.par;
-  place(M.tee, setup ? null : h.tee);
-  place(M.gc, !setup && S.round.pins[N] && h.green ? h.green : null);
+  place(M.tee, setup ? null : tee);
+  M.tee.getElement().classList.toggle('moved', !setup && !!S.round.tees[N]);
+  place(M.gc, !setup && hasPin() && h.green ? h.green : null);
   place(M.pin, setup ? null : pinLL());
   place(M.me, S.me && S.me.ll);
   M.me.getElement().classList.toggle('sim', !!(S.me && S.me.src === 'sim'));
@@ -20,22 +21,27 @@ function refresh() {
     const f = [], pin = pinLL();
     if (setup) setupNine.forEach(x => { if (registered(x)) f.push(ln(x.tee, x.green, 'setup')); });
     else if (S.tap) { const p = tapLine(); if (p) f.push(p); }  // while marks are up, only their path to the pin
-    else if (registered(h) && !S.me) f.push(ln(h.tee, h.green, 'hole'));  // no line from you to the pin until you tap
+    else if (registered(h) && !S.me) f.push(ln(tee, pin, 'hole'));  // no line from you to the pin until you tap
     map.getSource('lines').setData(fc(f));
     // rings reach a little past the tee (or the player, if farther)
-    const reach = pin && !setup ? Math.max(h.tee ? yards(h.tee, pin) : 0, S.me ? yards(S.me.ll, pin) : 0, 150) + 25 : 0;
+    const reach = pin && !setup ? Math.max(tee ? yards(tee, pin) : 0, S.me ? yards(S.me.ll, pin) : 0, 150) + 25 : 0;
     map.getSource('rings').setData(fc(reach ? rings(pin, Math.min(600, reach)) : []));
   }
   // banner (pin / test position; setup has its own controls in the sheet)
-  const BAN = { pin: `${N}番のピン位置に十字を合わせる`, me: 'テスト用の現在地に十字を合わせる' };
+  const BAN = { pin: `${N}番の今日のピン位置に十字を合わせる`, tee: `${N}番の今日のティー位置に十字を合わせる（この端末だけ）`, me: 'テスト用の現在地に十字を合わせる' };
   $('banner').hidden = !BAN[S.mode] || !$('setup').hidden; if (BAN[S.mode]) $('bannerText').textContent = BAN[S.mode];
+  const pt = S.mode === 'pin' || S.mode === 'tee';
+  $('bannerSel').hidden = !pt;
+  $('banPin').setAttribute('aria-pressed', S.mode === 'pin'); $('banTee').setAttribute('aria-pressed', S.mode === 'tee');
+  // 登録位置に戻す: only when there is something of yours to take back
+  $('bannerReset').hidden = !(S.mode === 'tee' ? S.round.tees[N] : S.mode === 'pin' && (S.round.pins[N] || (comp && comp.role === 'org' && compPin(N))));
   document.querySelector('.side').hidden = !$('banner').hidden || setup;  // the banner / guide panel would cover the lower buttons
   $('tapReset').hidden = !S.tap;
   $('bElev').setAttribute('aria-checked', !!S.prefs.elev);
   // GPS button: accuracy while on (green), 'オフ' while off
   $('bGps').setAttribute('aria-pressed', S.watch != null);
   $('gpsInfo').textContent = S.watch == null ? 'オフ' : S.me && S.me.src === 'gps' ? `±${Math.round(S.me.acc || 0)}m` : '取得中';
-  $('bPin').setAttribute('aria-pressed', S.mode === 'pin');
+  $('bPin').setAttribute('aria-pressed', S.mode === 'pin' || S.mode === 'tee');
   $('b3d').setAttribute('aria-pressed', S.is3D);
   $('viewName').textContent = { tee: 'ティー', top: '真上', green: 'グリーン' }[S.view];
   $('dock').hidden = !!S.mode || !$('setup').hidden;
@@ -48,7 +54,7 @@ function refresh() {
 }
 
 /* crosshair: sits in the middle of the map area left visible between the HUD and the bottom panel */
-const PLACING = ['pin', 'me'];  // the guide places by tapping, without the crosshair
+const PLACING = ['pin', 'tee', 'me'];  // the guide places by tapping, without the crosshair
 const isPlacing = () => PLACING.includes(S.mode);
 function crossXY() {
   const top = document.querySelector('.hud').getBoundingClientRect().bottom;
@@ -60,6 +66,7 @@ function crossLL() { const p = map.unproject(crossXY()); return [p.lng, p.lat]; 
 function crossLabel() {
   const h = hole(), lab = $('crossLab'); let t = '';
   if (S.mode === 'pin' && h.green) t = `グリーン中心から ${Math.round(yards(h.green, crossLL()))}Y`;
+  else if (S.mode === 'tee' && h.green) t = `${target()}まで ${Math.round(yards(crossLL(), pinLL()))}Y`;
   lab.textContent = t; lab.hidden = !t;
 }
 function placeCross() {
@@ -100,8 +107,8 @@ async function readout(quick) {  // quick: distances only (while dragging a mark
     const path = tapPath(pin), legs = path.slice(1).map((p, i) => Math.round(yards(path[i], p)));
     const [a, b] = path, y = yards(a, b);
     $('dNum').textContent = Math.round(y);
-    $('dLab').textContent = legs.length === 1 ? 'マークからピン' : tapFromMe() ? 'マークまで' : 'マーク間';
-    const rest = legs.length === 3 ? `マーク間 ${legs[1]}Y・そこからピン ${legs[2]}Y` : legs.length === 2 ? `そこからピン ${legs[1]}Y` : '';
+    $('dLab').textContent = legs.length === 1 ? `マークから${target()}` : tapFromMe() ? 'マークまで' : 'マーク間';
+    const rest = legs.length === 3 ? `マーク間 ${legs[1]}Y・そこから${target()} ${legs[2]}Y` : legs.length === 2 ? `そこから${target()} ${legs[1]}Y` : '';
     sub.textContent = rest;
     if (S.prefs.elev && !quick) {
       const [ea, eb] = await Promise.all([elevAt(a), elevAt(b)]);
@@ -111,11 +118,11 @@ async function readout(quick) {  // quick: distances only (while dragging a mark
     return;
   }
   if (!S.me) {
-    $('dNum').textContent = Math.round(yards(h.tee, pin)); $('dLab').textContent = 'ティーからピン';
+    $('dNum').textContent = Math.round(yards(roundTee(), pin)); $('dLab').textContent = `ティーから${target()}`;
     sub.textContent = S.watch ? '現在地を取得中…' : 'GPSをオンにすると現在地からの距離が出ます'; return;
   }
   const y = yards(S.me.ll, pin);
-  $('dNum').textContent = Math.round(y); $('dLab').textContent = 'ピンまで';
+  $('dNum').textContent = Math.round(y); $('dLab').textContent = `${target()}まで`;
   // 4th line: elevation only (GPS accuracy is on the GPS button)
   const test = S.me.src === 'sim' ? 'テスト位置' : '';
   sub.textContent = test;

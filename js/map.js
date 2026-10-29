@@ -89,15 +89,16 @@ let camTok = 0;
 map.on('movestart', e => { if (e.originalEvent) camTok++; });  // user gesture cancels a pending re-aim
 function camera(view, duration = 900, settle = true) {
   const h = hole(); if (!registered(h) || inSetup()) return;  // the guide aims the map itself (js/guide.js)
-  const len = Math.max(60, distM(h.tee, h.green)), brg = bearing(h.tee, h.green);
+  const t = roundTee();  // today's tee, if moved
+  const len = Math.max(60, distM(t, h.green)), brg = bearing(t, h.green);
   const el = map.getContainer(), H = el.clientHeight || 700;
-  const lat = (h.tee[1] + h.green[1]) / 2;
+  const lat = (t[1] + h.green[1]) / 2;
   const base = Math.log2(156543.03 * Math.cos(rad(lat)) * (H * .5) / len);
   const pitch3 = S.is3D;
   let opt;
-  if (view === 'top') opt = { center: lerpLL(h.tee, h.green, .5), bearing: brg, pitch: 0, zoom: base };
-  else if (view === 'green') opt = { center: lerpLL(h.tee, h.green, pitch3 ? .45 : .5), bearing: (brg + 180) % 360, pitch: pitch3 ? 62 : 0, zoom: base + (pitch3 ? .35 : 0) };
-  else opt = { center: lerpLL(h.tee, h.green, pitch3 ? .6 : .5), bearing: brg, pitch: pitch3 ? 62 : 0, zoom: base + (pitch3 ? .35 : 0) };
+  if (view === 'top') opt = { center: lerpLL(t, h.green, .5), bearing: brg, pitch: 0, zoom: base };
+  else if (view === 'green') opt = { center: lerpLL(t, h.green, pitch3 ? .45 : .5), bearing: (brg + 180) % 360, pitch: pitch3 ? 62 : 0, zoom: base + (pitch3 ? .35 : 0) };
+  else opt = { center: lerpLL(t, h.green, pitch3 ? .6 : .5), bearing: brg, pitch: pitch3 ? 62 : 0, zoom: base + (pitch3 ? .35 : 0) };
   map.easeTo(Object.assign(opt, { duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : duration }));
   // in 3D the ground height under the new view is known only after its elevation tiles load;
   // aim again once they have, otherwise the camera can end up inside the hillside (looks hugely zoomed in)
