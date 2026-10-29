@@ -3,17 +3,9 @@
 "use strict";
 
 /* ================= interactions ================= */
-/* place the current item (tee / green / pin / test position) at ll */
+/* place the current item (pin / test position) at the crosshair; tees and greens are placed in the guide (js/guide.js) */
 function placeAt(ll) {
-  const h = hole();
   switch (S.mode) {
-    case 'setup-tee': h.tee = ll; h.src = 'manual'; h.ok = registered(h); S.mode = 'setup-green'; saveCourse(); break;
-    case 'setup-green':
-      h.green = ll; h.src = 'manual'; h.ok = registered(h); saveCourse();
-      // on to the next hole of the same nine; the nine's 9th hole ends this registration
-      if (S.su.n < NINE) { S.su.n++; const nx = hole(); S.mode = registered(nx) ? null : nx.tee ? 'setup-green' : 'setup-tee'; }
-      else { S.mode = null; toast(`${nineOf(S.su.nine).name}の${NINE}ホールの登録が終わりました`); closeSetup(); }
-      break;
     case 'pin':  // the organizer's pin is handed out to everyone in the competition
       S.round.pins[N] = ll; saveRound(); S.mode = null;
       if (comp && comp.role === 'org') { compSetPin(N, ll); toast(`${N}番のピンを全員に配りました`); } else toast(`${N}番のピンを置きました`);
@@ -29,7 +21,7 @@ function placeAt(ll) {
 let camSave = null;
 const camKeep = () => { camSave = { center: map.getCenter(), zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() }; };
 function camBack() { if (camSave) { map.easeTo(Object.assign(camSave, { duration: 600 })); camSave = null; } }
-$('sPlace').onclick = $('bannerPlace').onclick = () => placeAt(crossLL());
+$('bannerPlace').onclick = () => placeAt(crossLL());
 /* measuring marks. 1st tap: a mark, distance to the pin. 2nd tap: a second mark — closer to the pin than
    the first, it splits that leg; farther out, the path now starts there. A 3rd tap starts over.
    Marks clear themselves after a few idle seconds and the display goes back to your position. */
@@ -64,8 +56,9 @@ const tapClear = () => { clearTimeout(tapT); S.tap = null; refresh(); };
 $('tapReset').onclick = tapClear;
 M.me.getElement().addEventListener('click', e => { e.stopPropagation(); if (S.tap) tapClear(); });
 map.on('click', e => {
-  if (e.originalEvent && e.originalEvent.target.closest && e.originalEvent.target.closest('.mk.tap, .mk.me')) return;
+  if (e.originalEvent && e.originalEvent.target.closest && e.originalEvent.target.closest('.mk.tap, .mk.me, .mk.hit')) return;
   const ll = [e.lngLat.lng, e.lngLat.lat];
+  if (inSetup()) { guideTap(ll); return; }  // registering: a tap places the green / tee being asked for
   // while placing, a tap only brings that spot under the crosshair; the button does the placing
   if (isPlacing()) { centerOn(ll); return; }
   S.tap = S.tap && S.tap.length === 1 ? [S.tap[0], ll] : [ll];
@@ -75,14 +68,13 @@ map.on('click', e => {
 });
 function goHole(n) {
   // while registering, ‹ › move through the nine being registered (1–9); otherwise through the round (1–18)
-  if (inSetup()) S.su.n = ((n - 1 + NINE) % NINE) + 1;
-  else N = ((n - 1 + ROUND) % ROUND) + 1;
+  if (inSetup()) { guideGo(S.su.nine, ((n - 1 + NINE) % NINE) + 1, 'green'); return; }
+  N = ((n - 1 + ROUND) % ROUND) + 1;
   S.tap = null; savePrefs();
   if (S.mode === 'pin') S.mode = null;
   camSave = null;  // the new hole gets its own view
-  if (inSetup()) { const h = hole(); S.mode = registered(h) ? null : h.tee ? 'setup-green' : 'setup-tee'; }
   refresh();
-  if (!(S.mode && S.mode.startsWith('setup'))) camera(S.view);
+  camera(S.view);
 }
 $('prevHole').onclick = () => goHole(holeNo() - 1);
 $('nextHole').onclick = () => goHole(holeNo() + 1);

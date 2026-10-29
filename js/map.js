@@ -88,7 +88,7 @@ map.on('load', () => {
 let camTok = 0;
 map.on('movestart', e => { if (e.originalEvent) camTok++; });  // user gesture cancels a pending re-aim
 function camera(view, duration = 900, settle = true) {
-  const h = hole(); if (!registered(h)) return;
+  const h = hole(); if (!registered(h) || inSetup()) return;  // the guide aims the map itself (js/guide.js)
   const len = Math.max(60, distM(h.tee, h.green)), brg = bearing(h.tee, h.green);
   const el = map.getContainer(), H = el.clientHeight || 700;
   const lat = (h.tee[1] + h.green[1]) / 2;

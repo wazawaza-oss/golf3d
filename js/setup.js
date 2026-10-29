@@ -1,82 +1,186 @@
-/* golf3d — setup: registering tees and greens, nine by nine (pick a nine, then its holes 1–9)
+/* golf3d — setup: the course registration screens in settings (コース登録 → nines, tee colours, yardages, the hole list,
+   確定). Everything works on a draft (S.draft, saved as golf3d.courseDraft) until 確定 copies it into the course.
    Plain scripts loaded in order from index.html (no build step); they share top-level names. */
 "use strict";
 
-/* setup */
-const nextNineName = () => NINE_NAMES.find(n => !S.course.nines.some(x => x.name === n)) || `ナイン${S.course.nines.length + 1}`;
-// start on hole n of a nine (or its first hole still to register), placing whatever is missing there
-function setupGo(id, n) {
-  const nine = nineOf(id);
-  S.su = { nine: nine.id, n: n || (nine.holes.find(x => !registered(x)) || nine.holes[0]).n };
-  const h = hole(); S.mode = !h.tee ? 'setup-tee' : !h.green ? 'setup-green' : null; S.tap = null;
-  refresh();
-  if (registered(h)) camera('top');
+Object.assign(M_TITLE, { mReg: 'コース登録', mRegNines: 'ナインとティー', mRegYard: 'パーとヤード' });
+Object.assign(M_RENDER, { mReg: () => renderReg(), mRegNines: () => renderRegNines(), mRegYard: () => renderYard() });
+const nextNineName = () => NINE_NAMES.find(n => !S.draft.course.nines.some(x => x.name === n)) || `ナイン${S.draft.course.nines.length + 1}`;
+const cleanCand = c => ({ greens: ((c && c.greens) || []).filter(isLL), tees: ((c && c.tees) || []).filter(isLL) });
+// the draft left from last time, or a fresh copy of the course as it is
+function loadDraft() {
+  if (S.draft) return;
+  const d = loadJSON(DRAFT_KEY), c = d && toCourse(d.course);
+  S.draft = c ? { course: c, cand: cleanCand(d.cand), fresh: !!d.fresh, named: !!d.named }
+    : { course: toCourse(JSON.parse(JSON.stringify(S.course))), cand: cleanCand(null), fresh: false, named: false };
 }
-function renderSetup() {
-  const h = hole(), nine = nineOf(S.su.nine);
-  const min = !!S.prefs.setupMin;
-  $('setup').classList.toggle('collapsed', min);
-  $('sToggle').setAttribute('aria-expanded', !min); $('sChev').textContent = min ? '▲ ひらく' : '▼ たたむ';
-  $('sHole').textContent = `${nine.name} ${S.su.n}番`; $('sPar').value = String(h.par);
-  $('sState').textContent = `Par ${h.par} ・ ` + (S.mode === 'setup-green' ? 'グリーン中心に十字を' : S.mode === 'setup-tee' ? 'ティーに十字を' : registered(h) ? '登録済み' : '');
-  $('sPlace').hidden = !(S.mode === 'setup-tee' || S.mode === 'setup-green');
-  $('sTee').setAttribute('aria-pressed', S.mode === 'setup-tee'); $('sGreen').setAttribute('aria-pressed', S.mode === 'setup-green');
-  $('sTee').textContent = S.mode ? 'ティー' : 'ティーを置き直す'; $('sGreen').textContent = S.mode ? 'グリーン' : 'グリーンを置き直す';
-  $('setupHint').textContent = S.mode === 'setup-green' ? '地図を動かして十字をグリーンの中心に合わせ、「ここに置く」を押してください。' : S.mode === 'setup-tee' ? '地図を動かして十字をティー（バックティー）に合わせ、「ここに置く」を押してください。' : '置き直したい項目のボタンを押してください。';
-  // nines: pick one to register, or add another (東・西・南 …)
-  const ns = $('sNines'); ns.textContent = '';
-  S.course.nines.forEach(x => {
-    const b = el('button', x.holes.every(registered) ? 'done' : '', x.name || '名前なし');
-    b.setAttribute('aria-pressed', x.id === nine.id);
-    b.onclick = () => { if (x.id !== nine.id) setupGo(x.id); };
-    ns.appendChild(b);
-  });
-  const add = el('button', 'add', '＋ ナインを追加');
-  add.onclick = () => { const x = blankNine(nextNineName()); S.course.nines.push(x); saveCourse(); setupGo(x.id, 1); $('sNineName').select(); };
-  ns.appendChild(add);
-  if (document.activeElement !== $('sNineName')) $('sNineName').value = nine.name;
-  $('sNineDel').disabled = S.course.nines.length < 2;  // a course keeps at least one nine
-  $('sHolesTitle').textContent = `${nine.name || 'このナイン'}のホール`;
-  const chips = $('chips'); chips.textContent = '';
-  nine.holes.forEach(x => {
-    const b = document.createElement('button'); b.textContent = x.n;
-    b.className = registered(x) ? 'done' : (x.tee || x.green) ? 'half' : '';
-    b.setAttribute('aria-current', x.n === S.su.n); b.setAttribute('aria-label', `${nine.name} ${x.n}番ホール${registered(x) ? '（登録済み）' : ''}`);
-    b.onclick = () => setupGo(nine.id, x.n);
-    chips.appendChild(b);
-  });
-}
-// opens on the nine and hole the round is on now
 function openSetup() {
-  openSheet('setup'); $('onboard').hidden = true;
-  if (S.is3D) set3D(false);
-  setupGo(localNines()[N > NINE ? 1 : 0].id, ((N - 1) % NINE) + 1);
+  loadDraft(); $('onboard').hidden = true;
+  mStack = ['mMain', 'mReg']; openMenu(true);
 }
-function closeSetup() { $('setup').hidden = true; S.su = null; if (S.mode && S.mode.startsWith('setup')) S.mode = null; }
-$('goSetup').onclick = openSetup;
-$('obStart').onclick = () => { $('onboard').hidden = true; openSetup(); };
+$('obStart').onclick = openSetup;
 $('obLater').onclick = () => $('onboard').hidden = true;
-// the organizer's registrations reach everyone in the competition when the sheet is closed
-$('setupDone').onclick = () => { closeSetup(); refresh(); if (registered(hole())) camera(S.view); if (comp && comp.role === 'org') compPublishCourse().catch(() => {}); backToMenu(); };
-$('sPar').onchange = () => { hole().par = +$('sPar').value; saveCourse(); refresh(); };
-$('sTee').onclick = () => { S.mode = 'setup-tee'; refresh(); if (hole().tee) centerOn(hole().tee); };
-$('sGreen').onclick = () => { S.mode = 'setup-green'; refresh(); if (hole().green) centerOn(hole().green); };
-// renaming: the chip and titles follow as you type
-$('sNineName').oninput = () => { const v = $('sNineName').value.trim(); if (v) { nineOf(S.su.nine).name = v.slice(0, 12); saveCourse(); renderSetup(); } };
-$('sNineName').onblur = () => renderSetup();
-// deleting a nine asks first; if today's round uses it, its scores and pins go too
-$('sNineDel').onclick = () => {
-  const nine = nineOf(S.su.nine), used = localNines().some(x => x.id === nine.id), placed = nine.holes.some(x => x.tee || x.green);
-  const note = [placed && '登録したティーとグリーンも消えます', used && '今日のラウンドで使っているので、スコアとピン位置も消えます'].filter(Boolean).join('。') || 'このナインには何も登録されていません';
-  ask(`「${nine.name}」を削除しますか？`, note, '削除', () => {
-    S.course.nines = S.course.nines.filter(x => x !== nine); saveCourse();
-    if (used) { clearRound(); fixRound(); saveRound(); }
-    setupGo(S.course.nines[0].id, 1);
-    toast(`「${nine.name}」を削除しました`);
+
+/* ---------- the main registration screen ---------- */
+function renderReg() {
+  loadDraft();
+  const c = S.draft.course;
+  if (!$('rgInfo').dataset.busy) $('rgInfo').textContent = c.area && c.area.name ? `選んだゴルフ場：${c.area.name}` : c.area ? 'ゴルフ場の場所を選びました' : 'まだ選んでいません（今の地図の場所のまま進めることもできます）';
+  const base = c.tees.find(t => t.id === c.baseTee);
+  $('rgNinesS').textContent = `${c.nines.map(x => x.name).join('・')}／ティー ${c.tees.map(t => t.name).join('・')}（基準：${base ? base.name : ''}）`;
+  const box = $('rgHoles'); box.textContent = '';
+  c.nines.forEach(nine => {
+    const st = nine.holes.map(h => holeState(h, c)), left = st.filter(s => s === 'none').length;
+    box.appendChild(el('div', 'grp-t', `${nine.name}　${left ? `未設定 ${left}` : 'すべて設定済み'}`));
+    const g = el('div', 'grp');
+    nine.holes.forEach((h, i) => {
+      const b = el('button', 'mrow hrow');
+      const y = h.yd[c.baseTee];
+      b.append(el('span', 'hn', `${h.n}番`), el('span', 'mtx', `Par ${h.par}${y ? `・${y}Y` : ''}${registered(h) ? `・地図 ${Math.round(yards(h.tee, h.green))}Y` : ''}`),
+        el('span', 'hst ' + st[i], STATE_NAME[st[i]] + (st[i] === 'auto' && !h.ok ? '（未確認）' : '')), el('span', 'chev', '›'));
+      b.setAttribute('aria-label', `${nine.name} ${h.n}番 ${STATE_NAME[st[i]]}。押すとこのホールを置き直します`);
+      b.onclick = () => guideStart(nine.id, h.n, true);
+      g.appendChild(b);
+    });
+    box.appendChild(g);
   });
+  const all = c.nines.flatMap(x => x.holes);
+  $('rgGuide').textContent = all.some(registered) ? '案内を続ける（未設定のホールから）' : '案内を始める（1番から）';
+}
+$('rgNines').onclick = () => { renderRegNines(); mShow('mRegNines'); };
+$('rgGuide').onclick = () => {
+  const c = S.draft.course;
+  const nine = c.nines.find(x => x.holes.some(h => !registered(h))) || c.nines[0];
+  guideStart(nine.id, (nine.holes.find(h => !registered(h)) || nine.holes[0]).n, false);
 };
-$('sToggle').onclick = () => {
-  const ll = crossLL();  // keep the spot under the crosshair while the panel changes size
-  S.prefs.setupMin = !S.prefs.setupMin; savePrefs(); refresh();
-  if (isPlacing()) centerOn(ll, { duration: 0 });
+// OSM: tees and greens of numbered holes are placed; the rest become candidates in the guide
+$('rgOsm').onclick = async () => {
+  const c = S.draft.course, info = $('rgOsmInfo'), btn = $('rgOsm');
+  const say = (t, bad) => { info.textContent = t; info.classList.toggle('err', !!bad); };
+  if (!c.area) { say('先に「1. ゴルフ場を探す」でゴルフ場を選んでください。', true); return; }
+  btn.disabled = true; say('OSMのデータを取得しています…（最大30秒）');
+  try {
+    const out = await draftCourse({ area: c.area, baseTee: c.baseTee,
+      nines: c.nines.map(x => ({ id: x.id, name: x.name, holes: x.holes.map(h => ({ n: h.n, par: h.par, yd: Object.assign({}, h.yd) })) })) });
+    const n = applyDraft(c, out);
+    S.draft.cand = cleanCand(out.candidates); saveDraft();
+    say(out.note + (n < out.holes.length ? `（手で置いた${out.holes.length - n}ホールはそのままにしました）` : ''));
+  } catch (e) { say(e.message, true); }
+  btn.disabled = false; renderReg();
 };
+/* 確定: the draft becomes the course. Same golf club: the round goes on (unless one of its nines was deleted);
+   a different golf club (fresh) starts a new round, as importing a course does. */
+$('rgSave').onclick = () => {
+  const d = S.draft, c = toCourse(d.course);
+  if (!d.fresh && !d.named) c.name = S.course.name;  // renamed in settings meanwhile
+  const lost = !d.fresh && [S.round.front, S.round.back].some(id => !c.nines.some(x => x.id === id));
+  const unset = c.nines.reduce((a, x) => a + x.holes.filter(h => !registered(h)).length, 0);
+  const drops = (d.fresh || lost) && roundHasData();
+  const go = () => {
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+    S.draft = null; $('menu').hidden = true;
+    if (d.fresh) useCourse(c, `「${c.name}」を保存しました`);
+    else {
+      S.course = c; saveCourse();
+      if (lost) clearRound();
+      fixRound(); saveRound(); refresh();
+      if (registered(hole())) camera(S.view);
+      toast('コースを保存しました');
+    }
+    if (comp && comp.role === 'org') compPublishCourse().catch(() => toast('コンペの参加者に配れませんでした。電波のある所でもう一度確定してください'));
+  };
+  const notes = [unset && `未設定が${unset}ホールあります。あとで続きを置けます`, drops && '今のスコアとピン位置は消えます'].filter(Boolean);
+  if (notes.length) ask(unset ? '未設定のホールが残っています。このまま確定しますか？' : 'コースを確定しますか？', notes.join('。'), '確定する', go);
+  else go();
+};
+$('rgDiscard').onclick = () => ask('下書きを捨てますか？', '確定していない変更が消えます。今のコースはそのままです', '捨てる', () => {
+  try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+  S.draft = null; loadDraft(); renderReg(); toast('下書きを捨てました');
+});
+
+/* ---------- nines and tee colours ---------- */
+function renderRegNines() {
+  const c = S.draft.course;
+  const ns = $('rnNines'); ns.textContent = '';
+  c.nines.forEach(nine => {
+    const row = el('div', 'mrow field');
+    const inp = el('input'); inp.type = 'text'; inp.maxLength = 12; inp.value = nine.name; inp.placeholder = 'ナインの名前（例：東）'; inp.setAttribute('aria-label', 'ナインの名前');
+    inp.oninput = () => { const v = inp.value.trim(); if (v) { nine.name = v.slice(0, 12); saveDraft(); } };
+    inp.onblur = () => { inp.value = nine.name; };
+    const del = el('button', 'xbtn', '削除'); del.disabled = c.nines.length < 2; del.setAttribute('aria-label', `${nine.name}を削除`);
+    del.onclick = () => {
+      const placed = nine.holes.some(h => h.tee || h.green), used = [S.round.front, S.round.back].includes(nine.id);
+      const note = [placed && '置いたティーとグリーンも消えます', used && '今日のラウンドで使っているので、確定するとスコアとピン位置も消えます'].filter(Boolean).join('。') || 'このナインには何も置いていません';
+      ask(`「${nine.name}」を削除しますか？`, note, '削除', () => { c.nines = c.nines.filter(x => x !== nine); saveDraft(); renderRegNines(); });
+    };
+    row.append(inp, del); ns.appendChild(row);
+  });
+  const ts = $('rnTees'); ts.textContent = '';
+  c.tees.forEach(t => {
+    const row = el('div', 'mrow field tee');
+    const col = el('input'); col.type = 'color'; col.value = t.color; col.setAttribute('aria-label', `${t.name}の表示色`);
+    col.oninput = () => { t.color = col.value; saveDraft(); };
+    const inp = el('input'); inp.type = 'text'; inp.maxLength = 8; inp.value = t.name; inp.setAttribute('aria-label', '色の名前');
+    inp.oninput = () => { const v = inp.value.trim(); if (v) { t.name = v.slice(0, 8); saveDraft(); } };
+    inp.onblur = () => { inp.value = t.name; };
+    const isBase = t.id === c.baseTee;
+    const base = el('button', 'basebtn', isBase ? '基準' : '基準にする'); base.setAttribute('aria-pressed', isBase);
+    base.onclick = () => {
+      if (isBase) return;
+      const set = () => { c.baseTee = t.id; saveDraft(); renderRegNines(); };
+      if (c.nines.some(x => x.holes.some(h => h.tee))) ask(`基準を「${t.name}」にしますか？`, '置いてあるティーの位置は、そのまま「' + t.name + '」のティーとして扱われます', '変える', set);
+      else set();
+    };
+    const del = el('button', 'xbtn', '削除'); del.disabled = c.tees.length < 2 || isBase; del.setAttribute('aria-label', `${t.name}を削除`);
+    del.onclick = () => ask(`「${t.name}」の色を削除しますか？`, 'この色のヤードも消えます', '削除', () => {
+      c.tees = c.tees.filter(x => x !== t); c.nines.forEach(x => x.holes.forEach(h => delete h.yd[t.id])); saveDraft(); renderRegNines();
+    });
+    row.append(col, inp, base, del); ts.appendChild(row);
+  });
+  const yd = $('rnYd'); yd.textContent = '';
+  c.nines.forEach(nine => {
+    const b = el('button', 'mrow'), filled = nine.holes.filter(h => h.yd[c.baseTee]).length;
+    b.append(el('span', 'mtx', nine.name), el('span', 'mval', `パー ${nine.holes.reduce((a, h) => a + h.par, 0)}・ヤード ${filled}/${NINE}`), el('span', 'chev', '›'));
+    b.onclick = () => { ydNine = nine.id; M_TITLE.mRegYard = `${nine.name}のパーとヤード`; renderYard(); mShow('mRegYard'); };
+    yd.appendChild(b);
+  });
+}
+$('rnNineAdd').onclick = () => { S.draft.course.nines.push(blankNine(nextNineName())); saveDraft(); renderRegNines(); const i = $('rnNines').querySelectorAll('input'); i[i.length - 1].select(); };
+$('rnTeeAdd').onclick = () => {
+  const c = S.draft.course; c.tees.push({ id: newId('t'), name: ['黒', '金', '緑', '黄'].find(n => !c.tees.some(t => t.name === n)) || '色', color: '#222222' });
+  saveDraft(); renderRegNines();
+};
+
+/* ---------- par and yardage of one nine: a table, one row per hole, one column per colour ---------- */
+let ydNine = null;
+function renderYard() {
+  const c = S.draft.course, nine = draftNine(ydNine), box = $('ryTable');
+  box.textContent = '';
+  const t = el('table'), head = el('tr');
+  head.append(el('th', '', '番'), el('th', '', 'パー'));
+  c.tees.forEach(x => { const th = el('th'); const dot = el('i', 'tdot'); dot.style.background = x.color; th.append(dot, x.name + (x.id === c.baseTee ? '（基準）' : '')); head.appendChild(th); });
+  t.appendChild(head);
+  const sumRow = el('tr', 'sum');
+  const sums = () => {
+    sumRow.textContent = '';
+    sumRow.append(el('td', '', '計'), el('td', '', nine.holes.reduce((a, h) => a + h.par, 0)));
+    c.tees.forEach(x => { const s = nine.holes.reduce((a, h) => a + (h.yd[x.id] || 0), 0); sumRow.appendChild(el('td', '', s ? `${s}Y` : '')); });
+  };
+  nine.holes.forEach(h => {
+    const tr = el('tr');
+    const par = el('select'); par.setAttribute('aria-label', `${h.n}番のパー`);
+    [3, 4, 5, 6].forEach(p => { const o = el('option', '', p); o.value = p; o.selected = h.par === p; par.appendChild(o); });
+    par.onchange = () => { h.par = +par.value; saveDraft(); sums(); };
+    const tdp = el('td'); tdp.appendChild(par);
+    tr.append(el('td', 'hn', h.n), tdp);
+    c.tees.forEach(x => {
+      const inp = el('input'); inp.type = 'number'; inp.inputMode = 'numeric'; inp.min = 1; inp.max = 999; inp.placeholder = '—';
+      inp.value = h.yd[x.id] || ''; inp.setAttribute('aria-label', `${h.n}番 ${x.name}のヤード`);
+      inp.onchange = () => { const v = Math.round(+inp.value); if (v > 0 && v < 1000) h.yd[x.id] = v; else { delete h.yd[x.id]; inp.value = ''; } saveDraft(); sums(); };
+      const td = el('td'); td.appendChild(inp); tr.appendChild(td);
+    });
+    t.appendChild(tr);
+  });
+  sums(); t.appendChild(sumRow);
+  box.appendChild(t);
+}

@@ -4,18 +4,18 @@
 
 /* ================= rendering ================= */
 function refresh() {
-  const h = hole(), setup = S.mode && S.mode.startsWith('setup');
+  const h = hole(), setup = inSetup();  // the guide draws its own (draggable) tee and green
   $('hNo').textContent = holeNo(); $('hPar').textContent = h.par;
-  place(M.tee, h.tee);
-  place(M.gc, S.round.pins[N] && h.green ? h.green : null);
-  place(M.pin, pinLL());
+  place(M.tee, setup ? null : h.tee);
+  place(M.gc, !setup && S.round.pins[N] && h.green ? h.green : null);
+  place(M.pin, setup ? null : pinLL());
   place(M.me, S.me && S.me.ll);
   M.me.getElement().classList.toggle('sim', !!(S.me && S.me.src === 'sim'));
   tapDraw();
   numMarkers.forEach(m => m.remove()); numMarkers = [];
-  // while registering, the other holes of the same nine show their numbers and tee–green lines
-  const setupNine = setup && inSetup() ? nineOf(S.su.nine).holes : [];
-  setupNine.forEach(x => { if (x.tee && x.n !== S.su.n) numMarkers.push(new maplibregl.Marker({ element: mkEl('num', String(x.n)) }).setLngLat(x.tee).addTo(map)); });
+  // while registering, the other holes of the same nine show their numbers (at the green) and tee–green lines
+  const setupNine = setup ? draftNine(S.su.nine).holes : [];
+  setupNine.forEach(x => { const p = x.green || x.tee; if (p && x.n !== S.su.n) numMarkers.push(new maplibregl.Marker({ element: mkEl('num', String(x.n)) }).setLngLat(p).addTo(map)); });
   if (mapReady) {
     const f = [], pin = pinLL();
     if (setup) setupNine.forEach(x => { if (registered(x)) f.push(ln(x.tee, x.green, 'setup')); });
@@ -29,7 +29,7 @@ function refresh() {
   // banner (pin / test position; setup has its own controls in the sheet)
   const BAN = { pin: `${N}番のピン位置に十字を合わせる`, me: 'テスト用の現在地に十字を合わせる' };
   $('banner').hidden = !BAN[S.mode] || !$('setup').hidden; if (BAN[S.mode]) $('bannerText').textContent = BAN[S.mode];
-  document.querySelector('.side').hidden = !$('banner').hidden;  // the banner would cover the lower buttons
+  document.querySelector('.side').hidden = !$('banner').hidden || setup;  // the banner / guide panel would cover the lower buttons
   $('tapReset').hidden = !S.tap;
   $('bElev').setAttribute('aria-checked', !!S.prefs.elev);
   // GPS button: accuracy while on (green), 'オフ' while off
@@ -40,14 +40,15 @@ function refresh() {
   $('viewName').textContent = { tee: 'ティー', top: '真上', green: 'グリーン' }[S.view];
   $('dock').hidden = !!S.mode || !$('setup').hidden;
   renderDock();
-  if (!$('setup').hidden) renderSetup();
+  if (setup) renderGuide();
+  guideMarkers();
   placeCross();
   readout();
   renderBadge(); applyRoles();
 }
 
 /* crosshair: sits in the middle of the map area left visible between the HUD and the bottom panel */
-const PLACING = ['setup-tee', 'setup-green', 'pin', 'me'];
+const PLACING = ['pin', 'me'];  // the guide places by tapping, without the crosshair
 const isPlacing = () => PLACING.includes(S.mode);
 function crossXY() {
   const top = document.querySelector('.hud').getBoundingClientRect().bottom;
@@ -58,8 +59,7 @@ function crossXY() {
 function crossLL() { const p = map.unproject(crossXY()); return [p.lng, p.lat]; }
 function crossLabel() {
   const h = hole(), lab = $('crossLab'); let t = '';
-  if (S.mode === 'setup-green' && h.tee) t = `ティーから ${Math.round(yards(h.tee, crossLL()))}Y`;
-  else if (S.mode === 'pin' && h.green) t = `グリーン中心から ${Math.round(yards(h.green, crossLL()))}Y`;
+  if (S.mode === 'pin' && h.green) t = `グリーン中心から ${Math.round(yards(h.green, crossLL()))}Y`;
   lab.textContent = t; lab.hidden = !t;
 }
 function placeCross() {
@@ -89,6 +89,11 @@ let rdTok = 0;
 async function readout(quick) {  // quick: distances only (while dragging a mark)
   const tok = ++rdTok, h = hole(), pin = pinLL(), sub = $('dSub');
   sub.textContent = '';
+  if (inSetup()) {  // registering: the hole's length as placed
+    $('dNum').textContent = registered(h) ? Math.round(yards(h.tee, h.green)) : '—'; $('dLab').textContent = 'ティーからグリーン';
+    sub.textContent = registered(h) ? '' : S.su.step === 'green' ? 'グリーンを置いてください' : 'ティーを置いてください';
+    return;
+  }
   if (!registered(h)) { $('dNum').textContent = '—'; $('dLab').textContent = '未登録のホール'; sub.textContent = comp && comp.role !== 'org' ? '主催者がこのホールをまだ登録していません' : '右の「設定」→「コース登録」で登録できます'; return; }
   if (S.tap) {
     // the big number is the first leg (from you, or from the farthest mark); the rest of the legs follow below

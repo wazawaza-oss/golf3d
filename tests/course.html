@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>コースデータのテスト</title>
+<style>
+  body{margin:0;padding:16px;font:15px/1.6 system-ui,-apple-system,"Hiragino Sans",sans-serif;background:#f0f1f4;color:#1b2430}
+  h1{font-size:20px;margin:0 0 8px}
+  p{margin:6px 0;color:#3a4350}
+  #sum{font-weight:900;font-size:17px;margin:8px 0}
+  #sum.ok{color:#1f7a3a} #sum.ng{color:#b3261e}
+  .row{display:flex;gap:8px;background:#fff;padding:7px 10px;border-top:1px solid #e3e5e9;font-size:14px}
+  .row .m{flex:none;width:20px;font-weight:900}
+  .row.ng{background:#fdecec} .row.ng .m{color:#b3261e} .row.ok .m{color:#1f7a3a}
+</style>
+<script>
+  // the app's scripts read and write localStorage when they load: give them a stand-in so this page never touches the real data
+  (function () {
+    const mem = {};
+    const fake = { getItem: k => k in mem ? mem[k] : null, setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; }, clear: () => Object.keys(mem).forEach(k => delete mem[k]) };
+    Object.defineProperty(window, 'localStorage', { value: fake, configurable: true });
+    // an old phone: the 18-hole course from before nines existed
+    const holes = Array.from({ length: 18 }, (_, i) => ({ par: i % 9 === 2 ? 3 : 4, tee: i < 2 ? [139.1 + i * .001, 35.2] : null, green: i < 2 ? [139.1 + i * .001, 35.203] : null }));
+    fake.setItem('golf3d.course', JSON.stringify({ name: '旧コース', center: [139.1, 35.2], holes }));
+  })();
+  window.compNines = () => null;  // from js/share.js (not loaded here)
+</script>
+<script src="../js/state.js"></script>
+<script src="../js/geo.js"></script>
+<script src="../js/draft.js"></script>
+</head>
+<body>
+<h1>コースデータのテスト</h1>
+<p>古い形式のコースを新しい形式に変換できるか、OSMのデータ（ダミー）から仮置きができるかを確かめます。このページは本物の保存データには触りません。</p>
+<div id="sum"></div>
+<div id="log"></div>
+<script>
+"use strict";
+const results = [];
+const check = (label, ok) => results.push({ label, ok: !!ok });
+
+/* 1. the old 18-hole course on this "phone" was converted when state.js loaded */
+const saved = JSON.parse(localStorage.getItem('golf3d.course'));
+check('古い18ホールのコースが OUT / IN の2ナインになる', S.course.nines.length === 2 && S.course.nines[0].name === 'OUT' && S.course.nines[1].name === 'IN');
+check('1番・2番のティーとグリーンが残る', S.course.nines[0].holes[1].tee[0] === 139.101 && S.course.nines[0].holes[1].green[1] === 35.203);
+check('パーが残る（3番 = パー3、12番 = パー3）', S.course.nines[0].holes[2].par === 3 && S.course.nines[1].holes[2].par === 3);
+check('元のデータが golf3d.course.v1backup に1回だけ残る', JSON.parse(localStorage.getItem('golf3d.course.v1backup')).holes.length === 18);
+check('変換したものが保存される', saved && saved.v === 2 && saved.nines.length === 2);
+check('ティーの色がない古いデータには 青・白・赤（基準は白）が付く', S.course.tees.map(t => t.name).join() === '青,白,赤' && S.course.baseTee === 'white');
+
+/* 2. the nine format from before tee colours (v2 without tees / yd) */
+const v2 = { v: 2, name: '東西南', center: [139, 35], nines: ['東', '西', '南'].map((name, k) => ({ id: 'n' + k, name, holes: Array.from({ length: 9 }, (_, i) => ({ n: i + 1, par: 4, tee: null, green: null, src: 'manual', ok: false })) })) };
+const c2 = toCourse(v2);
+check('3つのナイン（東・西・南）がそのまま読める', c2 && c2.nines.map(x => x.name).join() === '東,西,南');
+check('各ホールに空のヤード表が付く', c2.nines.every(x => x.holes.every(h => h.yd && !Object.keys(h.yd).length)));
+check('範囲（area）がなければ null', c2.area === null);
+
+/* 3. tee colours and yardages are kept; bad values are dropped */
+const v3 = JSON.parse(JSON.stringify(v2));
+v3.tees = [{ id: 'back', name: '黒', color: '#000000' }, { id: 'reg', name: '白', color: '#ffffff' }, { id: 'reg', name: '重複', color: '#ff0000' }, { id: 'lady', name: '赤', color: 'red' }];
+v3.baseTee = 'reg';
+v3.nines[0].holes[0].yd = { back: 410.4, reg: 380, lady: -5, gone: 300 };
+v3.area = { bbox: [139, 35, 139.01, 35.01], osm: 'way/1', name: 'テストGC' };
+const c3 = toCourse(v3);
+check('色の数と基準の色が残る（同じidは1つに）', c3.tees.length === 3 && c3.baseTee === 'reg');
+check('正しくない表示色は灰色になる', c3.tees[2].color === '#888888');
+check('ヤードは整数に、負の値・消えた色は捨てる', JSON.stringify(c3.nines[0].holes[0].yd) === '{"back":410,"reg":380}');
+check('範囲が残る', c3.area && c3.area.osm === 'way/1');
+check('ナインの形でないデータは読み込まない', toCourse({ nines: [{ holes: [1, 2] }] }) === null && toCourse('x') === null);
+
+/* 4. estimated tees and the plausibility check */
+const tee = [139.1, 35.2], green = [139.1, 35.2 + 360 * YD / 111195];  // ~360 yards north
+const h = { n: 1, par: 4, tee, green, src: 'manual', ok: true, yd: { back: 400, reg: 360 } };
+const est = teeLL(h, 'back', c3);
+check('バックティー（+40Y）は基準より40Y後ろに仮置きされる', Math.abs(yards(est, green) - 400) < 2);
+check('ヤードが空欄の色は基準と同じ位置', teeLL(h, 'lady', c3) === tee);
+check('距離が合っていれば「要確認」にならない', holeIssue(h, c3) === null && holeState(h, c3) === 'manual');
+check('パー3で500mは「要確認」', !!holeIssue(Object.assign({}, h, { par: 3, green: [139.1, 35.2 + 500 / 111195] }), c3));
+check('入力ヤードと地図が大きく違えば「要確認」', !!holeIssue(Object.assign({}, h, { yd: { reg: 250 } }), c3));
+check('ティーかグリーンがなければ「未設定」', holeState(Object.assign({}, h, { tee: null }), c3) === 'none');
+
+/* 5. OSM → draft (dummy Overpass data) */
+const sq = (x, y, r) => [[x - r, y - r], [x + r, y - r], [x + r, y + r], [x - r, y + r], [x - r, y - r]].map(([lon, lat]) => ({ lon, lat }));
+const osm = { elements: [
+  { type: 'way', tags: { golf: 'hole', ref: '1', par: '4' }, geometry: [{ lon: 139.100, lat: 35.200 }, { lon: 139.1001, lat: 35.2015 }, { lon: 139.100, lat: 35.2030 }] },
+  { type: 'way', tags: { golf: 'green' }, geometry: sq(139.1002, 35.2031, .0001) },
+  { type: 'node', tags: { golf: 'tee' }, lon: 139.1001, lat: 35.1999 },
+  { type: 'way', tags: { golf: 'hole', ref: '12', par: '3' }, geometry: [{ lon: 139.110, lat: 35.200 }, { lon: 139.110, lat: 35.2015 }] },
+  { type: 'way', tags: { golf: 'hole', ref: '5' }, geometry: [{ lon: 139.12, lat: 35.2 }, { lon: 139.12, lat: 35.203 }] },
+  { type: 'way', tags: { golf: 'hole', ref: '5' }, geometry: [{ lon: 139.13, lat: 35.2 }, { lon: 139.13, lat: 35.203 }] },
+  { type: 'way', tags: { golf: 'hole' }, geometry: [{ lon: 139.14, lat: 35.2 }, { lon: 139.14, lat: 35.203 }] },
+  { type: 'way', tags: { golf: 'green' }, geometry: sq(139.15, 35.21, .0001) },
+  { type: 'node', tags: { golf: 'tee' }, lon: 139.16, lat: 35.21 }
+] };
+const input = { area: { bbox: [139.09, 35.19, 139.17, 35.22] }, nines: blankCourse().nines.map(x => ({ id: x.id, name: x.name, holes: x.holes.map(y => ({ n: y.n, par: y.par, yd: y.yd })) })), baseTee: 'white' };
+const out = osmToDraft(osm, input);
+const h1 = out.holes.find(x => x.nine === 'out' && x.n === 1), h12 = out.holes.find(x => x.nine === 'in' && x.n === 3);
+check('ref=1 は OUT 1番、パー4', h1 && h1.par === 4 && h1.src === 'osm');
+check('1番のグリーンは近くのグリーンの中心に合う', h1 && Math.abs(h1.green[0] - 139.1002) < 1e-6 && Math.abs(h1.green[1] - 35.2031) < 1e-6);
+check('1番のティーは近くのティーに合う', h1 && h1.tee[0] === 139.1001 && h1.tee[1] === 35.1999);
+check('ref=12 は IN 3番、パー3（近くに形がなければ線の端）', h12 && h12.par === 3 && h12.green[1] === 35.2015);
+check('同じ番号が2つ（ref=5）なら仮置きしない', !out.holes.some(x => x.nine === 'out' && x.n === 5));
+check('番号のないグリーン・ティーは候補になる（使ったものは除く）', out.candidates.greens.length === 1 && out.candidates.tees.length === 1);
+check('データがないときは手動の案内', /手動/.test(osmToDraft({ elements: [] }, input).note));
+
+const course = blankCourse();
+course.nines[0].holes[0] = Object.assign(blankHole(1), { tee: [1, 1], green: [1, 2], src: 'manual', ok: true });
+const n = applyDraft(course, out);
+check('手で置いたホールは仮置きで上書きしない', course.nines[0].holes[0].tee[0] === 1 && n === 1);
+check('仮置きしたホールは「自動」で未確認', course.nines[1].holes[2].src === 'osm' && !course.nines[1].holes[2].ok);
+
+/* show the results */
+const bad = results.filter(r => !r.ok).length;
+const sum = document.getElementById('sum');
+sum.textContent = bad ? `${bad}件の失敗（全${results.length}件）` : `すべて合格（${results.length}件）`;
+sum.className = bad ? 'ng' : 'ok';
+results.forEach(r => {
+  const d = document.createElement('div'); d.className = 'row ' + (r.ok ? 'ok' : 'ng');
+  d.innerHTML = `<span class="m">${r.ok ? '✓' : '✗'}</span>`; d.append(r.label);
+  document.getElementById('log').appendChild(d);
+});
+</script>
+</body>
+</html>
