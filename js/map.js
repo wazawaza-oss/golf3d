@@ -66,10 +66,10 @@ function rings(pin, maxY) {
 let mapReady = false;
 map.on('load', () => {
   map.addSource('rings', { type: 'geojson', data: fc([]) });
-  map.addLayer({ id: 'rings-glow', type: 'line', source: 'rings',
-    paint: { 'line-color': '#ffffff', 'line-width': 5, 'line-blur': 4, 'line-opacity': ['interpolate', ['linear'], ['get', 'r'], 50, .06, 400, .02] } });
-  map.addLayer({ id: 'rings', type: 'line', source: 'rings',
-    paint: { 'line-color': '#ffffff', 'line-width': ['case', ['==', ['%', ['get', 'r'], 100], 0], 1.1, .8], 'line-opacity': ['interpolate', ['linear'], ['get', 'r'], 50, .28, 400, .1] } });
+  // dotted and faint, so they never compete with the photo (no glow: it would fill in the gaps)
+  map.addLayer({ id: 'rings', type: 'line', source: 'rings', layout: { 'line-cap': 'round' },
+    paint: { 'line-color': '#ffffff', 'line-width': ['case', ['==', ['%', ['get', 'r'], 100], 0], 1.2, .9], 'line-dasharray': [1, 3],
+      'line-opacity': ['interpolate', ['linear'], ['get', 'r'], 50, .2, 400, .07] } });
   map.addSource('lines', { type: 'geojson', data: fc([]) });
   map.addLayer({ id: 'lines-dash', type: 'line', source: 'lines', filter: ['in', ['get', 'kind'], ['literal', ['hole', 'setup']]],
     layout: { 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 2, 'line-opacity': .8, 'line-dasharray': [2, 2] } });

@@ -24,7 +24,7 @@ function refresh() {
     else if (registered(h) && !S.me) f.push(ln(tee, pin, 'hole'));  // no line from you to the pin until you tap
     map.getSource('lines').setData(fc(f));
     // rings reach a little past the tee (or the player, if farther)
-    const reach = pin && !setup ? Math.max(tee ? yards(tee, pin) : 0, S.me ? yards(S.me.ll, pin) : 0, 150) + 25 : 0;
+    const reach = pin && !setup && S.prefs.rings ? Math.max(tee ? yards(tee, pin) : 0, S.me ? yards(S.me.ll, pin) : 0, 150) + 25 : 0;
     map.getSource('rings').setData(fc(reach ? rings(pin, Math.min(600, reach)) : []));
   }
   // banner (pin / test position; setup has its own controls in the sheet)
@@ -38,6 +38,7 @@ function refresh() {
   document.querySelector('.side').hidden = !$('banner').hidden || setup;  // the banner / guide panel would cover the lower buttons
   $('tapReset').hidden = !S.tap;
   $('bElev').setAttribute('aria-checked', !!S.prefs.elev);
+  $('bRings').setAttribute('aria-checked', !!S.prefs.rings);
   // GPS button: accuracy while on (green), 'オフ' while off
   $('bGps').setAttribute('aria-pressed', S.watch != null);
   $('gpsInfo').textContent = S.watch == null ? 'オフ' : S.me && S.me.src === 'gps' ? `±${Math.round(S.me.acc || 0)}m` : '取得中';

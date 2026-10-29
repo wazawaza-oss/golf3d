@@ -59,6 +59,7 @@ function renderMenu() {
   const pins = new Set(Object.keys(S.round.pins).map(Number).concat(handed)).size, tees = Object.keys(S.round.tees).length;  // yours + handed out
   $('mvPins').textContent = [pins && `ピン${pins}`, tees && `ティー${tees}`].filter(Boolean).join('・') || 'なし'; $('pinReset').disabled = !pins && !tees;
   $('bElev').setAttribute('aria-checked', !!S.prefs.elev);
+  $('bRings').setAttribute('aria-checked', !!S.prefs.rings);
 }
 $('bMenu').onclick = () => openMenu();
 $('menuClose').onclick = () => { cnDone(); $('menu').hidden = true; };
@@ -112,6 +113,7 @@ function setNine(side, id) {
 $('goNine').onclick = () => { renderNinePick(); mShow('mNine'); };
 $('goSim').onclick = () => { $('menu').hidden = true; camKeep(); S.mode = 'me'; refresh(); };
 $('bElev').onclick = () => { S.prefs.elev = !S.prefs.elev; savePrefs(); refresh(); renderMenu(); };
+$('bRings').onclick = () => { S.prefs.rings = !S.prefs.rings; savePrefs(); refresh(); renderMenu(); };
 // undo bar: a few seconds to take back the last action
 let snackT = null;
 function snack(text, undo) {
