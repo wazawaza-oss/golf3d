@@ -63,13 +63,15 @@ function rings(pin, maxY) {
   }
   return out;
 }
+// S.prefs.ringsAlpha (10–100 %) is the inner ring's opacity; outer rings fade to a third of it
+const ringsOpacity = () => { const a = Math.min(100, Math.max(10, +S.prefs.ringsAlpha || 50)) / 100; return ['interpolate', ['linear'], ['get', 'r'], 50, a, 400, a * .35]; };
+const ringsPaint = () => { if (mapReady) map.setPaintProperty('rings', 'line-opacity', ringsOpacity()); };
 let mapReady = false;
 map.on('load', () => {
   map.addSource('rings', { type: 'geojson', data: fc([]) });
-  // dotted and faint, so they never compete with the photo (no glow: it would fill in the gaps)
+  // dotted (no glow: it would fill in the gaps); how strong is the user's choice (settings › 距離の輪の濃さ)
   map.addLayer({ id: 'rings', type: 'line', source: 'rings', layout: { 'line-cap': 'round' },
-    paint: { 'line-color': '#ffffff', 'line-width': ['case', ['==', ['%', ['get', 'r'], 100], 0], 1.2, .9], 'line-dasharray': [1, 3],
-      'line-opacity': ['interpolate', ['linear'], ['get', 'r'], 50, .2, 400, .07] } });
+    paint: { 'line-color': '#ffffff', 'line-width': ['case', ['==', ['%', ['get', 'r'], 100], 0], 1.2, .9], 'line-dasharray': [1, 3], 'line-opacity': ringsOpacity() } });
   map.addSource('lines', { type: 'geojson', data: fc([]) });
   map.addLayer({ id: 'lines-dash', type: 'line', source: 'lines', filter: ['in', ['get', 'kind'], ['literal', ['hole', 'setup']]],
     layout: { 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 2, 'line-opacity': .8, 'line-dasharray': [2, 2] } });

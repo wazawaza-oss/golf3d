@@ -108,6 +108,9 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 .mrow.center{justify-content:center;color:#0b5cad;font-weight:900}
 .mrow input{flex:1;min-width:0;border:none;padding:6px 0;font-size:16px;background:transparent}
 .grp.wipe,.grp.mgap{margin-top:30px}
+.mrow.slide .mtx{flex:none;padding-left:42px;font-size:15px}
+.mrow.slide input[type=range]{flex:1;min-width:0;height:36px;accent-color:#1f9d48}
+.mrow.slide .mval{width:44px;text-align:right;font-variant-numeric:tabular-nums}
 #menu .grp-f.credit{margin-top:14px;text-align:center;font-size:12px}
 /* current course card */
 .mcourse{display:flex;align-items:center;gap:10px;padding:12px 14px}

@@ -2,7 +2,7 @@
    Bump VERSION with every release: the new worker stores the new files and deletes the old set, so no stale mix remains.
    Map tiles live in their own cache (golf3d-tiles-v1, filled by 端末に保存) and are never touched here;
    GSI tiles and Firebase go straight to the network. */
-const VERSION = '2026-10-29.3';
+const VERSION = '2026-10-29.4';
 const APP = 'golf3d-app-' + VERSION;
 const FILES = [
   './', 'index.html', 'css/style.css',
