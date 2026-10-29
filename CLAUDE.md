@@ -57,7 +57,7 @@ localStorage (per browser; Safari and the home-screen app are separate):
 | `golf3d.courseDraft` | course registration in progress: `{course, cand:{greens,tees}, fresh, named}`; removed on 確定 / 下書きを捨てる |
 | `golf3d.course.v1backup` | the old 18-hole course, kept once when migrated |
 | `golf3d.round` | `{pins:{1..18:[lng,lat]}, tees:{1..18:[lng,lat]}, front, back}` (nine ids); `tees` = today's tee moved with ピン＆ティー (this phone only, never sent) |
-| `golf3d.prefs` | `{elev, rings, ringsAlpha, gps, n, setupMin}` (rings: the dotted 50Y rings around the pin; ringsAlpha 10–100 their strength) |
+| `golf3d.prefs` | `{elev, rings, ringsAlpha, device, devAdj, gps, n, setupMin}` (rings: dotted 50Y rings, ringsAlpha 10–100 their strength; device: index in `IPHONES` (js/hud.js) or null = 自動, devAdj: manual px for the bottom edge) |
 | `golf3d.score` | solo: `{players:[{id,name}], strokes:{id:[18]}}` |
 | `golf3d.offline` | `{sig, at}` of the course whose tiles were saved |
 | `golf3d.comp` | this phone's copy of the competition (+ `outbox` of unsent scores) |

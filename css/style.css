@@ -4,16 +4,18 @@
   --accent:#16592f; --tee:#2f6fd1;
   /* map marks: soft colours that sit quietly on the photo, each with its own shape (you: circle, pin: flag, mark: diamond) */
   --me:#2f8cff; --pin:#ff2bd6; --meas:#ffd84d;
-  /* bottom edge: the home-indicator area, as tall as each iPhone model needs (0 on phones without one) */
-  --sab:env(safe-area-inset-bottom,0px);
+  /* bottom edge = home-indicator area + correction. --home: 34px on Face ID iPhones (0 on phones without one);
+     --fixb: how far iOS's "bottom" is from the real screen bottom in the home-screen app (set in js/hud.js) */
+  --home:env(safe-area-inset-bottom,0px); --fixb:0px; --sab:calc(var(--home) + var(--fixb));
 }
 html,body{height:100%;margin:0}
 /* home-screen app with black-translucent: the page starts under the status bar and iOS can leave a strip of
    that height empty at the bottom; letting the root reach past it is the usual fix */
 @media (display-mode: standalone){html{min-height:calc(100% + env(safe-area-inset-top,0px))}}
 [hidden]{display:none!important}
+#vprobe{position:fixed;top:0;bottom:0;left:0;width:0;visibility:hidden;pointer-events:none}
 body{font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;color:var(--ink);background:#dfe6da;overflow:hidden;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
-#map{position:fixed;inset:0}
+#map{position:fixed;inset:0 0 var(--fixb) 0}
 button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
 button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 
@@ -74,7 +76,7 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 .cross .cl{position:absolute;left:50%;top:60px;transform:translateX(-50%);white-space:nowrap;background:rgba(20,34,58,.88);color:#fff;font:700 13px/1 system-ui,sans-serif;padding:5px 9px;border-radius:10px;font-variant-numeric:tabular-nums}
 
 /* sheets */
-.sheet{position:fixed;left:0;right:0;bottom:0;max-height:78vh;overflow:auto;background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.25);z-index:8;padding:14px max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 18px) max(16px,env(safe-area-inset-left,0px));-webkit-user-select:text;user-select:text}
+.sheet{position:fixed;left:0;right:0;bottom:var(--fixb);max-height:78vh;overflow:auto;background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.25);z-index:8;padding:14px max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 18px) max(16px,env(safe-area-inset-left,0px));-webkit-user-select:text;user-select:text}
 .sheet .inner{max-width:560px;margin:0 auto;display:grid;gap:14px}
 .sheet h2{margin:0;font-size:18px;display:flex;justify-content:space-between;align-items:center}
 .sheet h2 button{font-size:14px;font-weight:600;color:var(--muted);padding:6px 8px}
@@ -133,7 +135,7 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 .mrow[aria-checked="true"] .sw{background:#1f9d48}
 .mrow[aria-checked="true"] .sw::after{transform:translateX(20px)}
 /* in-sheet confirm and the undo bar */
-.mconfirm{position:fixed;inset:0;z-index:20;background:rgba(10,19,34,.45);display:grid;place-items:center;padding:20px}
+.mconfirm{position:fixed;inset:0 0 var(--fixb) 0;z-index:20;background:rgba(10,19,34,.45);display:grid;place-items:center;padding:20px}
 .mcard{width:min(320px,100%);background:#fff;border-radius:16px;padding:20px 18px 14px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.3)}
 .mcard p{margin:0;font-size:17px;font-weight:900;color:var(--ink);line-height:1.45}
 .mcard small{display:block;margin-top:6px;font-size:13.5px;font-weight:700;color:#3a4350}
@@ -210,8 +212,8 @@ input[type=text]{flex:1 1 200px}
 .dock{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:max(14px,calc(var(--sab) + 4px));max-width:440px;margin:0 auto;display:grid;grid-template-columns:64px 1fr 64px;gap:8px;z-index:5}
 .dk{height:64px;border-radius:14px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);font-weight:900;font-size:11px;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
 /* phones with rounded screen corners (a home indicator): the outer corners follow the screen's curve */
-#dkRank{border-bottom-left-radius:max(14px,calc(var(--sab) * .85))}
-#dkCard{border-bottom-right-radius:max(14px,calc(var(--sab) * .85))}
+#dkRank{border-bottom-left-radius:max(14px,calc(var(--home) * .85))}
+#dkCard{border-bottom-right-radius:max(14px,calc(var(--home) * .85))}
 .dk svg{display:block}
 .dkstep{height:64px;border-radius:14px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 6px;color:var(--ink)}
 .dkstep>button{width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,.7);border:1.5px solid var(--edge);font-size:26px;font-weight:900;flex:none}
@@ -220,7 +222,7 @@ input[type=text]{flex:1 1 200px}
 .dkstep .dv b{display:block;font-size:26px;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums}
 .dkstep .dv.under b{color:#a3170f}.dkstep .dv.over b{color:#0750a8}
 .hud{touch-action:pan-y}
-.page{position:fixed;inset:0;z-index:10;background:#f1f4ee;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;transform:translateX(100%);visibility:hidden;transition:transform .25s ease,visibility 0s linear .25s;padding:calc(env(safe-area-inset-top,0px) + 10px) max(14px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 28px) max(14px,env(safe-area-inset-left,0px));box-shadow:0 0 24px rgba(0,0,0,.25)}
+.page{position:fixed;inset:0 0 var(--fixb) 0;z-index:10;background:#f1f4ee;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;transform:translateX(100%);visibility:hidden;transition:transform .25s ease,visibility 0s linear .25s;padding:calc(env(safe-area-inset-top,0px) + 10px) max(14px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 28px) max(14px,env(safe-area-inset-left,0px));box-shadow:0 0 24px rgba(0,0,0,.25)}
 .page.on{visibility:visible;transition:transform .25s ease,visibility 0s}
 .page.drag{transition:none}
 .page .inner{max-width:560px;margin:0 auto;display:grid;gap:12px}

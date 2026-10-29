@@ -60,6 +60,7 @@ function renderMenu() {
   $('mvPins').textContent = [pins && `ピン${pins}`, tees && `ティー${tees}`].filter(Boolean).join('・') || 'なし'; $('pinReset').disabled = !pins && !tees;
   $('bElev').setAttribute('aria-checked', !!S.prefs.elev);
   $('bRings').setAttribute('aria-checked', !!S.prefs.rings);
+  $('mvDevice').textContent = devName();
   $('ringsRow').hidden = !S.prefs.rings;  // the strength slider only while the rings are shown
   $('ringsAlpha').value = S.prefs.ringsAlpha; $('ringsVal').textContent = `${S.prefs.ringsAlpha}%`;
 }
@@ -115,7 +116,26 @@ function setNine(side, id) {
 $('goNine').onclick = () => { renderNinePick(); mShow('mNine'); };
 $('goSim').onclick = () => { $('menu').hidden = true; camKeep(); S.mode = 'me'; refresh(); };
 $('bElev').onclick = () => { S.prefs.elev = !S.prefs.elev; savePrefs(); refresh(); renderMenu(); };
-$('bRings').onclick = () => { S.prefs.rings = !S.prefs.rings; savePrefs(); refresh(); renderMenu(); };
+/* iPhone model: the real screen height for fitting the home-screen app (fitScreen, js/hud.js) */
+M_TITLE.mDevice = 'iPhoneの機種'; M_RENDER.mDevice = () => renderDevice();
+const devName = () => IPHONES[S.prefs.device] ? `iPhone ${IPHONES[S.prefs.device][0].split(' / ')[0]}${IPHONES[S.prefs.device][0].includes('/') ? ' など' : ''}` : '自動';
+function renderDevice() {
+  const g = $('devList'); g.textContent = '';
+  [[null, '自動（おすすめ）', '画面の大きさを端末から読み取ります']].concat(IPHONES.map((d, i) => [i, `iPhone ${d[0]}`, `${d[1]}×${d[2]}`])).forEach(([i, name, sub]) => {
+    const on = (S.prefs.device == null ? null : S.prefs.device) === i, b = el('button', 'mrow');
+    const tx = el('span', 'mtx', name); tx.appendChild(el('small', '', sub));
+    b.setAttribute('aria-pressed', on); b.append(tx, el('span', 'pick', on ? '✓' : ''));
+    b.onclick = () => { S.prefs.device = i; savePrefs(); fitScreen(); renderDevice(); };
+    g.appendChild(b);
+  });
+  $('devAdj').value = S.prefs.devAdj || 0; $('devAdjV').textContent = `${S.prefs.devAdj > 0 ? '+' : ''}${S.prefs.devAdj || 0}`;
+  const f = fitInfo;  // for a screenshot when it still does not fit
+  $('devInfo').textContent = !f ? '' : f.on ? `測定：画面の高さ ${f.screenH}・iOSの表示の高さ ${f.winH}・下を ${f.fix}px 調整中` : 'ホーム画面のアプリ（縦向き）で開いたときに調整します。';
+}
+$('devAdj').oninput = () => { S.prefs.devAdj = +$('devAdj').value; fitScreen(); renderDevice(); };
+$('devAdj').onchange = () => savePrefs();
+$('goDevice').onclick = () => { renderDevice(); mShow('mDevice'); };
+$('bRings').onclick =() => { S.prefs.rings = !S.prefs.rings; savePrefs(); refresh(); renderMenu(); };
 // the map behind the sheet follows the slider as it moves; saved when the finger lifts
 $('ringsAlpha').oninput = () => { S.prefs.ringsAlpha = +$('ringsAlpha').value; $('ringsVal').textContent = `${S.prefs.ringsAlpha}%`; ringsPaint(); };
 $('ringsAlpha').onchange = () => savePrefs();

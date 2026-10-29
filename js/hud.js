@@ -83,6 +83,35 @@ function centerOn(ll, extra = {}) {
 map.on('move', () => { if (isPlacing()) crossLabel(); });
 addEventListener('resize', placeCross);
 if ('ResizeObserver' in window) { const ro = new ResizeObserver(placeCross); ro.observe($('setup')); ro.observe($('banner')); }
+/* screen fit for the iPhone home-screen app. iOS can place "the bottom of the window" above or below the real
+   screen bottom, so the bottom buttons end up hidden or with an empty strip under them. The real screen height
+   comes from the iPhone model picked in settings (or screen.height on 自動); a full-height fixed element
+   (#vprobe) shows where iOS puts the bottom; the difference (plus a manual adjustment) moves everything that sits
+   on the bottom edge. Only in the home-screen app and upright; Safari and Android are left as they are. */
+const IPHONES = [  // portrait size in points; every model here has a 34pt home indicator
+  ['X / XS / 11 Pro / 12 mini / 13 mini', 375, 812],
+  ['XR / XS Max / 11 / 11 Pro Max', 414, 896],
+  ['12 / 12 Pro / 13 / 13 Pro / 14 / 16e', 390, 844],
+  ['12 Pro Max / 13 Pro Max / 14 Plus', 428, 926],
+  ['14 Pro / 15 / 15 Pro / 16', 393, 852],
+  ['14 Pro Max / 15 Plus / 15 Pro Max / 16 Plus', 430, 932],
+  ['16 Pro / 17 / 17 Pro', 402, 874],
+  ['Air', 420, 912],
+  ['16 Pro Max / 17 Pro Max', 440, 956]
+];
+const isHomeApp = () => !!(navigator.standalone || matchMedia('(display-mode: standalone)').matches);
+let fitInfo = null;  // what was measured, shown in settings: { screenH, winH, fix }
+function fitScreen() {
+  const root = document.documentElement.style, dev = IPHONES[S.prefs.device];  // undefined = 自動
+  const upright = innerHeight > innerWidth, on = isHomeApp() && upright && /iPhone|iPod/.test(navigator.userAgent);
+  const screenH = dev ? dev[2] : Math.max(screen.width, screen.height), winH = Math.round($('vprobe').getBoundingClientRect().height);
+  const fix = on ? Math.max(-120, Math.min(120, winH - screenH)) + (+S.prefs.devAdj || 0) : 0;
+  fitInfo = { on, screenH, winH, fix };
+  root.setProperty('--home', dev && on ? '34px' : 'env(safe-area-inset-bottom,0px)');
+  if (root.getPropertyValue('--fixb') !== fix + 'px') { root.setProperty('--fixb', fix + 'px'); map.resize(); }
+}
+fitScreen(); addEventListener('resize', fitScreen); addEventListener('orientationchange', () => setTimeout(fitScreen, 300));
+addEventListener('pageshow', () => setTimeout(fitScreen, 300));
 // the button column and toast start just below the distance panel
 const hudEdge = () => document.documentElement.style.setProperty('--hudb', Math.round(document.querySelector('.hud').getBoundingClientRect().bottom) + 'px');
 hudEdge(); addEventListener('resize', hudEdge);

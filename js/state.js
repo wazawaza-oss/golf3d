@@ -97,7 +97,7 @@ const S = {
   round: loadJSON('golf3d.round') || { pins: {} },  // { pins: { 1..18: [lng, lat] }, tees: { 1..18: [lng, lat] }, front, back } (nine ids)
   su: null,  // guide in progress: { nine: id, n: 1..9, step: 'green'|'tee', only } (only: opened for one hole from the list)
   draft: null,  // course registration in progress (see DRAFT_KEY)
-  prefs: Object.assign({ elev: true, rings: true, ringsAlpha: 50, gps: false, n: 1, setupMin: matchMedia('(max-width:700px)').matches }, loadJSON('golf3d.prefs') || {}),
+  prefs: Object.assign({ elev: true, rings: true, ringsAlpha: 50, device: null, devAdj: 0, gps: false, n: 1, setupMin: matchMedia('(max-width:700px)').matches }, loadJSON('golf3d.prefs') || {}),
   score: (() => { const s = loadJSON('golf3d.score'); return s && Array.isArray(s.players) && s.players.length ? s : { players: [{ id: 'p1', name: '自分' }], strokes: {} }; })(),
   is3D: false, view: 'tee', mode: null, me: null, tap: null, watch: null, wake: null, page: 'map'
 };
