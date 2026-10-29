@@ -61,7 +61,7 @@ localStorage (per browser; Safari and the home-screen app are separate):
 | `golf3d.score` | solo: `{players:[{id,name}], strokes:{id:[18]}}` |
 | `golf3d.offline` | `{sig, at}` of the course whose tiles were saved |
 | `golf3d.comp` | this phone's copy of the competition (+ `outbox` of unsent scores) |
-| `golf3d.a2hsClosed` | Safari hint closed |
+| `golf3d.a2hsClosed` | time the add-to-home card was closed (shown again after 20 h; older versions saved `true`) |
 
 Caches: `golf3d-tiles-v1` (map tiles, never cleared by updates), `golf3d-app-<VERSION>` (app files).
 

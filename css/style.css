@@ -4,11 +4,17 @@
   --accent:#16592f; --tee:#2f6fd1;
   /* map marks: soft colours that sit quietly on the photo, each with its own shape (you: circle, pin: flag, mark: diamond) */
   --me:#2f8cff; --pin:#ff2bd6; --meas:#ffd84d;
+  /* bottom edge: the home-indicator area (iPhone model's safe area), lowered by --gapb when iOS reports the
+     home-screen app shorter than its screen (set in js/hud.js; 0 everywhere else) */
+  --gapb:0px; --sab:calc(env(safe-area-inset-bottom,0px) - var(--gapb));
 }
 html,body{height:100%;margin:0}
+/* home-screen app with black-translucent: the page starts under the status bar and iOS can leave a strip of
+   that height empty at the bottom; letting the root reach past it is the usual fix */
+@media (display-mode: standalone){html{min-height:calc(100% + env(safe-area-inset-top,0px))}}
 [hidden]{display:none!important}
 body{font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;color:var(--ink);background:#dfe6da;overflow:hidden;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
-#map{position:fixed;inset:0}
+#map{position:fixed;inset:0 0 calc(-1 * var(--gapb)) 0}
 button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
 button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 
@@ -42,10 +48,10 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 .sub .up{color:#a3170f;background:rgba(163,23,15,.12)}.sub .down{color:#0750a8;background:rgba(7,80,168,.12)}
 /* while marks are up: a rounded リセット button sitting right above スコアボード (same width, same glass);
    the button column always ends above that spot, so nothing moves when it appears */
-.tapreset{position:fixed;right:max(10px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 86px);z-index:5;width:64px;height:38px;border-radius:12px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);font-size:13px;font-weight:900;text-shadow:0 0 2px rgba(255,255,255,.95)}
+.tapreset{position:fixed;right:max(10px,env(safe-area-inset-right,0px));bottom:calc(var(--sab) + 86px);z-index:5;width:64px;height:38px;border-radius:12px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);font-size:13px;font-weight:900;text-shadow:0 0 2px rgba(255,255,255,.95)}
 
 /* right column: settings / GPS / 3D / view / you / pin — fits between the distance panel (--hudb) and the bottom dock */
-.side{position:fixed;right:max(10px,env(safe-area-inset-right,0px));top:calc(var(--hudb,190px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 134px);display:flex;flex-direction:column;justify-content:center;gap:7px;z-index:4;pointer-events:none}
+.side{position:fixed;right:max(10px,env(safe-area-inset-right,0px));top:calc(var(--hudb,190px) + 10px);bottom:calc(var(--sab) + 134px);display:flex;flex-direction:column;justify-content:center;gap:7px;z-index:4;pointer-events:none}
 .fab{pointer-events:auto;flex:0 1 50px;min-height:40px;width:52px;border-radius:12px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);font-weight:900;font-size:15px;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);line-height:1.15;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center}
 .fab small{display:block;font-size:10.5px;font-weight:800;color:var(--ink);white-space:nowrap}
 .fab svg{display:block}
@@ -53,7 +59,7 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 .fab[aria-pressed="true"] small{color:#fff}
 
 /* floating cards */
-.banner{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 24px);width:min(440px,calc(100% - 20px));border-radius:14px;z-index:6;box-shadow:0 4px 18px rgba(0,0,0,.22);background:#14223a;color:#fff;padding:10px 12px;display:grid;gap:8px;font-weight:700;font-size:15px}
+.banner{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--sab) + 24px);width:min(440px,calc(100% - 20px));border-radius:14px;z-index:6;box-shadow:0 4px 18px rgba(0,0,0,.22);background:#14223a;color:#fff;padding:10px 12px;display:grid;gap:8px;font-weight:700;font-size:15px}
 .banner .bb{display:flex;gap:8px}
 .banner button{background:#fff;color:var(--ink);border-radius:10px;padding:10px 14px;font-size:14px;font-weight:700;flex:none}
 .banner button.go{flex:1;background:var(--meas);color:#14223a;font-size:16px}
@@ -69,7 +75,7 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 .cross .cl{position:absolute;left:50%;top:60px;transform:translateX(-50%);white-space:nowrap;background:rgba(20,34,58,.88);color:#fff;font:700 13px/1 system-ui,sans-serif;padding:5px 9px;border-radius:10px;font-variant-numeric:tabular-nums}
 
 /* sheets */
-.sheet{position:fixed;left:0;right:0;bottom:0;max-height:78vh;overflow:auto;background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.25);z-index:8;padding:14px max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 18px) max(16px,env(safe-area-inset-left,0px));-webkit-user-select:text;user-select:text}
+.sheet{position:fixed;left:0;right:0;bottom:calc(-1 * var(--gapb));max-height:78vh;overflow:auto;background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.25);z-index:8;padding:14px max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 18px) max(16px,env(safe-area-inset-left,0px));-webkit-user-select:text;user-select:text}
 .sheet .inner{max-width:560px;margin:0 auto;display:grid;gap:14px}
 .sheet h2{margin:0;font-size:18px;display:flex;justify-content:space-between;align-items:center}
 .sheet h2 button{font-size:14px;font-weight:600;color:var(--muted);padding:6px 8px}
@@ -128,14 +134,14 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 .mrow[aria-checked="true"] .sw{background:#1f9d48}
 .mrow[aria-checked="true"] .sw::after{transform:translateX(20px)}
 /* in-sheet confirm and the undo bar */
-.mconfirm{position:fixed;inset:0;z-index:20;background:rgba(10,19,34,.45);display:grid;place-items:center;padding:20px}
+.mconfirm{position:fixed;inset:0 0 calc(-1 * var(--gapb)) 0;z-index:20;background:rgba(10,19,34,.45);display:grid;place-items:center;padding:20px}
 .mcard{width:min(320px,100%);background:#fff;border-radius:16px;padding:20px 18px 14px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.3)}
 .mcard p{margin:0;font-size:17px;font-weight:900;color:var(--ink);line-height:1.45}
 .mcard small{display:block;margin-top:6px;font-size:13.5px;font-weight:700;color:#3a4350}
 .mcbtn{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
 .mcbtn button{height:46px;border-radius:12px;background:#eceef1;font-size:16px;font-weight:900;color:var(--ink)}
 .mcbtn button.red{background:#c8102e;color:#fff}
-.snack{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 24px);z-index:21;width:min(420px,calc(100% - 24px));display:flex;align-items:center;gap:10px;padding:10px 10px 10px 16px;border-radius:14px;background:#14223a;color:#fff;font-size:14.5px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.snack{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--sab) + 24px);z-index:21;width:min(420px,calc(100% - 24px));display:flex;align-items:center;gap:10px;padding:10px 10px 10px 16px;border-radius:14px;background:#14223a;color:#fff;font-size:14.5px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.35)}
 .snack span{flex:1}
 .snack button{padding:10px 14px;border-radius:10px;background:#fff;color:var(--ink);font-weight:900;font-size:14.5px}
 
@@ -202,7 +208,7 @@ input[type=text]{flex:1 1 200px}
 
 /* side pages: ranking (left of map) and score entry (right of map) */
 /* bottom dock (kept clear of Safari's bar): 順位 | this hole's score − / + | スコアボード */
-.dock{position:fixed;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 14px);max-width:440px;margin:0 auto;display:grid;grid-template-columns:64px 1fr 64px;gap:8px;z-index:5}
+.dock{position:fixed;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:calc(var(--sab) + 14px);max-width:440px;margin:0 auto;display:grid;grid-template-columns:64px 1fr 64px;gap:8px;z-index:5}
 .dk{height:64px;border-radius:14px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);font-weight:900;font-size:11px;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
 .dk svg{display:block}
 .dkstep{height:64px;border-radius:14px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 6px;color:var(--ink)}
@@ -212,7 +218,7 @@ input[type=text]{flex:1 1 200px}
 .dkstep .dv b{display:block;font-size:26px;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums}
 .dkstep .dv.under b{color:#a3170f}.dkstep .dv.over b{color:#0750a8}
 .hud{touch-action:pan-y}
-.page{position:fixed;inset:0;z-index:10;background:#f1f4ee;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;transform:translateX(100%);visibility:hidden;transition:transform .25s ease,visibility 0s linear .25s;padding:calc(env(safe-area-inset-top,0px) + 10px) max(14px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 28px) max(14px,env(safe-area-inset-left,0px));box-shadow:0 0 24px rgba(0,0,0,.25)}
+.page{position:fixed;inset:0 0 calc(-1 * var(--gapb)) 0;z-index:10;background:#f1f4ee;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;transform:translateX(100%);visibility:hidden;transition:transform .25s ease,visibility 0s linear .25s;padding:calc(env(safe-area-inset-top,0px) + 10px) max(14px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 28px) max(14px,env(safe-area-inset-left,0px));box-shadow:0 0 24px rgba(0,0,0,.25)}
 .page.on{visibility:visible;transition:transform .25s ease,visibility 0s}
 .page.drag{transition:none}
 .page .inner{max-width:560px;margin:0 auto;display:grid;gap:12px}
@@ -314,11 +320,6 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 .mk.num{font:700 11px/1 system-ui,sans-serif;background:rgba(20,34,58,.88);color:#fff;border-radius:10px;padding:4px 7px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 /* Safari only: a small, closable "add to home screen" card under the distance panel, left of the button column */
-.a2hs{position:fixed;top:calc(var(--hudb,190px) + 10px);left:max(10px,env(safe-area-inset-left,0px));right:calc(max(10px,env(safe-area-inset-right,0px)) + 62px);max-width:340px;z-index:6;display:flex;align-items:flex-start;gap:8px;padding:9px 6px 9px 12px;border-radius:14px;background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(10,19,34,.16);box-shadow:0 4px 14px rgba(0,0,0,.22);color:var(--ink)}
-.a2hs p{margin:0;flex:1;font-size:12.5px;line-height:1.45}
-.a2hs b{font-weight:800}
-.a2hs span{display:block;margin-top:2px;font-size:11.5px;font-weight:700;color:#3a4350}
-.a2hs button{flex:none;width:30px;height:30px;border-radius:50%;font-size:14px;font-weight:900;color:#3a4350}
 .sc th.sum{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}  /* nine names (e.g. 東, OUT) head the sum column */
 /* setup: which nine is being registered (OUT, IN, 東 …) and a button to add one */
 .nines{display:flex;flex-wrap:wrap;gap:6px}
@@ -330,7 +331,6 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 /* competition: role label under the distance panel */
 .rolebadge{position:fixed;top:calc(var(--hudb,190px) + 6px);left:50%;transform:translateX(-50%);z-index:5;max-width:calc(100% - 150px);padding:3px 10px;border-radius:999px;background:rgba(22,89,47,.82);color:#fff;font-size:11.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .rolebadge.off{background:rgba(90,100,112,.85)}
-.a2hs{top:calc(var(--hudb,190px) + 34px)}  /* below the role label */
 /* competition screens in settings */
 #menu .mrow.field .mtx{flex:none;width:84px}
 #menu .mrow.field input{flex:1 1 0;min-width:0;font:inherit;font-size:15px;font-weight:700;padding:8px 10px;border:1px solid #d9dce1;border-radius:9px;background:#fff;color:var(--ink)}  /* name and date boxes look alike */
@@ -355,3 +355,16 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 .mcbtn.one{grid-template-columns:1fr}
 .dkstep .dv.who{cursor:pointer}
 #menu .rrow input{min-width:0}
+/* add to home screen: a card above the bottom buttons while the app is open in a browser */
+.a2hs{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--sab) + 92px);width:min(420px,calc(100% - 20px));box-sizing:border-box;z-index:7;padding:14px 14px 12px;border-radius:18px;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.35);color:var(--ink)}
+.a2hs .a2t{display:flex;align-items:center;gap:10px;margin:0;font-size:18px;font-weight:900;line-height:1.3}
+.a2hs .a2t img{border-radius:9px;flex:none}
+.a2hs ul{margin:8px 0 0;padding-left:20px;font-size:13.5px;font-weight:700;line-height:1.55;color:#3a4350}
+.a2hs ol{margin:10px 0 0;padding:10px 12px 10px 32px;border-radius:12px;background:#eef3fa;font-size:15px;font-weight:800;line-height:1.6}
+.a2hs ol:empty{display:none}
+.a2hs ol svg{vertical-align:-4px;margin:0 2px}
+.a2btn{display:flex;gap:8px;margin-top:12px}
+.a2btn button{flex:1;height:48px;border-radius:12px;background:#eceef1;font-size:16px;font-weight:900;color:var(--ink)}
+.a2btn button.go{flex:1.6;background:var(--accent);color:#fff}
+.a2row{margin-top:14px;border:2px solid #1f9d48}
+.a2row .mtx{color:#0f4a26}

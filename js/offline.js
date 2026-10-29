@@ -53,13 +53,40 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
-/* Safari only (not the home-screen app, not Chrome / LINE on iPhone): suggest Add to Home Screen until closed */
-$('a2hsClose').onclick = () => { $('a2hs').hidden = true; saveJSON('golf3d.a2hsClosed', true); };
-(() => {
+/* Add to Home Screen: on a phone, in any browser (not the home-screen app), a card with the steps for that
+   browser. あとで hides it for 20 hours (golf3d.a2hsClosed = time closed); settings keeps a row to open it again. */
+const A2_SHARE = '<svg width="20" height="22" viewBox="0 0 20 22" fill="none" stroke="#0b5cad" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="共有ボタン"><path d="M10 14V2M6 6l4-4 4 4"/><path d="M6 9H3v11h14V9h-3"/></svg>';
+const a2 = (() => {
   const ua = navigator.userAgent;
   const iOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const safari = /Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\/|Line\//.test(ua);
+  const android = /Android/.test(ua);
   const app = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
-  if (!iOS || !safari || app || loadJSON('golf3d.a2hsClosed')) return;
-  $('a2hs').hidden = false;
+  const inApp = /Line\/|FBAN|FBAV|Instagram|GSA\//.test(ua);  // LINE and other in-app browsers cannot add to the home screen
+  return { on: (iOS || android) && !app, iOS, android, inApp, chrome: /CriOS/.test(ua) };
 })();
+let a2Prompt = null;  // Android Chrome: the browser's own install dialog, kept until the button is pressed
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); a2Prompt = e; $('a2hsInstall').hidden = false; a2Steps(); });
+function a2Steps() {
+  const ol = $('a2hsHow');
+  ol.innerHTML = a2Prompt ? '' : a2.inApp
+    ? `<li>右上（または右下）の「…」や ${A2_SHARE} から「${a2.iOS ? 'Safari' : 'ブラウザ'}で開く」を選ぶ</li><li>開いた画面で、もう一度この案内に従う</li>`
+    : a2.iOS
+      ? `<li>${a2.chrome ? 'アドレスバーの右の' : '画面の下（または上）の'} ${A2_SHARE} を押す</li><li>「ホーム画面に追加」を選ぶ（見えないときは下にスクロール）</li><li>右上の「追加」を押す</li>`
+      : '<li>右上の「︙」（メニュー）を押す</li><li>「ホーム画面に追加」または「アプリをインストール」を選ぶ</li>';
+}
+function a2Show() { a2Steps(); $('a2hs').hidden = false; }
+$('a2hsClose').onclick = () => { $('a2hs').hidden = true; saveJSON('golf3d.a2hsClosed', Date.now()); };
+$('a2hsInstall').onclick = async () => {
+  if (!a2Prompt) return;
+  a2Prompt.prompt();
+  const r = await a2Prompt.userChoice.catch(() => null); a2Prompt = null;
+  $('a2hsInstall').hidden = true; $('a2hs').hidden = true;
+  if (r && r.outcome === 'accepted') toast('ホーム画面に追加しました。次からはホーム画面のアイコンから開いてください');
+};
+$('a2hsOpen').onclick = () => { $('menu').hidden = true; a2Show(); };
+$('a2hsRow').hidden = !a2.on;
+addEventListener('appinstalled', () => { $('a2hs').hidden = $('a2hsRow').hidden = true; });
+if (a2.on) {
+  const closed = loadJSON('golf3d.a2hsClosed');  // older versions saved true: show it again
+  if (typeof closed !== 'number' || Date.now() - closed > 20 * 3600e3) a2Show();
+}

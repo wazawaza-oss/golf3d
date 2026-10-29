@@ -32,9 +32,12 @@
   <div class="sub" id="dSub"></div>
 </div>
 <div class="rolebadge" id="roleBadge" hidden></div>
-<div class="a2hs" id="a2hs" role="note" hidden>
-  <p><b>ホーム画面に追加すると、電波がなくても開けて、データも消えにくくなります。</b><span>Safari の共有ボタン → 「ホーム画面に追加」</span></p>
-  <button id="a2hsClose" aria-label="この案内を閉じる">✕</button>
+<!-- opened in a browser (not the home-screen app): ask to add it to the home screen (js/offline.js) -->
+<div class="a2hs" id="a2hs" role="dialog" aria-labelledby="a2hsT" hidden>
+  <p class="a2t" id="a2hsT"><img src="icons/icon-180.png" alt="" width="40" height="40">ホーム画面に追加してください</p>
+  <ul class="a2why"><li>画面全体が地図になり、見やすくなります</li><li>電波がなくても開けます</li><li>スコアやコースのデータが消えにくくなります</li></ul>
+  <ol class="a2how" id="a2hsHow"></ol>
+  <div class="a2btn"><button id="a2hsClose">あとで</button><button class="go" id="a2hsInstall" hidden>ホーム画面に追加</button></div>
 </div>
 <button class="tapreset" id="tapReset" aria-label="マークを消して現在地からの距離に戻す" hidden>リセット</button>
 <div class="side">
@@ -70,6 +73,7 @@
     <button class="mdone" id="menuClose">完了</button>
   </div>
   <div class="mbody" id="mMain">
+    <div class="grp a2row" id="a2hsRow" hidden><button class="mrow" id="a2hsOpen"><img src="icons/icon-180.png" alt="" width="30" height="30" class="mic"><span class="mtx">ホーム画面に追加する<small>画面が広くなり、電波がなくても開けます</small></span><span class="chev">›</span></button></div>
     <div class="grp-t">いまのコース</div>
     <div class="grp">
       <div class="mcourse">
