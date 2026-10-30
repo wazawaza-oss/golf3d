@@ -29,6 +29,7 @@
 <script src="../js/state.js"></script>
 <script src="../js/geo.js"></script>
 <script src="../js/draft.js"></script>
+<script src="../js/cardjson.js"></script>
 </head>
 <body>
 <h1>コースデータのテスト</h1>
@@ -109,6 +110,65 @@ course.nines[0].holes[0] = Object.assign(blankHole(1), { tee: [1, 1], green: [1,
 const n = applyDraft(course, out);
 check('手で置いたホールは仮置きで上書きしない', course.nines[0].holes[0].tee[0] === 1 && n === 1);
 check('仮置きしたホールは「自動」で未確認', course.nines[1].holes[2].src === 'osm' && !course.nines[1].holes[2].ok);
+
+/* 6. HDCP is kept; older holes get null */
+check('HDCPは1〜18だけ残り、ほかは null', toCourse(Object.assign({}, v2, { nines: v2.nines.map(x => ({ id: x.id, name: x.name, holes: x.holes.map((h, i) => Object.assign({}, h, { hdcp: [7, 0, 19, '3', 2.5][i] })) })) }))
+  .nines[0].holes.slice(0, 5).map(h => h.hdcp).join() === '7,,,,' && c2.nines[0].holes[0].hdcp === null);
+
+/* 7. score card JSON (schemaVersion 1) */
+const PARS = [4, 3, 5, 4, 4, 3, 4, 5, 4];
+const cardNine = (name, d) => ({ name, holes: PARS.map((par, i) => ({ no: i + 1, par, hdcp: i * 2 + 1, dist: { t1: [400, 180, 520, 390, 380, 160, 370, 510, 410][i] + d, t2: [380, 165, 500, 370, 360, 150, 350, 490, 390][i] + d } })),
+  printedTotals: { par: 36 } });
+const cardJ = { schemaVersion: 1, course: { name: 'テストCC', unit: 'yard', sourceUrl: null, tees: [{ id: 't1', label: 'バック' }, { id: 't2', label: 'レギュラー' }],
+  nines: [cardNine('東', 0), cardNine('西', 5), cardNine('南', -5)] }, warnings: ['3番の距離がかすれていました'] };
+const rd = readCard(JSON.stringify(cardJ));
+check('3ナインのカードが読める', rd.card && rd.card.nines.length === 3 && !rd.errors.length);
+check('```json で囲まれていても読める', readCard('```json\n' + JSON.stringify(cardJ) + '\n```').card !== null);
+check('JSONでなければエラー', readCard('{"schemaVersion":').errors.length === 1);
+check('schemaVersion 2 はエラー', !readCard(JSON.stringify(Object.assign({}, cardJ, { schemaVersion: 2 }))).card);
+const bad8 = JSON.parse(JSON.stringify(cardJ)); bad8.course.nines[1].holes.pop();
+check('ホールが9件でないとエラー', /8件/.test(readCard(JSON.stringify(bad8)).errors.join()));
+const badT = JSON.parse(JSON.stringify(cardJ)); badT.course.nines[0].holes[0].dist.t9 = 300;
+check('ティーにないidの距離はエラー', /t9/.test(readCard(JSON.stringify(badT)).errors.join()));
+check('ティーがないとエラー', !readCard(JSON.stringify(Object.assign({}, cardJ, { course: Object.assign({}, cardJ.course, { tees: [] }) }))).card);
+const shuf = JSON.parse(JSON.stringify(cardJ)); shuf.course.nines[0].holes.reverse();
+check('番号順に並べ直す', readCard(JSON.stringify(shuf)).card.nines[0].holes[0].hdcp === 1);
+
+const is0 = cardIssues(rd.card);
+check('問題のないカードは AIのメモと出典なしの注意だけ', is0.list.length === 1 && /かすれ/.test(is0.list[0]) && is0.light.length === 1 && !is0.cells.size);
+const w = readCard(JSON.stringify(cardJ)).card;
+w.nines[0].holes[1].par = 6; w.nines[0].holes[2].dist.t1 = 900; w.nines[0].holes[3].dist.t2 = null; w.nines[1].totals.par = 35;
+const is1 = cardIssues(w);
+check('パー6・距離の目安外・空欄・印刷合計の違いに印が付く', ['0.1.par', '0.2.t.t1', '0.3.t.t2', '1.sum.par'].every(k => is1.cells.has(k)));
+check('パー合計が34〜38の外なら印', is1.cells.has('0.sum.par'));
+const wm = readCard(JSON.stringify(Object.assign({}, cardJ, { course: Object.assign({}, cardJ.course, { unit: 'meter' }) }))).card;
+wm.nines[0].holes[0].dist.t1 = 950;
+check('メートルのときは距離の目安を見ない', !cardIssues(wm).cells.has('0.0.t.t1'));
+
+// over: the course's nines matched by name / order, positions kept, colours guessed
+const base = blankCourse();
+base.nines[1].name = '東'; base.nines[1].holes[0].tee = [139, 35]; base.nines[1].holes[0].green = [139, 35.003];
+base.nines[0].holes[4].yd = { white: 999 };
+const tmap = cardTeeMap(rd.card, base);
+check('バック→青、レギュラー→白 に入る', tmap.t1 === 'blue' && tmap.t2 === 'white');
+const ov = applyCard(base, rd.card, tmap, 'over');
+check('上書き：名前が同じハーフ（東）に入り、位置は残る', ov.nines[1].name === '東' && ov.nines[1].id === base.nines[1].id && ov.nines[1].holes[0].tee[0] === 139 && ov.nines[1].holes[0].yd.white === 380);
+check('上書き：残りのハーフ（OUT）は順番で西になり、南は追加', ov.nines[0].name === '西' && ov.nines[0].id === 'out' && ov.nines.length === 3 && ov.nines[2].name === '南');
+check('上書き：パー・HDCPが入る', ov.nines[1].holes[1].par === 3 && ov.nines[1].holes[1].hdcp === 3);
+check('上書き：元のコースは変わらない', base.nines[0].name === 'OUT' && base.nines[0].holes[4].yd.white === 999);
+const blank = readCard(JSON.stringify(cardJ)).card; blank.nines[1].holes[4].dist.t2 = null; blank.nines[1].holes[4].hdcp = null;
+const ov2 = applyCard(base, blank, tmap, 'over');
+check('上書き：カードの空欄は今の値のまま', ov2.nines[0].holes[4].yd.white === 999 && ov2.nines[0].holes[4].hdcp === null);
+check('上書き：地図に置く色はそのまま', ov.baseTee === 'white');
+const ok = toCourse(JSON.parse(JSON.stringify(ov)));
+check('上書きしたコースは保存の形として正しい（HDCPも残る）', ok && ok.nines.length === 3 && ok.nines[2].holes[8].hdcp === 17);
+
+// new: the card's nines and colours only; meters become yards
+const nw = applyCard(base, wm, { t1: 'new', t2: 'new' }, 'new');
+check('別のコース：カードの3ハーフだけ、位置なし', nw.nines.map(x => x.name).join() === '東,西,南' && !nw.nines.some(x => x.holes.some(h => h.tee)));
+check('別のコース：色はバック（青）・レギュラー（白）、地図に置く色はレギュラー', nw.tees.map(t => t.name + t.color).join() === 'バック#1f5fd1,レギュラー#ffffff' && nw.tees[1].id === nw.baseTee);
+check('別のコース：メートルはヤードに換算（380m → 416Y）', nw.nines[0].holes[0].yd[nw.baseTee] === 416);
+check('別のコース：950m（1039Y）は入れない', !(nw.tees[0].id in nw.nines[0].holes[0].yd));
 
 /* show the results */
 const bad = results.filter(r => !r.ok).length;

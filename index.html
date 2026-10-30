@@ -227,7 +227,8 @@
     </div>
     <p class="grp-f" id="rgInfo"></p>
     <div class="grp-t">2. ハーフ（OUT・INなど）とティーの色</div>
-    <div class="grp"><button class="mrow" id="rgNines"><span class="mtx">ハーフ・ティーの色・ヤード<small id="rgNinesS"></small></span><span class="chev">›</span></button></div>
+    <div class="grp"><button class="mrow" id="rgNines"><span class="mtx">ハーフ・ティーの色・ヤード<small id="rgNinesS"></small></span><span class="chev">›</span></button>
+      <button class="mrow" id="rgCard"><span class="mtx">スコアカードから取り込む<small>AIで作ったJSONから、パー・HDCP・ヤードをまとめて入れます</small></span><span class="chev">›</span></button></div>
     <div class="grp-t">3. 地図データから自動で置く（データがあるゴルフ場だけ）</div>
     <div class="grp"><button class="mrow center" id="rgOsm">地図データから自動で置く</button></div>
     <p class="grp-f" id="rgOsmInfo">データがないゴルフ場でも、このまま4へ進んで手で置けます。自動で置いた位置は、4で確かめてください。</p>
@@ -256,6 +257,32 @@
   <div class="mbody" id="mRegYard" hidden>
     <p class="grp-f">ヤードは空欄のままでもかまいません（空欄の色は、地図に置く色と同じ位置になります）。</p>
     <div class="ydt" id="ryTable"></div>
+  </div>
+
+  <!-- score card JSON (made by an outside AI) → par, HDCP, yardages of the draft (js/import.js, js/cardjson.js) -->
+  <div class="mbody" id="mRegCard" hidden>
+    <p class="grp-f">スコアカードの写真などから、外部のAIで作ったJSONを貼り付けるか、ファイルを選んでください。パー・HDCP・ティーごとの距離が下書きに入ります（地図に置いた位置は変わりません）。</p>
+    <div class="grp"><textarea id="rcText" rows="6" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder='{"schemaVersion": 1, "course": { … } }' aria-label="スコアカードのJSON"></textarea></div>
+    <div class="rcbtns"><button class="mrow center" id="rcFile">ファイルを選ぶ</button><button class="mrow center go" id="rcRead">読み込む</button></div>
+    <input type="file" id="rcFileIn" accept=".json,.txt,application/json,text/plain" hidden>
+    <p class="grp-f" id="rcInfo"></p>
+    <div id="rcView" hidden>
+      <div id="rcSrc"></div>
+      <div class="grp-t">確認してください</div>
+      <ul class="rcwarn" id="rcWarn"></ul>
+      <div class="grp-t">登録のしかた</div>
+      <div class="grp">
+        <div class="mrow field"><span class="mtx">コース名</span><input type="text" id="rcName" maxlength="40" placeholder="コース名を入れてください" aria-label="コース名"></div>
+        <div class="mrow rcmode"><button id="rcOver" aria-pressed="true">今のコースに上書き<small>地図の位置・スコアは残す</small></button><button id="rcNew" aria-pressed="false">別のコースとして<small>今のコースと置き換え</small></button></div>
+      </div>
+      <p class="grp-f" id="rcModeInfo"></p>
+      <div class="grp-t">ティー（どの色に入れるか）</div>
+      <div class="grp" id="rcTees"></div>
+      <p class="grp-f">黄色のマスは確かめてほしい所です。マスを押すと直せます（空欄は登録しません）。</p>
+      <div id="rcTables"></div>
+      <div class="grp mgap"><button class="mrow center big go" id="rcGo">登録（下書きに入れる）</button></div>
+      <p class="grp-f">登録のあと、コース登録の画面の「確定して保存」で保存されます。</p>
+    </div>
   </div>
 
   <div class="mbody" id="mDevice" hidden>
@@ -369,8 +396,10 @@
 <script src="js/menu.js"></script>
 <script src="js/course.js"></script>
 <script src="js/draft.js"></script>
+<script src="js/cardjson.js"></script>
 <script src="js/search.js"></script>
 <script src="js/setup.js"></script>
+<script src="js/import.js"></script>
 <script src="js/guide.js"></script>
 <script src="js/score.js"></script>
 <script src="js/rank.js"></script>

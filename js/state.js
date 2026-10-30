@@ -9,8 +9,9 @@ const YD = 0.9144;
 const DEFAULT_CENTER = [139.101508, 35.223713];
 
 /* ================= course: golf club → nines → holes 1–9 =================
-   course = { v: 2, name, center, nines: [{ id, name, holes: [{ n: 1..9, par, tee, green, src: 'manual'|'osm'|'ai', ok, yd }] }],
+   course = { v: 2, name, center, nines: [{ id, name, holes: [{ n: 1..9, par, hdcp, tee, green, src: 'manual'|'osm'|'ai', ok, yd }] }],
               tees: [{ id, name, color }], baseTee, area }
+   hdcp: the hole's handicap 1–18 from the score card, or null (older data has none).
    tee is the base colour's tee (baseTee, e.g. white); yd = { teeId: yards } (may be empty). The other colours' tees are
    not stored: teeLL works them out from the yardage difference, so they are always shown as estimates ("仮").
    area = { bbox: [w, s, e, n], osm, name } of the golf club found by the search (or null).
@@ -20,14 +21,15 @@ const NINE_NAMES = ['OUT', 'IN', '東', '西', '南', '北', '中'];
 const SOURCES = ['manual', 'osm', 'ai'];
 const newId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const defaultTees = () => [{ id: 'blue', name: '青', color: '#1f5fd1' }, { id: 'white', name: '白', color: '#ffffff' }, { id: 'red', name: '赤', color: '#d93025' }];
-const blankHole = n => ({ n, par: 4, tee: null, green: null, src: 'manual', ok: false, yd: {} });
+const blankHole = n => ({ n, par: 4, hdcp: null, tee: null, green: null, src: 'manual', ok: false, yd: {} });
+const cleanHdcp = v => typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 18 ? v : null;
 const blankNine = (name, id) => ({ id: id || newId('n'), name, holes: Array.from({ length: NINE }, (_, i) => blankHole(i + 1)) });
 const UNNAMED = '未登録のコース', OLD_UNNAMED = 'テストコース';  // the name before a golf club is chosen (older versions: テストコース)
 const blankCourse = () => ({ v: 2, name: UNNAMED, center: DEFAULT_CENTER, nines: [blankNine('OUT', 'out'), blankNine('IN', 'in')], tees: defaultTees(), baseTee: 'white', area: null });
 const isLL = p => Array.isArray(p) && p.length === 2 && p.every(v => typeof v === 'number' && isFinite(v));
 // a hole from a file or old data; holes placed by hand before this format count as checked
 const cleanHole = (h, i) => ({
-  n: i + 1, par: [3, 4, 5, 6].includes(+h.par) ? +h.par : 4, tee: isLL(h.tee) ? h.tee : null, green: isLL(h.green) ? h.green : null,
+  n: i + 1, par: [3, 4, 5, 6].includes(+h.par) ? +h.par : 4, hdcp: cleanHdcp(h.hdcp), tee: isLL(h.tee) ? h.tee : null, green: isLL(h.green) ? h.green : null,
   src: SOURCES.includes(h.src) ? h.src : 'manual', ok: 'ok' in h ? !!h.ok : !!(h.tee && h.green),
   yd: h.yd && typeof h.yd === 'object' ? h.yd : {}
 });

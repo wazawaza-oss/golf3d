@@ -45,7 +45,7 @@ function renderReg() {
     nine.holes.forEach((h, i) => {
       const b = el('button', 'mrow hrow');
       const y = h.yd[c.baseTee];
-      b.append(el('span', 'hn', `${cardNo(c, nine, h.n)}番`), el('span', 'mtx', `Par ${h.par}${y ? `・${y}Y` : ''}${registered(h) ? `・地図 ${Math.round(yards(h.tee, h.green))}Y` : ''}`),
+      b.append(el('span', 'hn', `${cardNo(c, nine, h.n)}番`), el('span', 'mtx', `Par ${h.par}${h.hdcp ? `・HDCP ${h.hdcp}` : ''}${y ? `・${y}Y` : ''}${registered(h) ? `・地図 ${Math.round(yards(h.tee, h.green))}Y` : ''}`),
         el('span', 'hst ' + st[i], STATE_NAME[st[i]] + (st[i] === 'auto' && !h.ok ? '（未確認）' : '')), el('span', 'chev', '›'));
       b.setAttribute('aria-label', `${nine.name} ${cardNo(c, nine, h.n)}番 ${STATE_NAME[st[i]]}。押すとこのホールを置き直します`);
       b.onclick = () => guideStart(nine.id, h.n, true);
@@ -167,13 +167,13 @@ function renderYard() {
   const c = S.draft.course, nine = draftNine(ydNine), box = $('ryTable');
   box.textContent = '';
   const t = el('table'), head = el('tr');
-  head.append(el('th', '', '番'), el('th', '', 'パー'));
+  head.append(el('th', '', '番'), el('th', '', 'パー'), el('th', '', 'HDCP'));
   c.tees.forEach(x => { const th = el('th'); const dot = el('i', 'tdot'); dot.style.background = x.color; th.append(dot, x.name + (x.id === c.baseTee ? '（地図に置く色）' : '')); head.appendChild(th); });
   t.appendChild(head);
   const sumRow = el('tr', 'sum');
   const sums = () => {
     sumRow.textContent = '';
-    sumRow.append(el('td', '', '計'), el('td', '', nine.holes.reduce((a, h) => a + h.par, 0)));
+    sumRow.append(el('td', '', '計'), el('td', '', nine.holes.reduce((a, h) => a + h.par, 0)), el('td'));
     c.tees.forEach(x => { const s = nine.holes.reduce((a, h) => a + (h.yd[x.id] || 0), 0); sumRow.appendChild(el('td', '', s ? `${s}Y` : '')); });
   };
   nine.holes.forEach(h => {
@@ -182,7 +182,11 @@ function renderYard() {
     [3, 4, 5, 6].forEach(p => { const o = el('option', '', p); o.value = p; o.selected = h.par === p; par.appendChild(o); });
     par.onchange = () => { h.par = +par.value; saveDraft(); sums(); };
     const tdp = el('td'); tdp.appendChild(par);
-    tr.append(el('td', 'hn', h.n), tdp);
+    const hc = el('input'); hc.type = 'number'; hc.inputMode = 'numeric'; hc.min = 1; hc.max = 18; hc.placeholder = '—';
+    hc.value = h.hdcp || ''; hc.setAttribute('aria-label', `${h.n}番のHDCP`);
+    hc.onchange = () => { h.hdcp = cleanHdcp(Math.round(+hc.value)); hc.value = h.hdcp || ''; saveDraft(); };
+    const tdh = el('td'); tdh.appendChild(hc);
+    tr.append(el('td', 'hn', h.n), tdp, tdh);
     c.tees.forEach(x => {
       const inp = el('input'); inp.type = 'number'; inp.inputMode = 'numeric'; inp.min = 1; inp.max = 999; inp.placeholder = '—';
       inp.value = h.yd[x.id] || ''; inp.setAttribute('aria-label', `${h.n}番 ${x.name}のヤード`);

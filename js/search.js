@@ -127,5 +127,5 @@ function regUsePlace(p) {
     $('rgInfo').textContent = `「${p.name}」に移動しました` + (p.golf ? '（敷地の範囲を取得しました）' : '');
   };
   if (far && placed) ask(`「${p.name}」で新しく登録を始めますか？`, '下書きで置いた位置は消えます。今のコースは「確定」するまで残ります', '新しく始める', () => apply(true));
-  else apply(far && allHoles().some(registered));
+  else apply(far && allHoles().some(registered) && !d.fresh);  // already a new golf club (e.g. imported from a score card): keep it
 }

@@ -419,3 +419,24 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 /* every button: a small press, and on a mouse a slight darkening under the pointer */
 button:active:not(:disabled){transform:scale(.96)}
 @media (hover:hover){button:hover:not(:disabled){filter:brightness(.97)}}
+/* score card import (js/import.js) */
+#rcText{display:block;width:100%;box-sizing:border-box;min-height:120px;border:0;padding:12px;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;font-size:16px;resize:vertical;color:var(--ink);background:#fff;-webkit-user-select:text;user-select:text}
+.rcbtns{display:flex;gap:10px;margin-top:10px}
+.rcbtns .mrow{flex:1;border-radius:12px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.rcsrc{display:block;margin-top:14px;padding:12px 14px;border-radius:12px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06);font-size:14px;font-weight:800;color:#0b5cad;word-break:break-all}
+.rcsrc small{display:block;font-size:12px;font-weight:700;color:#3a4350}
+.rcwarn{margin:0;padding:10px 14px 10px 30px;border-radius:12px;background:#fff8dc;font-size:13.5px;font-weight:700;line-height:1.5;color:#4d3a00;max-height:220px;overflow:auto}
+.rcwarn li.light{color:#6b7380;font-weight:600}
+.rcwarn li.ok{list-style:none;margin-left:-16px;color:#0f4a26}
+.mrow.rcmode{gap:8px;padding:10px}
+.rcmode button{flex:1;min-height:58px;padding:6px 8px;border-radius:10px;background:#eef2ea;font-size:15px;font-weight:900;color:var(--ink)}
+.rcmode button small{display:block;font-size:11.5px;font-weight:700;opacity:.8}
+.rcmode button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.mrow.rctee{gap:8px}
+.mrow.rctee .mtx{flex:1 1 0;min-width:0}
+.mrow.rctee select{flex:none;width:58%;font:inherit;font-size:16px;font-weight:800;padding:8px 6px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+.ydt td.warn,.ydt td.warn input{background:#ffe7a3}
+.ydt td small{display:block;font-size:11px;color:#8a5a00}
+#rcTables .ydt th{white-space:normal;line-height:1.25}
+#rcTables .ydt input{min-width:0;padding:9px 2px}
+#rcTables .ydt td{padding:3px 2px}
