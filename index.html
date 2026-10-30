@@ -258,7 +258,7 @@
 
   <!-- score card JSON (made by an outside AI) → par, HDCP, yardages of the draft (js/import.js, js/cardjson.js) -->
   <div class="mbody" id="mRegCard" hidden>
-    <p class="grp-f">スコアカードの写真などから、外部のAIで作ったJSONを貼り付けるか、ファイルを選んでください。パー・HDCP・ティーごとの距離が下書きに入ります（地図に置いた位置は変わりません）。</p>
+    <p class="grp-f">スコアカードの写真などから、外部のAIで作ったJSONを貼り付けるか、ファイルを選んでください。パー・HDCP・ティーごとの距離が下書きに入ります。JSONにティー・グリーンの座標があれば、まだ置いていないホールに仮の位置として入ります（地図に置いた位置は変わりません）。</p>
     <div class="grp"><textarea id="rcText" rows="6" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder='{"schemaVersion": 1, "course": { … } }' aria-label="スコアカードのJSON"></textarea></div>
     <div class="rcbtns"><button class="mrow center" id="rcFile">ファイルを選ぶ</button><button class="mrow center go" id="rcRead">読み込む</button></div>
     <input type="file" id="rcFileIn" accept=".json,.txt,application/json,text/plain" hidden>

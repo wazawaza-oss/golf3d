@@ -139,6 +139,35 @@ check('別のコース：色はバック（青）・レギュラー（白）、�
 check('別のコース：メートルはヤードに換算（380m → 416Y）', nw.nines[0].holes[0].yd[nw.baseTee] === 416);
 check('別のコース：950m（1039Y）は入れない', !(nw.tees[0].id in nw.nines[0].holes[0].yd));
 
+// positions on the card: { lat, lng } → [lng, lat], checks, into holes with none
+const pj = JSON.parse(JSON.stringify(cardJ));
+pj.course.center = { lat: 35.3, lng: 140.2 };
+pj.course.nines.forEach((x, k) => x.holes.forEach((h, i) => {
+  const lat = 35.3 + k * .01 + i * .001;
+  h.green = { lat, lng: 140.2, source: 'osm', confidence: 'high' };
+  h.tee = { lat, lng: 140.2 + h.dist.t1 * YD / 91000, source: 'map_view', confidence: 'low' };  // ≈ the back tee's length east
+}));
+pj.course.nines[0].holes[1].tee = { lat: 10, lng: 140 };              // outside Japan
+pj.course.nines[0].holes[2].green = { lat: 35.4, lng: 140.2 };         // ~11 km away, and far too long
+pj.course.nines[1].holes[0].green = Object.assign({}, pj.course.nines[1].holes[1].green);  // used twice
+pj.course.nines[2].holes[3].tee = null; pj.course.nines[2].holes[3].green = null;
+const pc = readCard(JSON.stringify(pj)).card;
+check('座標は [経度, 緯度] で読む', pc.nines[0].holes[0].green.ll[0] === 140.2 && pc.center[1] === 35.3);
+check('日本の外の座標は使わない（null）', pc.nines[0].holes[1].tee === null && pc.dropped.length === 1);
+check('map_view / low は要確認、osm / high はそうでない', pc.nines[0].holes[0].tee.check && !pc.nines[0].holes[0].green.check);
+const pi = cardIssues(pc), pl = pi.list.join('\n');
+check('座標の問題のないホールには印なし', !pi.cells.has('0.0.pos') && !pi.cells.has('1.5.pos'));
+check('中心から3km超・長さのずれに印', pi.cells.has('0.2.pos') && /km離れて/.test(pl) && /かけ離れて/.test(pl));
+check('同じ座標・日本の外・要確認が一覧に出る', /同じ座標/.test(pl) && /日本の外/.test(pl) && /「要確認」/.test(pl));
+const pn = applyCard(base, pc, { t1: 'new', t2: 'new' }, 'new'), ph = pn.nines[0].holes[0];
+check('別のコース：位置が自動・未確認で入り、中心はカードの値', ph.src === 'ai' && !ph.ok && ph.tee[0] > 140.2 && pn.center[0] === 140.2);
+check('別のコース：座標のないホールは未設定', !pn.nines[2].holes[3].tee && pn.nines[2].holes[3].src === 'manual');
+const po = applyCard(base, pc, tmap, 'over');
+check('上書き：置いてあるホール（東1番）の位置はそのまま、ほかは仮に入る', po.nines[1].holes[0].tee[0] === 139 && po.nines[1].holes[0].src === 'manual' && po.nines[1].holes[1].src === 'ai');
+check('上書き：置いた位置があれば中心は変えない', po.center[0] === base.center[0]);
+check('座標なしのカードも今までどおり', applyCard(base, rd.card, tmap, 'over').nines[0].holes[0].tee === null);
+check('位置を入れたコースは保存の形として正しい（src・ok が残る）', (() => { const t = toCourse(JSON.parse(JSON.stringify(pn))); return t && t.nines[0].holes[0].src === 'ai' && t.nines[0].holes[0].ok === false; })());
+
 /* show the results */
 const bad = results.filter(r => !r.ok).length;
 const sum = document.getElementById('sum');

@@ -45,7 +45,7 @@ function renderGuide() {
   const issue = holeIssue(h, c);
   $('gWarn').hidden = !issue; if (issue) $('gWarn').textContent = `確認してください：${issue}`;
   const notes = [];
-  if (has && h.src !== 'manual') notes.push(h.src === 'osm' ? '地図データから自動で置きました。位置を確かめてください' : '自動で置きました。位置を確かめてください');  // courses placed before this was removed
+  if (has && h.src !== 'manual') notes.push(h.src === 'osm' ? '地図データから自動で置きました。位置を確かめてください' : '取り込んだJSONの仮の位置です。航空写真と見比べて確かめてください');  // osm: courses placed before that was removed
   if (!green && c.tees.length > 1 && h.tee) notes.push('「仮」はほかの色のティーの目安です（ヤードの差から計算）');
   $('gNote').textContent = notes.join('。');
   $('gCredit').hidden = !c.nines.some(x => x.holes.some(z => z.src === 'osm'));  // positions taken from OSM earlier

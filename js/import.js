@@ -42,10 +42,11 @@ function renderCard() {
     const a = el('a', 'rcsrc', '出典のページを開く（見比べて確かめてください）'); a.href = card.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
     a.appendChild(el('small', '', card.url)); src.appendChild(a);
   }
+  const hasPos = card.nines.some(x => x.holes.some(h => h.tee || h.green));
   $('rcOver').setAttribute('aria-pressed', rc.mode === 'over'); $('rcNew').setAttribute('aria-pressed', rc.mode === 'new');
   $('rcModeInfo').textContent = rc.mode === 'over'
-    ? `${[UNNAMED, OLD_UNNAMED].includes(c.name) ? '今のコース' : `「${c.name}」`}のパー・HDCP・ヤードを書き換えます。ハーフは同じ名前どうし（なければ順番）で合わせます。カードの空欄は今の値のままです`
-    : '新しいコースとして下書きを作り直します。確定すると今のコース・スコア・ピン位置と置き換わります';
+    ? `${[UNNAMED, OLD_UNNAMED].includes(c.name) ? '今のコース' : `「${c.name}」`}のパー・HDCP・ヤードを書き換えます。ハーフは同じ名前どうし（なければ順番）で合わせます。カードの空欄は今の値のままです${hasPos ? '。地図の位置は、まだ置いていないホールにだけ仮に入れます' : ''}`
+    : `新しいコースとして下書きを作り直します。確定すると今のコース・スコア・ピン位置と置き換わります${hasPos ? '。地図の位置は仮に入れます' : ''}`;
   // tee colours: one select per tee on the card
   const tees = $('rcTees'); tees.textContent = '';
   card.tees.forEach(t => {
@@ -72,6 +73,7 @@ function renderCard() {
     box.appendChild(el('div', 'grp-t', `${x.name}（距離は${unit === 'm' ? 'メートル' : 'ヤード'}）`));
     const wrap = el('div', 'ydt'), t = el('table'), head = el('tr');
     head.append(el('th', '', '番'), el('th', '', 'パー'), el('th', '', 'HDCP'));
+    if (hasPos) head.appendChild(el('th', '', '地図'));
     card.tees.forEach(u => head.appendChild(el('th', '', u.label)));
     t.appendChild(head);
     x.holes.forEach((h, i) => {
@@ -79,11 +81,19 @@ function renderCard() {
       tr.append(el('td', 'hn', h.no),
         num(() => h.par, v => { h.par = v; }, `${k}.${i}.par`, `${x.name} ${h.no}番のパー`),
         num(() => h.hdcp, v => { h.hdcp = v; }, `${k}.${i}.hdcp`, `${x.name} ${h.no}番のHDCP`));
+      // the position from the card: 仮 (checked on the map after 登録), Tだけ / Gだけ when only one is there
+      if (hasPos) {
+        const ps = [h.tee, h.green].filter(Boolean), td = el('td', 'pos', !ps.length ? '—' : ps.length < 2 ? (h.tee ? 'Tだけ' : 'Gだけ') : '仮');
+        if (ps.some(p => p.check)) td.appendChild(el('small', '', '要確認'));
+        td.setAttribute('aria-label', `${x.name} ${h.no}番の地図の位置：${td.textContent}`);
+        rc.cells[`${k}.${i}.pos`] = td; tr.appendChild(td);
+      }
       card.tees.forEach(u => tr.appendChild(num(() => h.dist[u.id], v => { h.dist[u.id] = v > 0 ? v : null; }, `${k}.${i}.t.${u.id}`, `${x.name} ${h.no}番 ${u.label}の距離`)));
       t.appendChild(tr);
     });
     const sum = el('tr', 'sum');
     sum.append(el('td', '', '計'), rc.cells[`${k}.sum.par`] = el('td'), el('td'));
+    if (hasPos) sum.appendChild(el('td'));
     card.tees.forEach(u => sum.appendChild(rc.cells[`${k}.sum.${u.id}`] = el('td')));
     t.appendChild(sum); wrap.appendChild(t); box.appendChild(wrap);
   });
@@ -121,7 +131,8 @@ $('rcGo').onclick = () => {
     d.course = out; saveDraft();
     rc = null; $('rcText').value = ''; $('rcInfo').textContent = '';
     mShow('mReg'); renderReg();
-    toast('下書きに入れました。「確定して保存」で保存されます');
+    const ai = out.nines.some(x => x.holes.some(h => h.src === 'ai' && !h.ok));
+    toast(ai ? '下書きに入れました。地図の位置は仮なので、案内で確かめてから「確定して保存」を押してください' : '下書きに入れました。「確定して保存」で保存されます');
   };
   if (rc.mode !== 'new') { go(); return; }
   const placed = d.course.nines.some(x => x.holes.some(h => h.tee || h.green));

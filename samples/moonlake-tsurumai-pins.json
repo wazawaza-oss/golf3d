@@ -1,0 +1,579 @@
+{
+  "schemaVersion": 1,
+  "course": {
+    "name": "ムーンレイクゴルフクラブ 鶴舞コース",
+    "unit": "yard",
+    "sourceUrl": "https://golf-jalan.net/gc00868/detail/",
+    "center": {
+      "lat": 35.315108,
+      "lng": 140.19953
+    },
+    "tees": [
+      {
+        "id": "t1",
+        "label": "Black・ベント"
+      },
+      {
+        "id": "t2",
+        "label": "Blue・ベント"
+      },
+      {
+        "id": "t3",
+        "label": "White・ベント"
+      },
+      {
+        "id": "t4",
+        "label": "Red・ベント"
+      },
+      {
+        "id": "t5",
+        "label": "Black・コーライ"
+      },
+      {
+        "id": "t6",
+        "label": "Blue・コーライ"
+      },
+      {
+        "id": "t7",
+        "label": "White・コーライ"
+      },
+      {
+        "id": "t8",
+        "label": "Red・コーライ"
+      }
+    ],
+    "nines": [
+      {
+        "name": "OUT",
+        "holes": [
+          {
+            "no": 1,
+            "par": 4,
+            "hdcp": 9,
+            "dist": {
+              "t1": 387,
+              "t2": 373,
+              "t3": 354,
+              "t4": 334,
+              "t5": 364,
+              "t6": 350,
+              "t7": 331,
+              "t8": 311
+            },
+            "tee": {
+              "lat": 35.316281,
+              "lng": 140.198209,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.313408,
+              "lng": 140.199823,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          },
+          {
+            "no": 2,
+            "par": 4,
+            "hdcp": 3,
+            "dist": {
+              "t1": 442,
+              "t2": 428,
+              "t3": 408,
+              "t4": 323,
+              "t5": 426,
+              "t6": 412,
+              "t7": 392,
+              "t8": 307
+            },
+            "tee": {
+              "lat": 35.325202,
+              "lng": 140.201144,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.32191,
+              "lng": 140.203052,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          },
+          {
+            "no": 3,
+            "par": 4,
+            "hdcp": 15,
+            "dist": {
+              "t1": 364,
+              "t2": 353,
+              "t3": 333,
+              "t4": 304,
+              "t5": 361,
+              "t6": 350,
+              "t7": 330,
+              "t8": 301
+            },
+            "tee": {
+              "lat": 35.324604,
+              "lng": 140.200484,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.32167,
+              "lng": 140.199823,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          },
+          {
+            "no": 4,
+            "par": 3,
+            "hdcp": 7,
+            "dist": {
+              "t1": 206,
+              "t2": 188,
+              "t3": 167,
+              "t4": 127,
+              "t5": 182,
+              "t6": 164,
+              "t7": 143,
+              "t8": 103
+            },
+            "tee": {
+              "lat": 35.325023,
+              "lng": 140.205693,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.323885,
+              "lng": 140.207014,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          },
+          {
+            "no": 5,
+            "par": 5,
+            "hdcp": 1,
+            "dist": {
+              "t1": 620,
+              "t2": 610,
+              "t3": 594,
+              "t4": 486,
+              "t5": 602,
+              "t6": 592,
+              "t7": 576,
+              "t8": 468
+            },
+            "tee": {
+              "lat": 35.323346,
+              "lng": 140.196522,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.318557,
+              "lng": 140.198429,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          },
+          {
+            "no": 6,
+            "par": 3,
+            "hdcp": 13,
+            "dist": {
+              "t1": 187,
+              "t2": 173,
+              "t3": 153,
+              "t4": 134,
+              "t5": 198,
+              "t6": 184,
+              "t7": 164,
+              "t8": 145
+            },
+            "tee": {
+              "lat": 35.32155,
+              "lng": 140.195788,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.320113,
+              "lng": 140.195715,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          },
+          {
+            "no": 7,
+            "par": 4,
+            "hdcp": 5,
+            "dist": {
+              "t1": 416,
+              "t2": 376,
+              "t3": 308,
+              "t4": 289,
+              "t5": 401,
+              "t6": 361,
+              "t7": 293,
+              "t8": 274
+            },
+            "tee": {
+              "lat": 35.319874,
+              "lng": 140.195788,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.31688,
+              "lng": 140.195715,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          },
+          {
+            "no": 8,
+            "par": 4,
+            "hdcp": 11,
+            "dist": {
+              "t1": 399,
+              "t2": 374,
+              "t3": 345,
+              "t4": 267,
+              "t5": 364,
+              "t6": 339,
+              "t7": 310,
+              "t8": 232
+            },
+            "tee": {
+              "lat": 35.317,
+              "lng": 140.195788,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.314006,
+              "lng": 140.195494,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          },
+          {
+            "no": 9,
+            "par": 5,
+            "hdcp": 17,
+            "dist": {
+              "t1": 557,
+              "t2": 538,
+              "t3": 521,
+              "t4": 432,
+              "t5": 531,
+              "t6": 512,
+              "t7": 495,
+              "t8": 409
+            },
+            "tee": {
+              "lat": 35.306582,
+              "lng": 140.203199,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.309696,
+              "lng": 140.200264,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          }
+        ],
+        "printedTotals": {
+          "par": 36,
+          "dist": {
+            "t1": 3578,
+            "t2": 3413,
+            "t3": 3183,
+            "t4": 2696,
+            "t5": 3429,
+            "t6": 3264,
+            "t7": 3034,
+            "t8": 2550
+          }
+        }
+      },
+      {
+        "name": "IN",
+        "holes": [
+          {
+            "no": 1,
+            "par": 5,
+            "hdcp": 16,
+            "dist": {
+              "t1": 559,
+              "t2": 534,
+              "t3": 509,
+              "t4": 478,
+              "t5": 553,
+              "t6": 508,
+              "t7": 483,
+              "t8": 452
+            },
+            "tee": {
+              "lat": 35.315922,
+              "lng": 140.198063,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.311731,
+              "lng": 140.200044,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          },
+          {
+            "no": 2,
+            "par": 4,
+            "hdcp": 4,
+            "dist": {
+              "t1": 456,
+              "t2": 437,
+              "t3": 405,
+              "t4": 307,
+              "t5": 421,
+              "t6": 402,
+              "t7": 370,
+              "t8": 272
+            },
+            "tee": {
+              "lat": 35.314246,
+              "lng": 140.20041,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.311252,
+              "lng": 140.202318,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          },
+          {
+            "no": 3,
+            "par": 4,
+            "hdcp": 10,
+            "dist": {
+              "t1": 414,
+              "t2": 392,
+              "t3": 367,
+              "t4": 300,
+              "t5": 397,
+              "t6": 375,
+              "t7": 350,
+              "t8": 283
+            },
+            "tee": {
+              "lat": 35.319335,
+              "lng": 140.203859,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.316281,
+              "lng": 140.20496,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          },
+          {
+            "no": 4,
+            "par": 4,
+            "hdcp": 14,
+            "dist": {
+              "t1": 403,
+              "t2": 376,
+              "t3": 350,
+              "t4": 321,
+              "t5": 394,
+              "t6": 367,
+              "t7": 341,
+              "t8": 312
+            },
+            "tee": {
+              "lat": 35.320712,
+              "lng": 140.205547,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.317718,
+              "lng": 140.206427,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          },
+          {
+            "no": 5,
+            "par": 3,
+            "hdcp": 8,
+            "dist": {
+              "t1": 217,
+              "t2": 206,
+              "t3": 189,
+              "t4": 108,
+              "t5": 201,
+              "t6": 190,
+              "t7": 173,
+              "t8": 92
+            },
+            "tee": {
+              "lat": 35.314246,
+              "lng": 140.203786,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.312689,
+              "lng": 140.204519,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          },
+          {
+            "no": 6,
+            "par": 4,
+            "hdcp": 2,
+            "dist": {
+              "t1": 389,
+              "t2": 306,
+              "t3": 300,
+              "t4": 235,
+              "t5": 417,
+              "t6": 334,
+              "t7": 328,
+              "t8": 263
+            },
+            "tee": {
+              "lat": 35.312569,
+              "lng": 140.204593,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.310175,
+              "lng": 140.205327,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          },
+          {
+            "no": 7,
+            "par": 4,
+            "hdcp": 12,
+            "dist": {
+              "t1": 389,
+              "t2": 372,
+              "t3": 347,
+              "t4": 291,
+              "t5": 350,
+              "t6": 333,
+              "t7": 308,
+              "t8": 252
+            },
+            "tee": {
+              "lat": 35.308618,
+              "lng": 140.19278,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.306702,
+              "lng": 140.195715,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          },
+          {
+            "no": 8,
+            "par": 3,
+            "hdcp": 18,
+            "dist": {
+              "t1": 192,
+              "t2": 176,
+              "t3": 159,
+              "t4": 134,
+              "t5": 166,
+              "t6": 150,
+              "t7": 133,
+              "t8": 108
+            },
+            "tee": {
+              "lat": 35.306822,
+              "lng": 140.195935,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.305983,
+              "lng": 140.197329,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          },
+          {
+            "no": 9,
+            "par": 5,
+            "hdcp": 6,
+            "dist": {
+              "t1": 555,
+              "t2": 538,
+              "t3": 513,
+              "t4": 412,
+              "t5": 539,
+              "t6": 522,
+              "t7": 497,
+              "t8": 396
+            },
+            "tee": {
+              "lat": 35.320952,
+              "lng": 140.19997,
+              "source": "map_view",
+              "confidence": "low"
+            },
+            "green": {
+              "lat": 35.31676,
+              "lng": 140.198503,
+              "source": "map_view",
+              "confidence": "low"
+            }
+          }
+        ],
+        "printedTotals": {
+          "par": 36,
+          "dist": {
+            "t1": 3574,
+            "t2": 3337,
+            "t3": 3139,
+            "t4": 2586,
+            "t5": 3438,
+            "t6": 3181,
+            "t7": 2983,
+            "t8": 2430
+          }
+        }
+      }
+    ]
+  },
+  "warnings": [
+    "座標: ティー・グリーンとも18ホール分を、地理院地図の航空写真（スクショ）を見て目視で仮置きした（source=map_view, confidence=low）。ホール番号の対応表が無いため、フェアウェイの長さ・向き・クラブハウス位置から割り当てた推測で、番号の取り違えが多数あるはず。位置はおおよそで数十m以上ずれる。全ホール要確認",
+    "course.center は、ユーザーが提示した地理院地図URLの中心座標（35.315108, 140.199530）。クラブハウス付近かは未確認",
+    "このコースは「2グリーン」（ベント・コーライ）。距離もグリーン別に別表になっているため、ティーを8本（4色×2グリーン）として登録した。現在のJSONは green を1つしか持てない",
+    "9番 Red・コーライ: じゃらんゴルフは409ヤード、楽天GORAは474ヤードで不一致。じゃらんゴルフの合計欄（2550）と合うため、409を採用",
+    "15番: じゃらんゴルフの表で Black 389 / Blue 306 と急に短くなる（コーライは 417 / 334）。出典の合計欄とは一致しているが、誤記の可能性あり",
+    "総距離: じゃらんゴルフのベント Black 合計は 7152（ゴルフダイジェスト等と一致）。楽天GORAは 7,492Y と表記しており一致しない",
+    "HDCPは出典ページのとおり。OUT/INの通し（1〜18番）での値"
+  ]
+}
