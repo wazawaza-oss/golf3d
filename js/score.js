@@ -101,7 +101,7 @@ function renderDock() {
   const p = me(), i = N - 1, hp = playHoles()[i].par, v = p ? strokesOf(p)[i] : null, many = comp && roleKind() !== 'player';
   $('dkMinus').disabled = $('dkPlus').disabled = !p;
   $('dkVal').className = 'dv ' + scoreCls(v, hp) + (many ? ' who' : '');
-  $('dkHole').textContent = !p ? '名前を選んでください' : comp ? `${p.name}${many ? ' ▸' : ''} ・ ${N}番 P${hp}` : `${N}番 Par ${hp}`;
+  $('dkHole').textContent = !p ? '名前を選んでください' : comp ? `${p.name}${many ? '▸' : ''}・${N}番 P${hp}` : `${N}番 Par ${hp}`;
   $('dkNum').textContent = v == null ? '—' : v;
   $('dkTerm').textContent = v == null ? '未入力' : termOf(v, hp);
 }

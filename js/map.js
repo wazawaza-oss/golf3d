@@ -85,7 +85,7 @@ map.on('load', () => {
     layout: { 'line-join': 'round' }, paint: { 'line-color': '#ffd84d', 'line-width': 3, 'line-dasharray': [2, 1.6] } });
   mapReady = true;
   refresh();
-  if (registered(hole())) { if (S.prefs.is3D) { set3D(true); refresh(); } else camera(S.view, 0); }  // as left last time
+  if (registered(hole())) { camera(S.view, 0); if (S.prefs.is3D) { set3D(true); refresh(); } }  // as left last time: aimed flat first, then 3D over the hole
   else if (obDue() && !comp) $('onboard').hidden = false;  // a competition's player gets the course from the organizer
 });
 
@@ -109,7 +109,9 @@ function camera(view, duration = 900, settle = true) {
   else if (!pitch3) opt = { center: lerpLL(t, h.green, .5), bearing: view === 'green' ? (brg + 180) % 360 : brg, pitch: 0, zoom: flat, offset: mid };
   else if (view === 'green') opt = { center: lerpLL(t, h.green, .45), bearing: (brg + 180) % 360, pitch: 62, zoom: base + .35 };
   else opt = { center: lerpLL(t, h.green, .6), bearing: brg, pitch: 62, zoom: base + .35 };
-  map.easeTo(Object.assign(opt, { duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : duration }));
+  // freezeElevation: MapLibre then reads the ground height again when the move ends; without it the height stays
+  // frozen at whatever it was (0 m on a hill course), the camera sits inside the hillside and the view looks hugely zoomed in
+  map.easeTo(Object.assign(opt, { duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : duration, freezeElevation: true }));
   // in 3D the ground height under the new view is known only after its elevation tiles load;
   // aim again once they have, otherwise the camera can end up inside the hillside (looks hugely zoomed in)
   if (S.is3D && settle) { const tok = ++camTok; map.once('idle', () => { if (S.is3D && tok === camTok) camera(view, 400, false); }); }
@@ -120,8 +122,8 @@ function set3D(on) {
   map.setTerrain(on ? { source: 'dem', exaggeration: 1 } : null);
   const aim = () => {
     if (S.is3D !== on) return;
-    if (registered(hole()) && !(S.mode && S.mode.startsWith('setup'))) camera(S.view, 900, false);
-    else map.easeTo({ pitch: on ? 60 : 0, duration: 700 });
+    if (registered(hole()) && !(S.mode && S.mode.startsWith('setup'))) camera(S.view, 900);  // and aim once more when the ground is in
+    else map.easeTo({ pitch: on ? 60 : 0, duration: 700, freezeElevation: true });
   };
   if (on) map.once('idle', aim); else aim();
 }

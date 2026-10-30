@@ -122,7 +122,7 @@ function regUsePlace(p) {
     Object.assign(d.course, { center: p.center, area });
     if (fresh || d.named || [UNNAMED, OLD_UNNAMED].includes(S.course.name) || !S.course.name) { d.course.name = p.name.slice(0, 40); d.named = true; }
     saveDraft();
-    map.fitBounds([[p.bbox[0], p.bbox[1]], [p.bbox[2], p.bbox[3]]], { padding: 30, maxZoom: 17, bearing: 0, pitch: 0, duration: 0 });
+    map.fitBounds([[p.bbox[0], p.bbox[1]], [p.bbox[2], p.bbox[3]]], { padding: 30, maxZoom: 17, bearing: 0, pitch: 0, duration: 0, freezeElevation: true });
     renderReg();
     $('rgInfo').textContent = `「${p.name}」に移動しました` + (p.golf ? '（敷地の範囲を取得しました）' : '');
   };

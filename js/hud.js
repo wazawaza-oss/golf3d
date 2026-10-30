@@ -83,7 +83,7 @@ function placeCross() {
 /* move the map so that ll ends up under the crosshair */
 function centerOn(ll, extra = {}) {
   const [x, y] = crossXY(), el = map.getContainer();
-  map.easeTo(Object.assign({ center: ll, offset: [x - el.clientWidth / 2, y - el.clientHeight / 2], duration: 500 }, extra));
+  map.easeTo(Object.assign({ center: ll, offset: [x - el.clientWidth / 2, y - el.clientHeight / 2], duration: 500, freezeElevation: true }, extra));  // freezeElevation: see camera() in js/map.js
 }
 map.on('move', () => { if (isPlacing()) crossLabel(); });
 addEventListener('resize', placeCross);

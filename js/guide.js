@@ -132,7 +132,7 @@ function prevGreen(only) {  // only: a green placed on an earlier hole, or null
 function guideFit(pts, maxZoom, brg) {
   const b = pts.reduce((b, p) => b.extend(p), new maplibregl.LngLatBounds(pts[0], pts[0]));
   const cam = map.cameraForBounds(b, { padding: guidePad(), maxZoom, bearing: brg == null ? map.getBearing() : brg });
-  if (cam) map.easeTo(Object.assign(cam, { pitch: 0, duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 700 }));
+  if (cam) map.easeTo(Object.assign(cam, { pitch: 0, duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 700, freezeElevation: true }));
 }
 // the panel grows with a warning or a note: aim again so the tee / green does not end up under it
 let gPanelH = 0;

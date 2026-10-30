@@ -24,7 +24,7 @@ function placeAt(ll) {
    the map goes back to the view it had before */
 let camSave = null;
 const camKeep = () => { camSave = { center: map.getCenter(), zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() }; };
-function camBack() { if (camSave) { map.easeTo(Object.assign(camSave, { duration: 600 })); camSave = null; } }
+function camBack() { if (camSave) { map.easeTo(Object.assign(camSave, { duration: 600, freezeElevation: true })); camSave = null; } }
 $('bannerPlace').onclick = () => placeAt(crossLL());
 /* measuring marks. 1st tap: a mark, distance to the pin. 2nd tap: a second mark — closer to the pin than
    the first, it splits that leg; farther out, the path now starts there. A 3rd tap starts over.
@@ -101,14 +101,14 @@ $('bView').onclick = () => {
 $('bMe').onclick = () => {
   if (!S.me) { toast('現在地がありません。GPSをオンにしてください'); return; }
   const pin = pinLL();
-  if (!pin) { map.easeTo({ center: S.me.ll, zoom: Math.max(map.getZoom(), 17), duration: 700 }); return; }
+  if (!pin) { map.easeTo({ center: S.me.ll, zoom: Math.max(map.getZoom(), 17), duration: 700, freezeElevation: true }); return; }
   // fit you and the pin between the panels, turned so the pin is straight ahead (up the screen)
   const top = document.querySelector('.hud').getBoundingClientRect().bottom, low = $('dock').hidden ? innerHeight : $('dock').getBoundingClientRect().top;
   const cam = map.cameraForBounds([S.me.ll, pin].reduce((b, p) => b.extend(p), new maplibregl.LngLatBounds(S.me.ll, S.me.ll)), {
     bearing: bearing(S.me.ll, pin), maxZoom: 18,
     padding: { top: top + 66, bottom: innerHeight - low + 36, left: 48, right: 90 }  // top: room for the flag; right: the button column
   });
-  if (cam) map.easeTo(Object.assign(cam, { pitch: map.getPitch(), duration: 800 }));
+  if (cam) map.easeTo(Object.assign(cam, { pitch: map.getPitch(), duration: 800, freezeElevation: true }));
 };
 /* 今日のピン位置: today's pin (handed out to everyone by the organizer) or today's tee (this phone only).
    The banner switches between the two; 登録位置に戻す goes back to the green's centre / the registered tee. */

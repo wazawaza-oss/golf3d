@@ -229,10 +229,11 @@ input[type=text]{flex:1 1 200px}
 
 /* side pages: ranking (left of map) and score entry (right of map) */
 /* bottom dock (kept clear of Safari's bar): 順位 | this hole's score − / + | スコアボード */
-.dock{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:max(14px,calc(var(--sab) + 4px));max-width:440px;margin:0 auto;display:grid;grid-template-columns:76px 1fr 76px;gap:8px;z-index:5}
+.dock{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:max(14px,calc(var(--sab) + 4px));max-width:440px;margin:0 auto;display:grid;grid-template-columns:64px minmax(0,1fr) 64px;gap:8px;z-index:5}  /* minmax: a long name in the middle never pushes スコア表 off the screen */
 .dk{height:64px;border-radius:14px;background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);font-weight:900;font-size:12px;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
-.dk svg{display:block}.dkstep{height:64px;border-radius:14px;background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 6px;color:var(--ink)}
-.dkstep>button{width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,.7);border:1.5px solid var(--edge);font-size:26px;font-weight:900;flex:none}
+.dk svg{display:block}
+.dkstep{height:64px;min-width:0;border-radius:14px;background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:space-between;gap:2px;padding:0 5px;color:var(--ink)}
+.dkstep>button{width:44px;height:48px;border-radius:12px;background:rgba(255,255,255,.7);border:1.5px solid var(--edge);font-size:26px;font-weight:900;flex:none}
 .dkstep .dv{flex:1;min-width:0;text-align:center;line-height:1.1}
 .dkstep .dv small{display:block;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dkstep .dv b{display:block;font-size:26px;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums}
