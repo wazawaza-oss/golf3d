@@ -84,10 +84,18 @@ $('prevHole').onclick = () => goHole(holeNo() - 1);
 $('nextHole').onclick = () => goHole(holeNo() + 1);
 $('bannerCancel').onclick = () => { S.mode = null; refresh(); camBack(); };  // pin / test position (setup has its own controls)
 
-$('b3d').onclick = () => { if (!mapReady) return; set3D(!S.is3D); refresh(); };
+// 3D, view and pin on a hole without tee and green: nothing changes; say so, with a way to register it
+function needHole() {
+  if (registered(hole()) || inSetup()) return false;
+  if (comp && comp.role !== 'org') toast('主催者がこのホールをまだ登録していません');
+  else snack('このホールのグリーンとティーを先に登録します', () => openSetup(), '登録する');
+  return true;
+}
+$('b3d').onclick = () => { if (!mapReady || (!S.is3D && needHole())) return; set3D(!S.is3D); savePrefs(); refresh(); };  // turning 3D off always works
 $('bView').onclick = () => {
+  if (needHole()) return;
   S.view = { tee: 'top', top: 'green', green: 'tee' }[S.view];
-  if (!registered(hole())) toast('このホールはまだ登録されていません'); else camera(S.view);
+  camera(S.view); savePrefs();
   refresh();
 };
 $('bMe').onclick = () => {
@@ -102,7 +110,7 @@ $('bMe').onclick = () => {
   });
   if (cam) map.easeTo(Object.assign(cam, { pitch: map.getPitch(), duration: 800 }));
 };
-/* ピン＆ティー: today's pin (handed out to everyone by the organizer) or today's tee (this phone only).
+/* 今日のピン位置: today's pin (handed out to everyone by the organizer) or today's tee (this phone only).
    The banner switches between the two; 登録位置に戻す goes back to the green's centre / the registered tee. */
 function pinTeeMode(kind) {
   S.mode = kind; S.tap = null;
@@ -111,7 +119,7 @@ function pinTeeMode(kind) {
   centerOn(ll, { zoom: Math.max(map.getZoom(), kind === 'pin' ? 18.3 : 18), duration: 700 });
 }
 $('bPin').onclick = () => {
-  if (!registered(hole())) { toast('先にこのホールを登録してください'); return; }
+  if (needHole()) return;
   if (S.mode === 'pin' || S.mode === 'tee') { S.mode = null; refresh(); camBack(); return; }
   camKeep(); pinTeeMode('pin');
 };

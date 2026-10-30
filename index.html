@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1d6638">
 <title>ゴルフ3Dマップ</title>
 <!-- home-screen app: manifest for Android/Chrome, apple-* for iPhone -->
@@ -13,12 +13,13 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ゴルフ3D">
-<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" integrity="sha384-MinO0mNliZ3vwppuPOUnGa+iq619pfMhLVUXfC4LHwSCvF9H+6P/KO4Q7qBOYV5V" crossorigin="anonymous">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" integrity="sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div id="map" role="application" aria-label="コースマップ"></div>
+<div class="maploading" id="mapLoading" role="status"><span class="spin" aria-hidden="true"></span>地図を読み込み中…</div>
 <div id="vprobe" aria-hidden="true"></div><!-- measures where iOS puts the bottom of the screen (js/hud.js) -->
 
 <div class="hud">
@@ -46,10 +47,10 @@
     <svg width="20" height="20" viewBox="-14 -14 28 28" aria-hidden="true"><circle r="9.6" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="3.77 3.77"/><circle r="8" fill="currentColor"/><circle r="3.4" fill="#fff"/></svg><small>設定</small>
   </button>
   <button class="fab" id="bGps" aria-pressed="false">GPS<small id="gpsInfo">オフ</small></button>
-  <button class="fab" id="b3d" aria-pressed="false">3D<small>立体</small></button>
-  <button class="fab" id="bView">視点<small id="viewName">ティー</small></button>
-  <button class="fab" id="bPin" aria-pressed="false" aria-label="今日のピンとティーの位置を置く">
-    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M6 21V2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M7 2L19 7L7 12Z" fill="#ff2bd6" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><small>ピン&amp;<br>ティー</small>
+  <button class="fab" id="b3d" aria-pressed="false">3D<small id="b3dState">オフ</small></button>
+  <button class="fab" id="bView">視点<small id="viewName">ティー<br>から見る</small></button>
+  <button class="fab" id="bPin" aria-pressed="false" aria-label="今日のピン位置を設定">
+    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M6 21V2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M7 2L19 7L7 12Z" fill="#ff2bd6" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg><small>今日の<br>ピン位置</small>
   </button>
   <button class="fab" id="bMe" aria-label="現在地とピンが収まるように表示">◎<small>現在地</small></button>
 </div>
@@ -74,7 +75,13 @@
     <button class="mdone" id="menuClose">完了</button>
   </div>
   <div class="mbody" id="mMain">
-    <div class="grp a2row" id="a2hsRow" hidden><button class="mrow" id="a2hsOpen"><img src="icons/icon-180.png" alt="" width="30" height="30" class="mic"><span class="mtx">ホーム画面に追加する<small>画面が広くなり、電波がなくても開けます</small></span><span class="chev">›</span></button></div>
+    <div class="grp-t" data-show="solo org">準備の3ステップ</div>
+    <div class="grp steps" data-show="solo org">
+      <button class="mrow" id="ckSetup"><span class="stepn" id="ckSetupMark">1</span><span class="mtx">コース登録<small>ゴルフ場を探して、ティーとグリーンを置く</small></span><span class="mval" id="ckSetupVal"></span><span class="chev">›</span></button>
+      <button class="mrow" id="stComp"><span class="stepn" id="stCompMark">2</span><span class="mtx" id="stCompT">コンペを作る</span><span class="mval" id="stCompV"></span><span class="chev">›</span></button>
+      <button class="mrow" id="stLinks"><span class="stepn" id="stLinksMark">3</span><span class="mtx">参加者にリンクを送る<small id="stLinksS"></small></span><span class="chev">›</span></button>
+    </div>
+    <p class="grp-f" data-show="solo">コンペをせず自分たちだけでスコアを付けるときは、1だけで使えます。</p>
     <div class="grp-t">いまのコース</div>
     <div class="grp">
       <div class="mcourse">
@@ -82,19 +89,23 @@
         <input type="text" id="courseName" maxlength="40" aria-label="コース名" hidden>
         <button class="cnedit" id="cnEdit" data-show="solo org" aria-label="コース名を変更"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button>
       </div>
-      <button class="mrow" id="ckSetup" data-show="solo org"><span class="ck" id="ckSetupMark"></span><span class="mtx">コース登録</span><span class="mval" id="ckSetupVal"></span><span class="chev">›</span></button>
-      <button class="mrow" id="ckOff"><span class="ck" id="ckOffMark"></span><span class="mtx">電波なしで使う準備</span><span class="mval" id="ckOffVal"></span><span class="chev">›</span></button>
     </div>
-    <p class="grp-f">ラウンド前にこの2つがそろっていれば準備完了です。</p>
 
-    <div class="grp-t">コンペ</div>
+    <div class="grp-t">電波なしで使う準備（ラウンド前に、この2つ）</div>
     <div class="grp">
+      <button class="mrow" id="ckA2"><span class="ck" id="ckA2Mark"></span><span class="mtx">ホーム画面に追加<small id="ckA2S"></small></span><span class="mval" id="ckA2Val"></span><span class="chev">›</span></button>
+      <button class="mrow" id="ckOff"><span class="ck" id="ckOffMark"></span><span class="mtx">マップを端末に保存<small id="offInfo"></small></span><span class="mval" id="ckOffVal"></span><span class="chev">›</span></button>
+    </div>
+    <p class="grp-f">2つとも ✓ になれば準備完了です。電波のない所でも、地図と距離が見られます。</p>
+
+    <div class="grp-t" data-show="lead player">コンペ</div>
+    <div class="grp" data-show="lead player">
       <button class="mrow" id="goComp"><span class="mic" style="background:#b8860b"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></svg></span><span class="mtx" id="cpRowT">コンペを作る<small>参加者にリンクを送って、全員のスコアを集めます</small></span><span class="mval" id="cpRowV"></span><span class="chev">›</span></button>
     </div>
 
     <div class="grp-t">今日のラウンド</div>
     <div class="grp">
-      <button class="mrow" id="goNine" data-show="solo org"><span class="mic" style="background:#16592f"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V3"/><path d="M6 4l12 4.5L6 13"/></svg></span><span class="mtx">前半・後半のナイン<small>このラウンドで回る2つ</small></span><span class="mval" id="mvNine"></span><span class="chev">›</span></button>
+      <button class="mrow" id="goNine" data-show="solo org"><span class="mic" style="background:#16592f"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V3"/><path d="M6 4l12 4.5L6 13"/></svg></span><span class="mtx">回るコース（前半/後半）<small>このラウンドで回る2つのハーフ</small></span><span class="mval" id="mvNine"></span><span class="chev">›</span></button>
       <button class="mrow" id="goPlayers" data-show="solo"><span class="mic" style="background:#2f6fd1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.5c2.6.4 4.5 2.4 4.5 5.5"/></svg></span><span class="mtx">参加者とスコア</span><span class="mval" id="mvPlayers"></span><span class="chev">›</span></button>
       <button class="mrow" id="pinReset"><span class="mic" style="background:#d63c8e"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v5h5"/></svg></span><span class="mtx">ピン・ティー位置をリセット<small>登録したグリーン中心とティーに戻します</small></span><span class="mval" id="mvPins"></span></button>
       <button class="mrow" id="saveCard"><span class="mic" style="background:#0e8a8a"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10M15 10v10"/></svg></span><span class="mtx">スコア表をJPEGで保存<small>コース名・日付・全員のスコアを1枚の画像に</small></span><span class="chev">›</span></button>
@@ -105,16 +116,26 @@
       <button class="mrow" id="bElev" role="switch" aria-checked="true"><span class="mic" style="background:#e07a00"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M2 20l6.5-9 4 5 3-3.5L22 20z"/></svg></span><span class="mtx">高低差を表示<small>公式競技ではオフにします</small></span><span class="sw" aria-hidden="true"></span></button>
       <button class="mrow" id="bRings" role="switch" aria-checked="true"><span class="mic" style="background:#0e8a8a"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="2 2.5" aria-hidden="true"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9"/></svg></span><span class="mtx">距離の輪を表示<small>ピンを中心に50ヤードごとの点線</small></span><span class="sw" aria-hidden="true"></span></button>
       <div class="mrow slide" id="ringsRow"><span class="mtx">輪の濃さ</span><input type="range" id="ringsAlpha" min="10" max="100" step="5" aria-label="距離の輪の濃さ"><span class="mval" id="ringsVal"></span></div>
+    </div>
+
+    <div class="grp-t" data-show="solo org">コース</div>
+    <div class="grp" data-show="solo org">
+      <button class="mrow" id="goJump"><span class="mic" style="background:#7a4fd6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg></span><span class="mtx">別のコースに切り替え</span><span class="chev">›</span></button>
+    </div>
+
+    <div class="grp mgap">
+      <button class="mrow" id="goMore"><span class="mic" style="background:#5b6573"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2" fill="#fff"/><circle cx="12" cy="12" r="2" fill="#fff"/><circle cx="19" cy="12" r="2" fill="#fff"/></svg></span><span class="mtx">詳細設定<small>iPhoneの機種・バックアップなど</small></span><span class="chev">›</span></button>
+    </div>
+
+    <div class="grp wipe" data-show="solo org"><button class="mrow danger" id="wipeBtn">このコースの登録を消す</button></div>
+    <p class="grp-f credit">出典：地理院タイル（国土地理院）</p>
+  </div>
+
+  <div class="mbody" id="mMore" hidden>
+    <div class="grp-t">表示</div>
+    <div class="grp">
       <button class="mrow" id="goDevice"><span class="mic" style="background:#3a4350"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18.5h4"/></svg></span><span class="mtx">iPhoneの機種<small>画面の下までぴったり表示します</small></span><span class="mval" id="mvDevice"></span><span class="chev">›</span></button>
     </div>
-
-    <div class="grp-t">コース</div>
-    <div class="grp">
-      <button class="mrow" id="goSetup" data-show="solo org"><span class="mic" style="background:#1f9d48"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V3"/><path d="M6 4l12 4.5L6 13"/></svg></span><span class="mtx">コース登録<small>ゴルフ場の検索・ナイン・ティーとグリーン</small></span><span class="chev">›</span></button>
-      <button class="mrow" id="offSave"><span class="mic" style="background:#2f6fd1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M12 6v8M9 11l3 3 3-3"/></svg></span><span class="mtx">端末に保存<small id="offInfo">電波がなくても地図が見られる</small></span><span class="mval" id="offVal"></span></button>
-      <button class="mrow" id="goJump" data-show="solo org"><span class="mic" style="background:#7a4fd6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg></span><span class="mtx">別のコースに切り替え</span><span class="chev">›</span></button>
-    </div>
-
     <div class="grp-t" data-show="solo org">バックアップ</div>
     <div class="grp" data-show="solo org">
       <button class="mrow" id="exportBtn"><span class="mic" style="background:#5b6573"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 14v6h14v-6"/></svg></span><span class="mtx">コースデータを書き出す</span><span class="chev">›</span></button>
@@ -126,9 +147,6 @@
     <div class="grp" data-show="solo org">
       <button class="mrow" id="goTest"><span class="mic" style="background:#8a8f96"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6M10 3v6L5 19a1.5 1.5 0 0 0 1.3 2h11.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/></svg></span><span class="mtx">テスト用の機能</span><span class="chev">›</span></button>
     </div>
-
-    <div class="grp wipe" data-show="solo org"><button class="mrow danger" id="wipeBtn">このコースの登録を消す</button></div>
-    <p class="grp-f credit">出典：地理院タイル（国土地理院）</p>
   </div>
 
   <div class="mbody" id="mJump" hidden>
@@ -138,7 +156,7 @@
   </div>
 
   <div class="mbody" id="mNine" hidden>
-    <p class="grp-f">このラウンドで回る2つのナインを選びます。前半が1〜9番、後半が10〜18番になり、スコア表の見出しもナインの名前になります。</p>
+    <p class="grp-f">このラウンドで回る2つのハーフ（OUT・INなど）を選びます。前半が1〜9番、後半が10〜18番になり、スコア表の見出しもその名前になります。</p>
     <div class="grp-t">前半（1〜9番）</div>
     <div class="grp" id="nineFront"></div>
     <div class="grp-t">後半（10〜18番）</div>
@@ -146,13 +164,17 @@
   </div>
 
   <div class="mbody" id="mCompNew" hidden>
-    <p class="grp-f">コンペを作ると、あなたが主催者になります。今の「前半・後半のナイン」のコースとパーが全員に配られます（あとから変えられます）。</p>
+    <p class="grp-f">作ると、参加者に送るリンクを出せるようになります（作ったあとの「リンクを送る」から）。あなたが主催者になり、下の「回るコース」のホールとパーが全員に配られます（あとから変えられます）。</p>
     <div class="grp">
-      <div class="mrow field"><span class="mtx">コンペ名</span><input type="text" id="cpName" maxlength="40" placeholder="例：秋の月例会"></div>
-      <div class="mrow field"><span class="mtx">日付</span><input type="date" id="cpDate"></div>
-      <button class="mrow" id="cpNewNine"><span class="mtx">使うナイン</span><span class="mval" id="cpNewNineV"></span><span class="chev">›</span></button>
+      <div class="mrow field"><label class="mtx" for="cpName">コンペ名</label><input type="text" id="cpName" maxlength="40" placeholder="例：秋の月例会"></div>
+      <div class="mrow field"><label class="mtx" for="cpDate">日付</label><input type="date" id="cpDate"></div>
+      <button class="mrow" id="cpNewNine"><span class="mtx">回るコース（前半/後半）</span><span class="mval" id="cpNewNineV"></span><span class="chev">›</span></button>
     </div>
-    <div class="grp mgap"><button class="mrow center" id="cpCreate">コンペを作る</button></div>
+    <div id="cpNeedReg" hidden>
+      <p class="grp-f err" id="cpNeedRegT"></p>
+      <div class="grp"><button class="mrow center" id="cpGoReg">コース登録へ進む</button></div>
+    </div>
+    <div class="grp mgap"><button class="mrow center big go" id="cpCreate">この内容で作成</button></div>
   </div>
 
   <div class="mbody" id="mComp" hidden>
@@ -165,25 +187,26 @@
     </div>
     <div class="grp-t" data-show="org">主催者の設定</div>
     <div class="grp" data-show="org">
-      <div class="mrow field"><span class="mtx">コンペ名</span><input type="text" id="cpNameE" maxlength="40"></div>
-      <div class="mrow field"><span class="mtx">日付</span><input type="date" id="cpDateE"></div>
-      <button class="mrow" id="cpNine"><span class="mtx">使うナイン<small>このコースとパーを全員に配ります</small></span><span class="mval" id="cpNineV"></span><span class="chev">›</span></button>
+      <div class="mrow field"><label class="mtx" for="cpNameE">コンペ名</label><input type="text" id="cpNameE" maxlength="40"></div>
+      <div class="mrow field"><label class="mtx" for="cpDateE">日付</label><input type="date" id="cpDateE"></div>
+      <button class="mrow" id="cpNine"><span class="mtx">回るコース（前半/後半）<small>このコースとパーを全員に配ります</small></span><span class="mval" id="cpNineV"></span><span class="chev">›</span></button>
       <button class="mrow" id="cpRoster"><span class="mtx">参加者と組<small>組分けとカート代表もここで決めます</small></span><span class="mval" id="cpRosterV"></span><span class="chev">›</span></button>
-      <button class="mrow" id="cpLinks"><span class="mtx">リンクを送る<small>参加者用・主催者の引き継ぎ用</small></span><span class="chev">›</span></button>
+      <button class="mrow" id="cpLinks"><span class="mtx">リンクを送る<small>参加者用リンク・主催者用リンク</small></span><span class="chev">›</span></button>
       <button class="mrow" id="cpMyName"><span class="mtx">自分もプレーする<small>名簿から自分の名前を選ぶ（選ばなくてもよい）</small></span><span class="mval" id="cpMyNameV"></span><span class="chev">›</span></button>
     </div>
     <p class="grp-f" id="cpNote"></p>
     <div class="grp wipe"><button class="mrow danger" id="cpLeave">このコンペから抜ける</button></div>
+    <p class="grp-f" id="cpLeaveNote"></p>
   </div>
 
   <div class="mbody" id="mRoster" hidden>
-    <p class="grp-f">名前・組・カート代表を決めます。代表は1組に1人で、自分の組の全員のスコアを入力できます。ラウンドの途中でも変えられ、すぐに全員に届きます。「未参加」はまだ名前を選んでいない人です。</p>
+    <p class="grp-f">カート代表＝同じ組の人のスコアをまとめて入力できる人（1組に1人）。「未参加」はまだ名前を選んでいない人です。</p>
     <div id="rosterList"></div>
     <div class="grp mgap"><button class="mrow center" id="rosterAdd">＋ 組を追加</button></div>
   </div>
 
   <div class="mbody" id="mLinks" hidden>
-    <p class="grp-f">参加者には全員同じ「参加者用」を送ります。開いた人は名簿から自分の名前を選び、組とカート代表は名簿の設定で決まります。</p>
+    <p class="grp-f">参加者には、上の「参加者用リンク」を送ります。下の「主催者用リンク」は主催者の権限を渡すものです。</p>
     <div id="linkList"></div>
   </div>
 
@@ -194,7 +217,8 @@
 
   <!-- course registration: works on a draft until 確定 (js/setup.js, js/search.js, js/guide.js) -->
   <div class="mbody" id="mReg" hidden>
-    <p class="grp-f">ゴルフ場を探して、ナインとティーの色を決め、1番から順にグリーンとティーをタップして置きます。「確定して保存」を押すまで、今のコースは変わりません。</p>
+    <p class="grp-f">ゴルフ場を探して、1番から順にグリーンとティーを地図でタップして置きます。<b>目安は約10分</b>（18ホール）です。</p>
+    <p class="grp-f">途中で右上の「完了」で閉じても、<b>下書きは残ります</b>（続きから再開できます）。コースとして保存されるのは、いちばん下の「確定して保存」を押したときです。</p>
     <div class="grp-t">1. ゴルフ場を探す</div>
     <div class="grp">
       <div class="mrow srch"><input type="search" id="rgQ" maxlength="60" placeholder="ゴルフ場の名前（例：○○カントリー）" enterkeyhint="search" aria-label="ゴルフ場の名前"><button class="mbtn" id="rgGo">検索</button></div>
@@ -202,35 +226,35 @@
       <button class="mrow center small" id="rgGsi" hidden>見つからないとき：国土地理院の地名検索で探す</button>
     </div>
     <p class="grp-f" id="rgInfo"></p>
-    <div class="grp-t">2. ナインとティーの色</div>
-    <div class="grp"><button class="mrow" id="rgNines"><span class="mtx">ナイン・ティーの色・ヤード<small id="rgNinesS"></small></span><span class="chev">›</span></button></div>
-    <div class="grp-t">3. OSMのデータで仮置き（データがあるコースだけ）</div>
-    <div class="grp"><button class="mrow center" id="rgOsm">OSMのデータを取得する</button></div>
-    <p class="grp-f" id="rgOsmInfo">データがないコースでも、このまま4へ進んで手動で置けます。</p>
+    <div class="grp-t">2. ハーフ（OUT・INなど）とティーの色</div>
+    <div class="grp"><button class="mrow" id="rgNines"><span class="mtx">ハーフ・ティーの色・ヤード<small id="rgNinesS"></small></span><span class="chev">›</span></button></div>
+    <div class="grp-t">3. 地図データから自動で置く（データがあるゴルフ場だけ）</div>
+    <div class="grp"><button class="mrow center" id="rgOsm">地図データから自動で置く</button></div>
+    <p class="grp-f" id="rgOsmInfo">データがないゴルフ場でも、このまま4へ進んで手で置けます。自動で置いた位置は、4で確かめてください。</p>
     <div class="grp-t">4. グリーンとティーを置く</div>
     <div class="grp"><button class="mrow center big" id="rgGuide">案内を始める</button></div>
     <p class="grp-f">ホールを押すと、そのホールだけ置き直せます。</p>
     <div id="rgHoles"></div>
     <div class="grp mgap"><button class="mrow center big go" id="rgSave">確定して保存</button></div>
     <div class="grp wipe"><button class="mrow danger" id="rgDiscard">下書きを捨てる</button></div>
-    <p class="grp-f credit">ゴルフ場の検索と仮置き：© OpenStreetMap contributors（Nominatim・Overpass API）／地名検索：国土地理院</p>
+    <p class="grp-f credit">ゴルフ場の検索と地図データ：© OpenStreetMap contributors（Nominatim・Overpass API）／地名検索：国土地理院</p>
   </div>
 
   <div class="mbody" id="mRegNines" hidden>
-    <div class="grp-t">ナイン（名前と数）</div>
+    <div class="grp-t">ハーフ（9ホールずつの名前と数）</div>
     <div class="grp" id="rnNines"></div>
-    <div class="grp mgap"><button class="mrow center" id="rnNineAdd">＋ ナインを追加</button></div>
-    <p class="grp-f">1ラウンドでは、この中から2つ（前半・後半）を選んで回ります。</p>
+    <div class="grp mgap"><button class="mrow center" id="rnNineAdd">＋ ハーフを追加</button></div>
+    <p class="grp-f">27ホールのゴルフ場なら3つ作ります。1ラウンドでは、この中から2つ（前半・後半）を選んで回ります。</p>
     <div class="grp-t">ティーの色</div>
     <div class="grp" id="rnTees"></div>
     <div class="grp mgap"><button class="mrow center" id="rnTeeAdd">＋ 色を追加</button></div>
-    <p class="grp-f">地図に置くのは「基準」の色のティーだけです。ほかの色は、ヤードの差から自動で仮置きします。</p>
+    <p class="grp-f">地図に置くのは「地図に置く色」のティーだけです（ふだん使うティーを選んでください）。ほかの色の位置は、ヤードの差から自動で決めます。</p>
     <div class="grp-t">パーとヤード</div>
     <div class="grp" id="rnYd"></div>
   </div>
 
   <div class="mbody" id="mRegYard" hidden>
-    <p class="grp-f">ヤードは空欄のままでもかまいません（空欄の色は、基準の色と同じ位置になります）。</p>
+    <p class="grp-f">ヤードは空欄のままでもかまいません（空欄の色は、地図に置く色と同じ位置になります）。</p>
     <div class="ydt" id="ryTable"></div>
   </div>
 
@@ -265,7 +289,7 @@
   <div class="mcard" role="alertdialog" aria-labelledby="askQ">
     <p id="askQ"></p>
     <small id="askNote"></small>
-    <div class="mcbtn"><button id="askNo">キャンセル</button><button id="askYes" class="red">消す</button></div>
+    <div class="mcbtn"><button id="askAlt" hidden></button><button id="askNo">キャンセル</button><button id="askYes" class="red">消す</button></div>
   </div>
 </div>
 <div class="snack" id="snack" hidden><span id="snackText"></span><button id="snackUndo">元に戻す</button></div>
@@ -282,40 +306,43 @@
   </div>
 </div>
 
-<div class="onboard" id="onboard" hidden>
-  <h2>はじめにコースを登録します</h2>
-  <p>ゴルフ場の名前で探して、1番ホールから順にグリーンとティーを地図でタップしていきます。OSMにデータがあるコースは、最初から仮置きされます。一度登録すれば次から使えます。</p>
-  <div class="row"><button class="btn primary" id="obStart">登録を始める</button><button class="btn" id="obLater">あとで</button></div>
+<div class="obwrap" id="onboard" hidden>
+  <div class="onboard" role="dialog" aria-modal="true" aria-labelledby="obT">
+    <p class="oblead">コースの距離を見ながら、みんなのスコアを集められます。</p>
+    <h2 id="obT">はじめにコースを登録します</h2>
+    <p>ゴルフ場の名前で探して、1番ホールから順にグリーンとティーを地図でタップしていきます（約10分）。地図データがあるゴルフ場は、自動で置くこともできます。一度登録すれば次から使えます。</p>
+    <div class="row"><button class="btn primary" id="obStart">登録を始める</button><button class="btn" id="obLater">あとで</button></div>
+  </div>
 </div>
 
 <div class="dock" id="dock">
-  <button class="dk" id="dkRank" aria-label="順位を開く">
-    <svg width="22" height="20" viewBox="0 0 18 16" aria-hidden="true"><path d="M6.5 4h5v12h-5zM0 8h5.5v8H0zM12.5 10H18v6h-5.5z" fill="currentColor"/></svg>順位
+  <button class="dk" id="dkRank" aria-label="順位表を開く">
+    <svg width="22" height="20" viewBox="0 0 18 16" aria-hidden="true"><path d="M6.5 4h5v12h-5zM0 8h5.5v8H0zM12.5 10H18v6h-5.5z" fill="currentColor"/></svg>順位表
   </button>
   <div class="dkstep">
     <button id="dkMinus" aria-label="1打減らす">−</button>
     <div class="dv" id="dkVal" aria-live="polite"><small id="dkHole">1番 Par 4</small><b id="dkNum">—</b><small id="dkTerm">未入力</small></div>
     <button id="dkPlus" aria-label="1打増やす">＋</button>
   </div>
-  <button class="dk" id="dkCard" aria-label="スコアボードを開く">
-    <svg width="20" height="22" viewBox="0 0 16 18" aria-hidden="true"><rect x="1" y="1" width="14" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 6h8M4 9.5h8M4 13h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>スコアボード
+  <button class="dk" id="dkCard" aria-label="スコア表を開く">
+    <svg width="20" height="22" viewBox="0 0 16 18" aria-hidden="true"><rect x="1" y="1" width="14" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 6h8M4 9.5h8M4 13h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>スコア表
   </button>
 </div>
 
 <div class="sheet" id="players" hidden>
   <div class="inner">
     <h2><span>参加者</span><button id="plClose">閉じる</button></h2>
-    <p>いちばん上があなたです。ほかの人のスコアは「スコア入力」から入れます。マップを右にスライドすると、全員の順位とスコアが見られます。</p>
+    <p>いちばん上があなたです。ほかの人のスコアは、名前の右の「スコア表」から入れます。全員の順位は、地図の下の「順位表」で見られます。</p>
     <div class="plist" id="plList"></div>
     <div class="row"><button class="btn" id="plAdd">＋ 参加者を追加</button></div>
-    <div class="row"><button class="btn danger" id="scWipe">スコアをすべて消す</button></div>
+    <div class="row wipe"><button class="btn danger" id="scWipe">スコアをすべて消す</button></div>
   </div>
 </div>
 
 
-<section class="page" id="pRank" aria-label="ランキング">
+<section class="page" id="pRank" aria-label="順位表">
   <div class="inner">
-    <div class="ptop"><span></span><h2>ランキング</h2><button class="back" data-go="map">マップ ›</button></div>
+    <div class="ptop"><span></span><h2>順位表</h2><button class="back" data-go="map">マップ ›</button></div>
     <p id="rkInfo"></p>
     <div class="rk" id="rkList"></div>
     <h3>全員のスコア</h3>
@@ -323,9 +350,9 @@
   </div>
 </section>
 
-<section class="page" id="pScore" aria-label="スコア入力">
+<section class="page" id="pScore" aria-label="スコア表">
   <div class="inner">
-    <div class="ptop"><button class="back" data-go="map">‹ マップ</button><h2 id="scTitle">マイスコア</h2><span></span></div>
+    <div class="ptop"><button class="back" data-go="map">‹ マップ</button><h2 id="scTitle">スコア表</h2><span></span></div>
     <div class="mysum" id="scSum"></div>
     <div id="scBoard" style="display:grid;gap:10px"></div>
     <p>スコアの欄をタップすると、その下に − ＋ が出ます。＋ を押すとパーから入力が始まります。</p>

@@ -6,9 +6,13 @@
 let fromMenu = false;  // the sheet now open was opened from settings: closing it goes back there
 const openSheet = id => { fromMenu = id !== 'menu' && !$('menu').hidden; $('menu').hidden = $('setup').hidden = $('players').hidden = true; $(id).hidden = false; };
 // in-page confirm: ask('question', 'note', 'button', () => { ...done on yes })
-function ask(q, note, yes, onYes) {
+// o.go: the yes button is green (not deleting anything); o.alt: ['label', fn] a third choice above the two
+function ask(q, note, yes, onYes, o = {}) {
   $('askQ').textContent = q; $('askNote').textContent = note; $('askYes').textContent = yes;
+  $('askYes').className = o.go ? 'go' : 'red';
   $('askYes').onclick = () => { $('ask').hidden = true; onYes(); };
+  $('askAlt').hidden = !o.alt;
+  if (o.alt) { $('askAlt').textContent = o.alt[0]; $('askAlt').onclick = () => { $('ask').hidden = true; o.alt[1](); }; }
   $('ask').hidden = false; $('askNo').focus();
 }
 $('askNo').onclick = () => $('ask').hidden = true;
@@ -22,7 +26,7 @@ const OFF_KEY = 'golf3d.offline';  // { sig } of the course whose map was last s
 const courseSig = () => JSON.stringify((comp ? playHoles() : allHoles()).map(h => [h.tee, h.green]));
 const offSaved = () => { const o = loadJSON(OFF_KEY); return !!(o && o.sig === courseSig()); };
 let offState = null;  // { pct } while the map is being saved
-const M_TITLE = { mMain: '設定', mJump: 'コースの切り替え', mNine: 'ナインの選択', mTest: 'テスト用の機能' };
+const M_TITLE = { mMain: '設定', mJump: 'コースの切り替え', mNine: '回るコースの選択', mTest: 'テスト用の機能', mMore: '詳細設定' };
 const M_RENDER = { mMain: () => renderMenu(), mNine: () => renderNinePick() };  // redraw a screen when coming back to it
 let mStack = ['mMain'];  // the screens passed through to get here; ‹ goes back one
 function mShow(id, replace) {  // the main list, or one of its sub-screens
@@ -47,17 +51,31 @@ function renderMenu() {
   $('cnText').textContent = (comp && comp.course && comp.course.club) || S.course.name || '名前なし';  // in a competition: the organizer's course
   renderCompRow(); applyRoles();
   const all = allHoles(), n = all.filter(registered).length;  // every nine of the course
-  $('ckSetupMark').className = 'ck ' + (n === all.length ? 'ok' : 'no'); $('ckSetupVal').textContent = `${n} / ${all.length}ホール`;
+  // the 3 steps: course · competition · links (✓ once done)
+  const step = (id, k, done) => { $(id).className = 'stepn' + (done ? ' ok' : ''); $(id).textContent = done ? '✓' : k; };
+  step('ckSetupMark', 1, n === all.length); $('ckSetupVal').textContent = `${n} / ${all.length}ホール`;
+  step('stCompMark', 2, !!comp);
+  $('stCompT').textContent = '';
+  $('stCompT').append(comp ? (comp.meta && comp.meta.name) || 'コンペ' : 'コンペを作る', el('small', '', comp ? '作成済み・名簿や組はここから' : '参加者にリンクを送って、全員のスコアを集めます'));
+  $('stCompV').textContent = comp ? roleLabel() : '';
+  step('stLinksMark', 3, false); $('stLinks').disabled = !comp;
+  $('stLinksS').textContent = comp ? '参加者用リンクをLINEなどで送ります' : '2でコンペを作ると送れます';
   const saved = offSaved() && !offState, busy = offState && `保存中 ${offState.pct}%`;
+  // checklist for using it without signal: home screen, map saved (the right side is the state, the row is the button)
+  const { list } = offTiles();
   $('ckOffMark').className = 'ck ' + (saved ? 'ok' : 'no');
-  $('ckOffVal').textContent = busy || (saved ? '保存済み' : '保存する');
-  $('offVal').textContent = busy || (saved ? '保存済み' : '未保存');
-  $('offInfo').textContent = `約${Math.max(1, Math.round(offTiles().list.length * 25 / 1024))}MB・電波がなくても地図が見られる`;
+  $('ckOffVal').textContent = busy || (saved ? '保存済み' : '未保存');
+  $('offInfo').textContent = !list.length ? '先にコースを登録してください（登録したホールの周りを保存します）'
+    : saved ? '押すと保存し直します' : `航空写真と高低差 約${offMB(list)}MB・Wi-Fiのある所で`;
+  const a2ok = a2.app || !a2.on;  // already in the home-screen app, or a computer (not needed)
+  $('ckA2Mark').className = 'ck ' + (a2ok ? 'ok' : 'no');
+  $('ckA2Val').textContent = a2.app ? '追加済み' : a2.on ? '未追加' : '不要';
+  $('ckA2S').textContent = a2.app ? 'いまホーム画面のアプリで開いています' : a2.on ? '画面が広くなり、電波がなくても開けます' : 'パソコンでは必要ありません';
   $('mvNine').textContent = localNines().map(x => x.name).join(' → ');
   $('mvPlayers').textContent = `${allPlayers().length}人`;
   const handed = comp && comp.role === 'org' ? Object.keys(comp.pins || {}).filter(k => comp.pins[k]).map(k => +k.slice(1)) : [];
   const pins = new Set(Object.keys(S.round.pins).map(Number).concat(handed)).size, tees = Object.keys(S.round.tees).length;  // yours + handed out
-  $('mvPins').textContent = [pins && `ピン${pins}`, tees && `ティー${tees}`].filter(Boolean).join('・') || 'なし'; $('pinReset').disabled = !pins && !tees;
+  $('mvPins').textContent = [pins && `ピン${pins}`, tees && `ティー${tees}`].filter(Boolean).join('・') || 'リセット対象なし'; $('pinReset').disabled = !pins && !tees;
   $('bElev').setAttribute('aria-checked', !!S.prefs.elev);
   $('bRings').setAttribute('aria-checked', !!S.prefs.rings);
   $('mvDevice').textContent = devName();
@@ -65,7 +83,10 @@ function renderMenu() {
   $('ringsAlpha').value = S.prefs.ringsAlpha; $('ringsVal').textContent = `${S.prefs.ringsAlpha}%`;
 }
 $('bMenu').onclick = () => openMenu();
-$('menuClose').onclick = () => { cnDone(); $('menu').hidden = true; };
+$('menuClose').onclick = () => {
+  cnDone(); $('menu').hidden = true;
+  if (mStack.includes('mReg') && loadJSON(DRAFT_KEY)) toast('下書きは残してあります。「確定して保存」を押すまでコースは変わりません');
+};
 $('mBack').onclick = () => { mStack.pop(); const id = mStack[mStack.length - 1]; if (M_RENDER[id]) M_RENDER[id](); mPaint(); };
 // course name: pencil turns the name into a text field
 function cnDone() {
@@ -80,8 +101,12 @@ $('cnEdit').onclick = () => {
 };
 $('courseName').onblur = cnDone;
 $('courseName').onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) $('courseName').blur(); };  // not while converting kana
-$('ckSetup').onclick = $('goSetup').onclick = () => openSetup();
-$('ckOff').onclick = $('offSave').onclick = () => offSaveRun();
+$('ckSetup').onclick = () => openSetup();
+$('stComp').onclick = () => $('goComp').click();
+$('stLinks').onclick = () => { if (!comp) return; renderComp(); mShow('mComp'); renderLinks(); mShow('mLinks'); };
+$('goMore').onclick = () => mShow('mMore');
+$('ckOff').onclick = () => offSaveRun();
+$('ckA2').onclick = () => { if (a2.app || !a2.on) { toast(a2.app ? 'もうホーム画面のアプリで開いています' : 'パソコンではホーム画面への追加は必要ありません'); return; } $('menu').hidden = true; a2Show(); };
 $('goJump').onclick = () => mShow('mJump');
 $('goTest').onclick = () => mShow('mTest');
 // front / back nine of the round: one list each; the same nine twice is allowed (9-hole courses)
@@ -141,8 +166,8 @@ $('ringsAlpha').oninput = () => { S.prefs.ringsAlpha = +$('ringsAlpha').value; $
 $('ringsAlpha').onchange = () => savePrefs();
 // undo bar: a few seconds to take back the last action
 let snackT = null;
-function snack(text, undo) {
-  $('snackText').textContent = text; $('snack').hidden = false;
+function snack(text, undo, label = '元に戻す') {  // label: the button, when it does something else than undo
+  $('snackText').textContent = text; $('snackUndo').textContent = label; $('snack').hidden = false;
   $('snackUndo').onclick = () => { clearTimeout(snackT); $('snack').hidden = true; undo(); };
   clearTimeout(snackT); snackT = setTimeout(() => $('snack').hidden = true, 5000);
 }

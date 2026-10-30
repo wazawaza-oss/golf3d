@@ -1,5 +1,5 @@
 /* golf3d — search: finding the golf club by name for course registration.
-   Nominatim (OpenStreetMap) first; the GSI place-name search (msearch.gsi.go.jp) as a fallback.
+   Nominatim (OpenStreetMap) first, with other spellings; the GSI place-name search (msearch.gsi.go.jp) when no golf club turns up.
    Only on the 検索 button (never while typing), one request at a time, at most one per second to Nominatim.
    Plain scripts loaded in order from index.html (no build step); they share top-level names. */
 "use strict";
@@ -38,25 +38,67 @@ async function searchGSI(q) {
   const list = await getJSON(`${GSI_SEARCH}?q=${encodeURIComponent(q)}`);
   return (Array.isArray(list) ? list : []).slice(0, 10).map(x => {
     const center = ((x.geometry || {}).coordinates || []).map(Number);
-    return { name: String((x.properties || {}).title || ''), sub: '国土地理院の地名検索', center, bbox: boxAround(center, 900), osm: null, golf: false };
+    const name = String((x.properties || {}).title || '');
+    return { name, sub: '国土地理院の地名検索', center, bbox: boxAround(center, 900), osm: null, golf: false, likely: GOLFISH.test(name) };
   }).filter(p => p.name && p.center.length === 2 && p.center.every(isFinite));
+}
+const GOLFISH = /ゴルフ|カン[ツト]リー|倶楽部|クラブ|[ＣＧ]Ｃ|[CG]C/;  // a place name that looks like a golf club (GSI has no type)
+// the name without its generic tail (…カントリー倶楽部, …ゴルフ場, …CC)
+const shortName = q => q.replace(/\s*(ゴルフ場|ゴルフコース|ゴルフ倶楽部|ゴルフクラブ|ゴルフリンクス|カン[ツト]リー(倶楽部|クラブ)?|倶楽部|クラブ|コース|[CGＣＧ]\.?[CＣ]\.?)$/i, '').trim();
+/* other spellings to try when the name as typed finds no golf club (OSM names differ: カンツリー/カントリー,
+   倶楽部/クラブ, ヶ/ケ), then the short name. At most 3 searches. */
+function nameVariants(q) {
+  const out = [q], add = s => { s = s.trim(); if (s.length >= 2 && !out.includes(s)) out.push(s); };
+  add(q.replace(/カンツリー/g, 'カントリー').replace(/倶楽部/g, 'クラブ').replace(/ヶ/g, 'ケ'));
+  add(q.replace(/カントリー/g, 'カンツリー').replace(/クラブ/g, '倶楽部').replace(/ケ/g, 'ヶ'));
+  add(shortName(q));
+  return out.slice(0, 3);
+}
+// GSI: the name, then the short name, until something looks like a golf club
+async function searchGSIBoth(q) {
+  let list = [];
+  for (const v of [...new Set([q, shortName(q)])].filter(s => s.length >= 2)) {
+    const got = await searchGSI(v);
+    if (!list.length || got.some(p => p.likely)) list = got;
+    if (list.some(p => p.likely)) break;
+  }
+  return list.sort((a, b) => b.likely - a.likely);
 }
 async function runSearch(gsi) {
   const q = $('rgQ').value.trim(), info = $('rgInfo');
-  if (!q) { $('rgQ').focus(); return; }
+  info.classList.remove('err');
+  if (!q) { info.textContent = 'ゴルフ場の名前を入れてください'; info.classList.add('err'); $('rgQ').focus(); return; }
   if (searchBusy) return;
   searchBusy = true; $('rgGo').disabled = $('rgGsi').disabled = true;
   info.dataset.busy = '1'; info.textContent = gsi ? '国土地理院の地名検索で探しています…' : '検索しています…';
   const box = $('rgList'); box.textContent = '';
-  let list = [];
+  let list = [], used = q;
   try {
-    list = await (gsi ? searchGSI(q) : searchOSM(q));
-    info.textContent = list.length ? `${list.length}件見つかりました。選ぶと地図がそこへ移動します` : gsi ? '見つかりませんでした。地名（市町村名など）で探して、地図を動かしても登録できます' : '見つかりませんでした。下の「国土地理院の地名検索」も試してください';
+    if (gsi) list = await searchGSIBoth(q);
+    else {
+      for (const v of nameVariants(q)) {  // one after another, never at the same time
+        if (v !== q) info.textContent = `「${v}」でも探しています…`;
+        const got = await searchOSM(v);
+        if (!list.length || got.some(p => p.golf)) { list = got; used = v; }
+        if (list.some(p => p.golf)) break;
+      }
+      if (!list.some(p => p.golf)) {  // OSM knows no golf club by that name: the GSI place names often do (e.g. 鷹之台ＣＣ)
+        info.textContent = '国土地理院の地名検索でも探しています…';
+        const g = (await searchGSIBoth(q)).filter(p => p.likely);
+        if (g.length) list = g;  // the short name's other OSM hits are mostly unrelated places
+      }
+    }
+    const golf = list.filter(p => p.golf || p.likely).length;
+    info.textContent = list.length
+      ? `${used !== q ? `「${used}」でも探しました。` : ''}${golf ? `⛳ゴルフ場が${golf}件見つかりました。選ぶと地図がそこへ移動します`
+        : `ゴルフ場は見つかりませんでした（ほかの場所が${list.length}件）。正式な名前や、近くの駅・町の名前で探して、地図を動かして登録することもできます`}`
+      : gsi ? '見つかりませんでした。地名（市町村名など）で探して、地図を動かしても登録できます'
+      : '見つかりませんでした。「○○カントリー」の○○だけなど短い名前でも試してください';
   } catch (e) { info.textContent = e.message; }
-  list.forEach(p => {
-    const b = el('button', 'mrow');
-    const tx = el('span', 'mtx', p.name); if (p.sub) tx.appendChild(el('small', '', p.sub));
-    b.append(tx, el('span', 'mval', p.golf ? 'ゴルフ場' : ''));
+  list.forEach(p => {  // the small line (prefecture, city) tells two places of the same name apart
+    const g = p.golf || p.likely, b = el('button', 'mrow' + (g ? ' golf' : ''));
+    const tx = el('span', 'mtx', (g ? '⛳ ' : '') + p.name); if (p.sub) tx.appendChild(el('small', '', p.sub));
+    b.append(tx, el('span', 'mval', p.golf ? 'ゴルフ場' : p.likely ? 'ゴルフ場（地名）' : p.osm ? 'ゴルフ場以外' : '地名'));
     b.onclick = () => { regUsePlace(p); box.textContent = ''; };
     box.appendChild(b);
   });
@@ -78,7 +120,7 @@ function regUsePlace(p) {
       d.course = n; d.cand = cleanCand(null); d.fresh = true;
     }
     Object.assign(d.course, { center: p.center, area });
-    if (fresh || d.named || S.course.name === 'テストコース' || !S.course.name) { d.course.name = p.name.slice(0, 40); d.named = true; }
+    if (fresh || d.named || [UNNAMED, OLD_UNNAMED].includes(S.course.name) || !S.course.name) { d.course.name = p.name.slice(0, 40); d.named = true; }
     saveDraft();
     map.fitBounds([[p.bbox[0], p.bbox[1]], [p.bbox[2], p.bbox[3]]], { padding: 30, maxZoom: 17, bearing: 0, pitch: 0, duration: 0 });
     renderReg();

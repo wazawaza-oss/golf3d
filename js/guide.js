@@ -45,17 +45,17 @@ const isLight = hex => { const n = parseInt(hex.slice(1), 16); return ((n >> 16)
 function renderGuide() {
   const h = hole(), c = S.draft.course, nine = draftNine(S.su.nine), green = S.su.step === 'green';
   const base = c.tees.find(t => t.id === c.baseTee) || c.tees[0], y = h.yd[c.baseTee];
-  $('gHole').textContent = `${nine.name} ${h.n}番`;
+  $('gHole').textContent = `${nine.name} ${cardNo(c, nine, h.n)}番`;
   if (document.activeElement !== $('gPar')) $('gPar').value = String(h.par);
   $('gInfo').textContent = y ? `${base.name} ${y}Y` : '';
   const item = green ? 'グリーン' : `ティー（${base.name}）`, has = green ? h.green : h.tee;
-  $('gAsk').textContent = has ? `${h.n}番の${item}：位置がよければ「次へ」。違うときはタップかドラッグで直します`
-    : `${h.n}番の${item}をタップしてください`;
+  $('gAsk').textContent = has ? `${cardNo(c, nine, h.n)}番の${item}：位置がよければ「次へ」。違うときはタップかドラッグで直します`
+    : `${cardNo(c, nine, h.n)}番の${item}をタップしてください`;
   const issue = holeIssue(h, c);
   $('gWarn').hidden = !issue; if (issue) $('gWarn').textContent = `確認してください：${issue}`;
   const cand = (green ? S.draft.cand.greens : S.draft.cand.tees).length;
   const notes = [];
-  if (has && h.src !== 'manual') notes.push(h.src === 'osm' ? 'OSMのデータから仮置きしました' : '自動で仮置きしました');
+  if (has && h.src !== 'manual') notes.push(h.src === 'osm' ? '地図データから自動で置きました。位置を確かめてください' : '自動で置きました。位置を確かめてください');
   if (cand) notes.push(`点線の丸は${green ? 'グリーン' : 'ティー'}の候補です。タップするとそこに置きます`);
   if (!green && c.tees.length > 1 && h.tee) notes.push('「仮」はほかの色のティーの目安です（ヤードの差から計算）');
   $('gNote').textContent = notes.join('。');

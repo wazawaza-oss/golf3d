@@ -2,6 +2,7 @@
   /* high contrast for bright sunlight: near-black text on opaque white panels */
   --ink:#0a1322; --muted:#36414d; --panel:#fff; --edge:rgba(10,19,34,.28); --line:#b9c2b3;
   --accent:#16592f; --tee:#2f6fd1;
+  --sc-under:#b3261e; --sc-over:#0b5cad;  /* score colours (map bar, score table, scoreboard, JPEG): under par red, double bogey or worse blue */
   /* map marks: soft colours that sit quietly on the photo, each with its own shape (you: circle, pin: flag, mark: diamond) */
   --me:#2f8cff; --pin:#ff2bd6; --meas:#ffd84d;
   /* bottom edge = home-indicator area + correction. --home: 34px on Face ID iPhones (0 on phones without one);
@@ -17,13 +18,14 @@ html,body{height:100%;margin:0}
 body{font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;color:var(--ink);background:#dfe6da;overflow:hidden;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 #map{position:fixed;inset:0 0 var(--fixb) 0}
 button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
-button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #0b5cad;outline-offset:2px}  /* on white panels: blue */
+.fab:focus-visible,.hole .ic:focus-visible,.dk:focus-visible,.dkstep>button:focus-visible,.tapreset:focus-visible{outline-color:var(--meas)}  /* drawn over the map: yellow */
 
 /* top: distance panel — light frosted glass with dark text (readable in sun); nothing sits at the bottom edge (Safari's bar).
    [‹] [ 1H · PAR 4 / big distance ] [›], then a hairline and the elevation line */
 .hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));max-width:440px;margin:0 auto;z-index:5;
-  display:grid;grid-template-columns:40px 1fr 40px;grid-template-areas:"prev mid next" "sub sub sub";align-items:center;
-  padding:4px 4px 6px;border-radius:18px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  display:grid;grid-template-columns:46px 1fr 46px;grid-template-areas:"prev mid next" "sub sub sub";align-items:center;
+  padding:4px 4px 6px;border-radius:18px;background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
   border:1px solid rgba(10,19,34,.16);box-shadow:0 6px 20px rgba(0,0,0,.22);color:var(--ink);font-weight:800}
 /* hole arrows at the two edges: big tap areas, light chevrons; only a soft highlight while pressed */
 .hole{display:contents}
@@ -36,28 +38,32 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 .holeline{display:flex;justify-content:center;align-items:baseline;gap:18px;line-height:1;margin-top:2px;text-shadow:0 0 2px rgba(255,255,255,.9)}
 .holeline span{display:flex;align-items:baseline;gap:5px}
 .holeline b{font-size:22px;font-weight:900;font-variant-numeric:tabular-nums}
-.holeline small{font-size:13px;font-weight:800;color:#3a4350;letter-spacing:.04em}
+.holeline small{font-size:13px;font-weight:800;color:#0a1322;letter-spacing:.04em}
 /* the number sits dead centre; its label takes the space to the right */
 .dist{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;column-gap:6px}
 .dist .nv{grid-column:2;white-space:nowrap}
-.dist .lab{grid-column:3;justify-self:start;padding-bottom:8px;font-size:11.5px;font-weight:800;color:#3a4350;line-height:1.2}
+.dist .lab{grid-column:3;justify-self:start;padding-bottom:8px;font-size:12.5px;font-weight:800;color:#0a1322;line-height:1.2}
 .dist .num{font-size:52px;font-weight:900;line-height:.95;font-variant-numeric:tabular-nums;letter-spacing:-.03em;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 6px rgba(255,255,255,.6)}
 .dist .unit{font-size:20px;font-weight:900;margin-left:6px}  /* a little air between the number and Y */
 /* elevation / extra line under a hairline; the rise or drop is a small tinted pill */
 .sub{grid-area:sub;margin:2px 6px 0;padding-top:5px;border-top:1px solid rgba(10,19,34,.12);text-align:center;font-size:13px;font-weight:700;min-height:1.35em;line-height:1.35;font-variant-numeric:tabular-nums;text-shadow:0 0 2px rgba(255,255,255,.9)}
+.hud.unreg .unit{display:none}
+.hud.unreg .num{color:#9aa0a8}
+.sub .subgo{margin:2px 0 2px 10px;min-height:40px;padding:0 14px;border-radius:10px;background:var(--accent);color:#fff;font-size:14px;font-weight:900;text-shadow:none;vertical-align:middle}
 .sub .up,.sub .down{display:inline-block;padding:0 7px;margin-right:4px;border-radius:999px;font-weight:900;text-shadow:none}
 .sub .up{color:#a3170f;background:rgba(163,23,15,.12)}.sub .down{color:#0750a8;background:rgba(7,80,168,.12)}
 /* while marks are up: a rounded リセット button sitting right above スコアボード (same width, same glass);
    the button column always ends above that spot, so nothing moves when it appears */
-.tapreset{position:fixed;right:max(10px,env(safe-area-inset-right,0px));bottom:calc(var(--sab) + 86px);z-index:5;width:64px;height:38px;border-radius:12px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);font-size:13px;font-weight:900;text-shadow:0 0 2px rgba(255,255,255,.95)}
+.tapreset{position:fixed;right:max(10px,env(safe-area-inset-right,0px));bottom:calc(var(--sab) + 86px);z-index:5;width:64px;height:38px;border-radius:12px;background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);font-size:13px;font-weight:900;text-shadow:0 0 2px rgba(255,255,255,.95)}
 
 /* right column: settings / GPS / 3D / view / you / pin — fits between the distance panel (--hudb) and the bottom dock */
 .side{position:fixed;right:max(10px,env(safe-area-inset-right,0px));top:calc(var(--hudb,190px) + 10px);bottom:calc(var(--sab) + 134px);display:flex;flex-direction:column;justify-content:center;gap:7px;z-index:4;pointer-events:none}
-.fab{pointer-events:auto;flex:0 1 50px;min-height:40px;width:52px;border-radius:12px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);font-weight:900;font-size:15px;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);line-height:1.15;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center}
-.fab small{display:block;font-size:10.5px;font-weight:800;color:var(--ink);white-space:nowrap}
+.fab{pointer-events:auto;flex:0 1 56px;min-height:44px;width:56px;border-radius:12px;background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);font-weight:900;font-size:15px;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);line-height:1.15;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.fab small{display:block;font-size:12px;font-weight:800;color:var(--ink);line-height:1.1;white-space:nowrap}
 .fab svg{display:block}
 .fab[aria-pressed="true"]{background:rgba(22,89,47,.82);text-shadow:none;border-color:var(--accent);color:#fff}
 .fab[aria-pressed="true"] small{color:#fff}
+.fab.na{color:#8a909a;background:rgba(236,238,241,.88)}.fab.na small{color:#6b7380}.fab.na svg{opacity:.45}  /* needs the hole registered first */
 
 /* floating cards */
 .banner{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--sab) + 24px);width:min(440px,calc(100% - 20px));border-radius:14px;z-index:6;box-shadow:0 4px 18px rgba(0,0,0,.22);background:#14223a;color:#fff;padding:10px 12px;display:grid;gap:8px;font-weight:700;font-size:15px}
@@ -86,6 +92,7 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 .btn{border-radius:10px;padding:10px 14px;background:#eef2ea;font-weight:700;font-size:14px}
 .btn.primary{background:var(--accent);color:#fff}
 .btn.danger{color:#b3261e}
+.row.wipe{margin-top:40px;padding-top:16px;border-top:1px solid var(--line)}  /* destructive: well away from the normal buttons */
 .btn:disabled{opacity:.45;cursor:default}
 .btn[aria-pressed="true"]{background:var(--ink);color:#fff}
 .btn.big{flex:1;padding:13px 14px;font-size:17px}
@@ -129,6 +136,10 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 .ck.ok{background:#1f9d48;color:#fff}
 .ck.ok::after{content:"✓"}
 .ck.no{border:3px solid #e0a800}
+/* the 3 preparation steps: a numbered circle, green ✓ when done */
+.stepn{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:15px;font-weight:900;background:#eef3fa;color:#0b5cad;box-shadow:inset 0 0 0 2px #0b5cad}
+.stepn.ok{background:#1f9d48;color:#fff;box-shadow:none}
+.mrow:disabled .stepn,.mrow:disabled .mtx,.mrow:disabled .mic,.mrow:disabled .chev{opacity:.45}
 /* iOS-style switch (the whole row is the switch) */
 .sw{position:relative;width:51px;height:31px;border-radius:16px;background:#b8bcc4;flex:none;transition:background .2s}
 .sw::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.25);transition:transform .2s}
@@ -138,10 +149,12 @@ button:focus-visible{outline:3px solid var(--meas);outline-offset:2px}
 .mconfirm{position:fixed;inset:0 0 var(--fixb) 0;z-index:20;background:rgba(10,19,34,.45);display:grid;place-items:center;padding:20px}
 .mcard{width:min(320px,100%);background:#fff;border-radius:16px;padding:20px 18px 14px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.3)}
 .mcard p{margin:0;font-size:17px;font-weight:900;color:var(--ink);line-height:1.45}
-.mcard small{display:block;margin-top:6px;font-size:13.5px;font-weight:700;color:#3a4350}
+.mcard small{display:block;margin-top:6px;font-size:13.5px;font-weight:700;color:#3a4350;white-space:pre-line}
 .mcbtn{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
 .mcbtn button{height:46px;border-radius:12px;background:#eceef1;font-size:16px;font-weight:900;color:var(--ink)}
 .mcbtn button.red{background:#c8102e;color:#fff}
+.mcbtn button.go{background:var(--accent);color:#fff}
+.mcbtn #askAlt{grid-column:1/-1}
 .snack{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--sab) + 24px);z-index:21;width:min(420px,calc(100% - 24px));display:flex;align-items:center;gap:10px;padding:10px 10px 10px 16px;border-radius:14px;background:#14223a;color:#fff;font-size:14.5px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.35)}
 .snack span{flex:1}
 .snack button{padding:10px 14px;border-radius:10px;background:#fff;color:var(--ink);font-weight:900;font-size:14.5px}
@@ -175,7 +188,10 @@ input[type=text]{flex:1 1 200px}
 .mrow.center.go{background:var(--accent);color:#fff}
 .mrow.center.go:active{background:#0f4222}
 .mrow.center:disabled{color:#8a909a}
+.mrow.center.go:disabled{background:#c9cdd3;color:#fff}
 #menu .grp-f.err{color:#b3261e;font-weight:800}
+#rgList .mrow .mval{font-size:12.5px;color:#6b7380}
+#rgList .mrow.golf .mval{color:#1f7a3a}
 .hrow .hn{flex:none;width:44px;font-variant-numeric:tabular-nums}
 .hrow .mtx{font-size:14px;font-weight:700;color:#3a4350}
 .hst{flex:none;font-size:13px;font-weight:900;padding:4px 9px;border-radius:999px;white-space:nowrap}
@@ -203,23 +219,26 @@ input[type=text]{flex:1 1 200px}
 .progress{height:8px;border-radius:4px;background:#eef2ea;overflow:hidden}
 .progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
 .toast{position:fixed;left:50%;top:calc(var(--hudb,190px) + 12px);transform:translateX(-50%);background:rgba(20,34,58,.92);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;z-index:9;max-width:calc(100% - 40px);text-align:center}
-.onboard{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(380px,calc(100% - 40px));background:#fff;border-radius:16px;padding:18px;z-index:7;box-shadow:0 8px 30px rgba(0,0,0,.3);display:grid;gap:12px}
+.obwrap{position:fixed;inset:0;z-index:7;background:rgba(10,19,34,.35);display:grid;place-items:center;padding:20px}
+.obwrap[hidden]{display:none}
+.onboard{width:min(380px,100%);background:#fff;border-radius:16px;padding:18px;box-shadow:0 8px 30px rgba(0,0,0,.3);display:grid;gap:12px}
+.onboard .oblead{font-size:15px;font-weight:800;color:var(--accent)}
+.onboard .btn{min-height:48px;padding:0 18px;flex:1}
 .onboard h2{margin:0;font-size:18px}
 .onboard p{margin:0;font-size:14px;line-height:1.65;color:var(--muted)}
 
 /* side pages: ranking (left of map) and score entry (right of map) */
 /* bottom dock (kept clear of Safari's bar): 順位 | this hole's score − / + | スコアボード */
-.dock{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:max(14px,calc(var(--sab) + 4px));max-width:440px;margin:0 auto;display:grid;grid-template-columns:64px 1fr 64px;gap:8px;z-index:5}
-.dk{height:64px;border-radius:14px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);font-weight:900;font-size:11px;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
-.dk svg{display:block}
-.dkstep{height:64px;border-radius:14px;background:rgba(255,255,255,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 6px;color:var(--ink)}
+.dock{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:max(14px,calc(var(--sab) + 4px));max-width:440px;margin:0 auto;display:grid;grid-template-columns:76px 1fr 76px;gap:8px;z-index:5}
+.dk{height:64px;border-radius:14px;background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);color:var(--ink);font-weight:900;font-size:12px;text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
+.dk svg{display:block}.dkstep{height:64px;border-radius:14px;background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);text-shadow:0 0 2px rgba(255,255,255,.95),0 0 4px rgba(255,255,255,.6);border:1.5px solid var(--edge);box-shadow:0 3px 12px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 6px;color:var(--ink)}
 .dkstep>button{width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,.7);border:1.5px solid var(--edge);font-size:26px;font-weight:900;flex:none}
 .dkstep .dv{flex:1;min-width:0;text-align:center;line-height:1.1}
-.dkstep .dv small{display:block;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dkstep .dv small{display:block;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dkstep .dv b{display:block;font-size:26px;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums}
-.dkstep .dv.under b{color:#a3170f}.dkstep .dv.over b{color:#0750a8}
-.hud{touch-action:pan-y}
-.page{position:fixed;inset:0 0 var(--fixb) 0;z-index:10;background:#f1f4ee;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;transform:translateX(100%);visibility:hidden;transition:transform .25s ease,visibility 0s linear .25s;padding:calc(env(safe-area-inset-top,0px) + 10px) max(14px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 28px) max(14px,env(safe-area-inset-left,0px));box-shadow:0 0 24px rgba(0,0,0,.25)}
+.dkstep .dv.under b{color:var(--sc-under)}.dkstep .dv.over2 b{color:var(--sc-over)}
+.hud{touch-action:pan-y pinch-zoom}
+.page{position:fixed;inset:0 0 var(--fixb) 0;z-index:10;background:#f1f4ee;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y pinch-zoom;transform:translateX(100%);visibility:hidden;transition:transform .25s ease,visibility 0s linear .25s;padding:calc(env(safe-area-inset-top,0px) + 10px) max(14px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 28px) max(14px,env(safe-area-inset-left,0px));box-shadow:0 0 24px rgba(0,0,0,.25)}
 .page.on{visibility:visible;transition:transform .25s ease,visibility 0s}
 .page.drag{transition:none}
 .page .inner{max-width:560px;margin:0 auto;display:grid;gap:12px}
@@ -228,7 +247,7 @@ input[type=text]{flex:1 1 200px}
 .ptop{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;min-height:44px}
 .ptop h2{margin:0;font-size:19px}
 .ptop>:first-child{justify-self:start}.ptop>:last-child{justify-self:end}
-.ptop .back{padding:10px 12px;border-radius:10px;background:#fff;font-weight:700;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.ptop .back{min-height:44px;padding:10px 14px;border-radius:10px;background:#fff;font-weight:700;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .mysum{display:flex;align-items:baseline;justify-content:center;gap:12px;background:#fff;border-radius:14px;padding:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);font-variant-numeric:tabular-nums}
 .mysum b{font-size:40px;line-height:1;font-weight:800}
 .mysum span{font-size:14px;color:var(--muted);font-weight:600}
@@ -240,9 +259,9 @@ input[type=text]{flex:1 1 200px}
 .sc td.fx{position:relative}
 .sc td.fx::after{content:"";position:absolute;top:2px;right:2px;width:6px;height:6px;border-radius:50%;background:#e8a400}  /* changed by someone else: tap for who */
 .stepper .sh b{white-space:nowrap}
-.stepper{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border-radius:14px;padding:10px 12px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.stepper{position:sticky;bottom:8px;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border-radius:14px;padding:10px 12px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .stepper .sh b{display:block;font-size:20px}.stepper .sh span{font-size:13px;color:var(--muted);font-weight:600}
-.stepper .clr{padding:10px 10px;border-radius:10px;background:#eef2ea;font-size:13px;font-weight:700;color:var(--muted)}
+.stepper .clr{min-height:44px;padding:10px 10px;margin-left:16px;border-radius:10px;background:#eef2ea;font-size:13px;font-weight:800;color:#b3261e}
 .stepper .clr:disabled{opacity:.4}
 .plist{display:grid;gap:8px}
 .prow .btn{flex:none;padding:10px 12px}
@@ -251,14 +270,14 @@ input[type=text]{flex:1 1 200px}
 .prow .nm{font-weight:700;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .prow .tot{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
 .prow input{flex:1}
-.prow .del{width:44px;height:44px;border-radius:10px;background:#eef2ea;color:#b3261e;font-size:18px}
+.prow .del{flex:none;min-width:52px;height:44px;padding:0 10px;margin-left:14px;border-radius:10px;background:#eef2ea;color:#b3261e;font-size:14px;font-weight:800}
 .prow .del:disabled{opacity:.35}
 .stp{display:flex;align-items:center;gap:6px}
 .stp>button{width:50px;height:50px;border-radius:12px;background:#eef2ea;font-size:26px;font-weight:700}
 .stp .val{width:60px;text-align:center;padding:2px 0;border-radius:10px}
 .stp .val b{display:block;font-size:30px;line-height:1.05;font-variant-numeric:tabular-nums}
 .stp .val small{display:block;font-size:10.5px;color:var(--muted);font-weight:700;white-space:nowrap}
-.stp .val.under b{color:#b3261e}.stp .val.over b{color:#0b6bcb}
+.stp .val.under b{color:var(--sc-under)}.stp .val.over2 b{color:var(--sc-over)}
 /* ranking table: about 5 rows tall, scrolls inside when there are more players */
 .rk{background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);max-height:262px;overflow-y:auto;overscroll-behavior:contain}
 .rkt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
@@ -268,14 +287,15 @@ input[type=text]{flex:1 1 200px}
 .rkt td.pos{font-size:20px;font-weight:800;color:var(--ink);width:44px}
 .rkt td.nm{font-size:16px;font-weight:700;color:var(--ink);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rkt td.dv{font-size:22px;font-weight:800;color:var(--ink)}
-.rkt tr.top td.pos{color:#b8860b}
+.rkt tr.top td.pos{color:#8a6508}
+.rkt td.pos.none{font-size:12px;font-weight:700;color:var(--muted)}
 .rkt tr.me td,.sc tr.me td{background:#f3faf4}
 table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;font-size:13px;font-variant-numeric:tabular-nums;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .sc th,.sc td{border:1px solid #e3e8df;padding:6px 0;text-align:center}
 .sc th:first-child,.sc td:first-child{width:58px;text-align:left;padding-left:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sc th{background:#f1f4ee;font-size:12px}
 .sc tr.par td{color:var(--muted);font-size:12px}
-.sc td.under{color:#b3261e;font-weight:800}.sc td.over2{color:#0b6bcb}
+.sc td.under{color:var(--sc-under);font-weight:800}.sc td.over2{color:var(--sc-over)}
 .sc .sum{font-weight:800;background:#f7f9f5}
 /* round sharing */
 .rcode{font-size:34px;font-weight:800;letter-spacing:.18em;text-align:center;background:#f1f4ee;border-radius:14px;padding:10px;font-variant-numeric:tabular-nums}
@@ -350,6 +370,11 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 #menu .mrow:disabled .mtx{color:#8a909a}
 #menu .lbtns{gap:8px;flex-wrap:wrap}
 #menu .lbtns button{flex:1;min-width:88px;height:42px;border-radius:10px;background:#eef3fa;color:#0b5cad;font-size:14px;font-weight:900}
+#menu .lbtns button:first-child{background:var(--accent);color:#fff}  /* LINE: the usual way to send */
+#menu .grp-t.lorg{margin-top:44px;padding-top:16px;border-top:1px solid #d9dce1;color:#b3261e;display:flex;align-items:center;gap:8px}
+#menu .grp.lorg{box-shadow:inset 0 0 0 2px #e8b4ad}
+#menu .grp.lorg .lbtns button{background:#fdeeec;color:#b3261e}
+.danger-tag{flex:none;padding:2px 8px;border-radius:6px;background:#c8102e;color:#fff;font-size:12px;font-weight:900}
 #menu .lnote{margin:0;padding:0 14px 10px;font-size:12px;font-weight:600;color:#3a4350;line-height:1.45}
 .qrcard #qrBox{width:min(240px,70vw);margin:12px auto 4px}
 .qrcard #qrBox svg{display:block;width:100%;height:auto}
@@ -367,5 +392,27 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 .a2btn{display:flex;gap:8px;margin-top:12px}
 .a2btn button{flex:1;height:48px;border-radius:12px;background:#eceef1;font-size:16px;font-weight:900;color:var(--ink)}
 .a2btn button.go{flex:1.6;background:var(--accent);color:#fff}
-.a2row{margin-top:14px;border:2px solid #1f9d48}
-.a2row .mtx{color:#0f4a26}
+/* tap areas: score rows at least 44px tall (the 9 holes of a half share the width) */
+.sc tr:not(.par) td{height:44px;padding:0}
+.sc.my tr.mine td{height:48px}
+
+/* tablet / computer (768px and wider): bigger side buttons, wider panels; sheets (settings, participants, the guide)
+   become a centred column so 完了 sits next to the content and the map stays in view at both sides */
+@media (min-width:768px){
+  .side{gap:10px}
+  .fab{flex-basis:62px;width:62px;min-height:48px;font-size:16px}
+  .fab small{font-size:12.5px}
+  .hud,.dock{max-width:520px}
+  .dk{font-size:13px}
+  .dkstep .dv small{font-size:13px}
+  .sheet{left:0;right:0;margin:0 auto;width:min(600px,calc(100% - 48px));box-sizing:border-box}
+  #menu{top:calc(env(safe-area-inset-top,0px) + 16px);border-radius:18px 18px 0 0}
+}
+/* start-up: until the first map view is drawn */
+.maploading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;display:flex;align-items:center;gap:10px;padding:12px 18px;border-radius:14px;background:rgba(255,255,255,.92);box-shadow:0 4px 16px rgba(0,0,0,.25);font-size:15px;font-weight:800;color:var(--ink);pointer-events:none}
+.maploading[hidden]{display:none}
+.maploading .spin{width:20px;height:20px;border-radius:50%;border:3px solid #cfd8c8;border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* every button: a small press, and on a mouse a slight darkening under the pointer */
+button:active:not(:disabled){transform:scale(.96)}
+@media (hover:hover){button:hover:not(:disabled){filter:brightness(.97)}}

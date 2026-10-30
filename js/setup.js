@@ -3,9 +3,9 @@
    Plain scripts loaded in order from index.html (no build step); they share top-level names. */
 "use strict";
 
-Object.assign(M_TITLE, { mReg: 'コース登録', mRegNines: 'ナインとティー', mRegYard: 'パーとヤード' });
+Object.assign(M_TITLE, { mReg: 'コース登録', mRegNines: 'ハーフとティー', mRegYard: 'パーとヤード' });
 Object.assign(M_RENDER, { mReg: () => renderReg(), mRegNines: () => renderRegNines(), mRegYard: () => renderYard() });
-const nextNineName = () => NINE_NAMES.find(n => !S.draft.course.nines.some(x => x.name === n)) || `ナイン${S.draft.course.nines.length + 1}`;
+const nextNineName = () => NINE_NAMES.find(n => !S.draft.course.nines.some(x => x.name === n)) || `ハーフ${S.draft.course.nines.length + 1}`;
 const cleanCand = c => ({ greens: ((c && c.greens) || []).filter(isLL), tees: ((c && c.tees) || []).filter(isLL) });
 // the draft left from last time, or a fresh copy of the course as it is
 function loadDraft() {
@@ -19,26 +19,35 @@ function openSetup() {
   mStack = ['mMain', 'mReg']; openMenu(true);
 }
 $('obStart').onclick = openSetup;
-$('obLater').onclick = () => $('onboard').hidden = true;
+// あとで: not asked again for a week (kept in golf3d.prefs as obLater = time); settings' step 1 still opens it
+const OB_WAIT = 7 * 864e5;
+const obDue = () => !allHoles().some(registered) && !(Date.now() - (S.prefs.obLater || 0) < OB_WAIT);
+$('obLater').onclick = () => { $('onboard').hidden = true; S.prefs.obLater = Date.now(); savePrefs(); };
+
+// the half played second (today's back, or the 2nd one when today's round is not on this course) is called 10–18, as on the score card
+const isBackHalf = (c, nine) => S.round.front !== S.round.back && c.nines.some(x => x.id === S.round.back) ? nine.id === S.round.back : c.nines.indexOf(nine) === 1;
+const cardNo = (c, nine, n) => isBackHalf(c, nine) ? n + NINE : n;
 
 /* ---------- the main registration screen ---------- */
 function renderReg() {
   loadDraft();
   const c = S.draft.course;
+  if (!$('rgInfo').dataset.busy) $('rgInfo').classList.remove('err');
   if (!$('rgInfo').dataset.busy) $('rgInfo').textContent = c.area && c.area.name ? `選んだゴルフ場：${c.area.name}` : c.area ? 'ゴルフ場の場所を選びました' : 'まだ選んでいません（今の地図の場所のまま進めることもできます）';
   const base = c.tees.find(t => t.id === c.baseTee);
-  $('rgNinesS').textContent = `${c.nines.map(x => x.name).join('・')}／ティー ${c.tees.map(t => t.name).join('・')}（基準：${base ? base.name : ''}）`;
+  $('rgNinesS').textContent = `${c.nines.map(x => x.name).join('・')}／ティー ${c.tees.map(t => t.name).join('・')}（地図に置く色：${base ? base.name : ''}）`;
   const box = $('rgHoles'); box.textContent = '';
   c.nines.forEach(nine => {
     const st = nine.holes.map(h => holeState(h, c)), left = st.filter(s => s === 'none').length;
-    box.appendChild(el('div', 'grp-t', `${nine.name}　${left ? `未設定 ${left}` : 'すべて設定済み'}`));
+    const from = cardNo(c, nine, 1);
+    box.appendChild(el('div', 'grp-t', `${nine.name}（${from}〜${from + NINE - 1}番）　${left ? `未設定 ${left}` : 'すべて設定済み'}`));
     const g = el('div', 'grp');
     nine.holes.forEach((h, i) => {
       const b = el('button', 'mrow hrow');
       const y = h.yd[c.baseTee];
-      b.append(el('span', 'hn', `${h.n}番`), el('span', 'mtx', `Par ${h.par}${y ? `・${y}Y` : ''}${registered(h) ? `・地図 ${Math.round(yards(h.tee, h.green))}Y` : ''}`),
+      b.append(el('span', 'hn', `${cardNo(c, nine, h.n)}番`), el('span', 'mtx', `Par ${h.par}${y ? `・${y}Y` : ''}${registered(h) ? `・地図 ${Math.round(yards(h.tee, h.green))}Y` : ''}`),
         el('span', 'hst ' + st[i], STATE_NAME[st[i]] + (st[i] === 'auto' && !h.ok ? '（未確認）' : '')), el('span', 'chev', '›'));
-      b.setAttribute('aria-label', `${nine.name} ${h.n}番 ${STATE_NAME[st[i]]}。押すとこのホールを置き直します`);
+      b.setAttribute('aria-label', `${nine.name} ${cardNo(c, nine, h.n)}番 ${STATE_NAME[st[i]]}。押すとこのホールを置き直します`);
       b.onclick = () => guideStart(nine.id, h.n, true);
       g.appendChild(b);
     });
@@ -58,7 +67,7 @@ $('rgOsm').onclick = async () => {
   const c = S.draft.course, info = $('rgOsmInfo'), btn = $('rgOsm');
   const say = (t, bad) => { info.textContent = t; info.classList.toggle('err', !!bad); };
   if (!c.area) { say('先に「1. ゴルフ場を探す」でゴルフ場を選んでください。', true); return; }
-  btn.disabled = true; say('OSMのデータを取得しています…（最大30秒）');
+  btn.disabled = true; say('地図データを取得しています…（最大30秒）');
   try {
     const out = await draftCourse({ area: c.area, baseTee: c.baseTee,
       nines: c.nines.map(x => ({ id: x.id, name: x.name, holes: x.holes.map(h => ({ n: h.n, par: h.par, yd: Object.assign({}, h.yd) })) })) });
@@ -93,7 +102,8 @@ $('rgSave').onclick = () => {
   if (notes.length) ask(unset ? '未設定のホールが残っています。このまま確定しますか？' : 'コースを確定しますか？', notes.join('。'), '確定する', go);
   else go();
 };
-$('rgDiscard').onclick = () => ask('下書きを捨てますか？', '確定していない変更が消えます。今のコースはそのままです', '捨てる', () => {
+$('rgDiscard').onclick = () => ask('下書きを捨てますか？',
+  `下書きで置いたグリーンとティー（${S.draft.course.nines.flatMap(x => x.holes).filter(registered).length}ホール分）と、ハーフ・色・ヤードの変更が消えます。確定済みの今のコースはそのままです`, '捨てる', () => {
   try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
   S.draft = null; loadDraft(); renderReg(); toast('下書きを捨てました');
 });
@@ -104,13 +114,13 @@ function renderRegNines() {
   const ns = $('rnNines'); ns.textContent = '';
   c.nines.forEach(nine => {
     const row = el('div', 'mrow field');
-    const inp = el('input'); inp.type = 'text'; inp.maxLength = 12; inp.value = nine.name; inp.placeholder = 'ナインの名前（例：東）'; inp.setAttribute('aria-label', 'ナインの名前');
+    const inp = el('input'); inp.type = 'text'; inp.maxLength = 12; inp.value = nine.name; inp.placeholder = 'ハーフの名前（例：東）'; inp.setAttribute('aria-label', 'ハーフの名前');
     inp.oninput = () => { const v = inp.value.trim(); if (v) { nine.name = v.slice(0, 12); saveDraft(); } };
     inp.onblur = () => { inp.value = nine.name; };
     const del = el('button', 'xbtn', '削除'); del.disabled = c.nines.length < 2; del.setAttribute('aria-label', `${nine.name}を削除`);
     del.onclick = () => {
       const placed = nine.holes.some(h => h.tee || h.green), used = [S.round.front, S.round.back].includes(nine.id);
-      const note = [placed && '置いたティーとグリーンも消えます', used && '今日のラウンドで使っているので、確定するとスコアとピン位置も消えます'].filter(Boolean).join('。') || 'このナインには何も置いていません';
+      const note = [placed && '置いたティーとグリーンも消えます', used && '今日のラウンドで使っているので、確定するとスコアとピン位置も消えます'].filter(Boolean).join('。') || 'このハーフには何も置いていません';
       ask(`「${nine.name}」を削除しますか？`, note, '削除', () => { c.nines = c.nines.filter(x => x !== nine); saveDraft(); renderRegNines(); });
     };
     row.append(inp, del); ns.appendChild(row);
@@ -124,11 +134,11 @@ function renderRegNines() {
     inp.oninput = () => { const v = inp.value.trim(); if (v) { t.name = v.slice(0, 8); saveDraft(); } };
     inp.onblur = () => { inp.value = t.name; };
     const isBase = t.id === c.baseTee;
-    const base = el('button', 'basebtn', isBase ? '基準' : '基準にする'); base.setAttribute('aria-pressed', isBase);
+    const base = el('button', 'basebtn', isBase ? '地図に置く色' : 'この色を置く'); base.setAttribute('aria-pressed', isBase);
     base.onclick = () => {
       if (isBase) return;
       const set = () => { c.baseTee = t.id; saveDraft(); renderRegNines(); };
-      if (c.nines.some(x => x.holes.some(h => h.tee))) ask(`基準を「${t.name}」にしますか？`, '置いてあるティーの位置は、そのまま「' + t.name + '」のティーとして扱われます', '変える', set);
+      if (c.nines.some(x => x.holes.some(h => h.tee))) ask(`地図に置く色を「${t.name}」にしますか？`, '置いてあるティーの位置は、そのまま「' + t.name + '」のティーとして扱われます', '変える', set);
       else set();
     };
     const del = el('button', 'xbtn', '削除'); del.disabled = c.tees.length < 2 || isBase; del.setAttribute('aria-label', `${t.name}を削除`);
@@ -158,7 +168,7 @@ function renderYard() {
   box.textContent = '';
   const t = el('table'), head = el('tr');
   head.append(el('th', '', '番'), el('th', '', 'パー'));
-  c.tees.forEach(x => { const th = el('th'); const dot = el('i', 'tdot'); dot.style.background = x.color; th.append(dot, x.name + (x.id === c.baseTee ? '（基準）' : '')); head.appendChild(th); });
+  c.tees.forEach(x => { const th = el('th'); const dot = el('i', 'tdot'); dot.style.background = x.color; th.append(dot, x.name + (x.id === c.baseTee ? '（地図に置く色）' : '')); head.appendChild(th); });
   t.appendChild(head);
   const sumRow = el('tr', 'sum');
   const sums = () => {

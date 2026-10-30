@@ -14,15 +14,15 @@ function rankedRows() {
 function renderRank() {
   const all = allPlayers(), rows = rankedRows();
   const maxN = Math.max(0, ...rows.map(r => r.n));
-  $('rkInfo').textContent = maxN ? `${maxN}ホールまでの成績（パーとの差で順位）` : 'スコアを入力すると、ここに順位が出ます。';
+  $('rkInfo').textContent = (maxN ? `${maxN}ホールまでの成績です。` : 'スコアを入力すると順位が付きます。') + '順位は、入力したホールの「パーとの差」が少ない順です（同じ差なら同じ順位。この決め方は変えられません）。';
   if (comp) $('rkInfo').textContent += `　${(comp.meta && comp.meta.name) || 'コンペ'}${compLive ? '' : '（オフライン）'}`;
   // ranking table (scrolls inside its box when there are many players)
   const tb = el('table', 'rkt'), hd = el('tr');
-  ['順位', '名前', 'スコア', '打数', 'H'].forEach(x => hd.append(el('th', '', x)));
+  ['順位', '名前', 'パーとの差', '合計打数', 'ホール数'].forEach(x => hd.append(el('th', '', x)));
   tb.append(hd);
   rows.forEach(r => {
     const tr = el('tr', (r.pos === 1 ? 'top' : '') + (r.p.id === myId() ? ' me' : ''));
-    tr.append(el('td', 'pos', r.pos || '—'), el('td', 'nm', r.p.name || '名前なし'), el('td', 'dv', r.n ? fmtDiff(r.diff) : '—'), el('td', '', r.n ? r.tot : '—'), el('td', '', r.n));
+    tr.append(el('td', r.pos ? 'pos' : 'pos none', r.pos || '未入力'), el('td', 'nm', pName(r.p)), el('td', 'dv', r.n ? fmtDiff(r.diff) : '—'), el('td', '', r.n ? r.tot : '—'), el('td', '', r.n));
     tb.append(tr);
   });
   const list = $('rkList'); list.textContent = ''; list.appendChild(tb);
@@ -39,7 +39,7 @@ function renderRank() {
     t.append(head, par);
     all.forEach(p => {
       const tr = el('tr', p.id === myId() ? 'me' : ''), a = strokesOf(p); let sum = 0, any = false;
-      tr.append(el('td', '', p.name || '—'));
+      tr.append(el('td', '', pName(p)));
       for (let i = from; i < from + NINE; i++) {
         const v = a[i], ed = comp && canEdit(p.id), c = scoreCell(p, i, rkSel && rkSel.pid === p.id && rkSel.i === i);
         if (ed) c.classList.add('ed');
@@ -104,13 +104,13 @@ function scoreCardCanvas() {
     players.forEach((p, idx) => {
       if (idx % 2 === 0) { g.fillStyle = '#f6f8f3'; g.fillRect(M, y, W - 2 * M, RH); }
       hline(y);
-      text(fit(p.name || '名前なし', NAME - 20, 24, 800), M + 14, y + RH / 2, 24, 800, '#0a1322', 'left');
+      text(fit(pName(p), NAME - 20, 24, 800), M + 14, y + RH / 2, 24, 800, '#0a1322', 'left');
       const a = strokesOf(p); let sum = 0, any = false;
       for (let k = 0; k < NINE; k++) {
         const v = a[from + k], hp = holes[from + k].par;
         if (v == null) continue;
         sum += v; any = true;
-        text(v, cx(k) + CELL / 2, y + RH / 2, 26, v < hp ? 900 : 700, v < hp ? '#b3261e' : v >= hp + 2 ? '#0b5cad' : '#0a1322');
+        text(v, cx(k) + CELL / 2, y + RH / 2, 26, v < hp ? 900 : 700, SC_COLOR[scoreCls(v, hp)] || '#0a1322');
       }
       if (any) text(sum, cx(NINE) + SUM / 2, y + RH / 2, 26, 900, '#0a1322');
       y += RH;
@@ -124,13 +124,13 @@ function scoreCardCanvas() {
   // ranking
   const COL = { pos: M + 50, name: M + 110, diff: M + 640, tot: M + 790, n: M + 920 };
   g.fillStyle = '#e6ece1'; g.fillRect(M, y, W - 2 * M, HH);
-  [['順位', COL.pos], ['スコア', COL.diff], ['打数', COL.tot], ['ホール', COL.n]].forEach(([s, x]) => text(s, x, y + HH / 2, 20, 800, '#36414d'));
+  [['順位', COL.pos], ['パーとの差', COL.diff], ['合計打数', COL.tot], ['ホール数', COL.n]].forEach(([s, x]) => text(s, x, y + HH / 2, 20, 800, '#36414d'));
   text('名前', COL.name, y + HH / 2, 20, 800, '#36414d', 'left');
   const top = y; y += HH;
   rows.forEach(r => {
     hline(y);
-    text(r.pos || '—', COL.pos, y + RH / 2, 28, 900, r.pos === 1 ? '#a8780a' : '#0a1322');
-    text(fit(r.p.name || '名前なし', COL.diff - COL.name - 80, 26, 800), COL.name, y + RH / 2, 26, 800, '#0a1322', 'left');
+    text(r.pos || '—', COL.pos, y + RH / 2, 28, 900, r.pos === 1 ? '#8a6508' : '#0a1322');
+    text(fit(pName(r.p), COL.diff - COL.name - 80, 26, 800), COL.name, y + RH / 2, 26, 800, '#0a1322', 'left');
     text(r.n ? fmtDiff(r.diff) : '—', COL.diff, y + RH / 2, 28, 900, '#0a1322');
     text(r.n ? r.tot : '—', COL.tot, y + RH / 2, 24, 700, '#36414d');
     text(r.n, COL.n, y + RH / 2, 24, 700, '#36414d');

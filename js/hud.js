@@ -43,8 +43,13 @@ function refresh() {
   $('bGps').setAttribute('aria-pressed', S.watch != null);
   $('gpsInfo').textContent = S.watch == null ? 'オフ' : S.me && S.me.src === 'gps' ? `±${Math.round(S.me.acc || 0)}m` : '取得中';
   $('bPin').setAttribute('aria-pressed', S.mode === 'pin' || S.mode === 'tee');
-  $('b3d').setAttribute('aria-pressed', S.is3D);
-  $('viewName').textContent = { tee: 'ティー', top: '真上', green: 'グリーン' }[S.view];
+  // 3D / view / pin need the hole's tee and green: greyed out (state left alone) until it is registered
+  const reg = registered(hole()), VIEW = { tee: 'ティー', top: '真上', green: 'グリーン' };
+  ['b3d', 'bView', 'bPin'].forEach(id => $(id).classList.toggle('na', !reg && !inSetup() && !(id === 'b3d' && S.is3D)));
+  $('b3d').setAttribute('aria-pressed', S.is3D); $('b3dState').textContent = S.is3D ? 'オン' : 'オフ';
+  $('b3d').setAttribute('aria-label', `3D表示：${S.is3D ? 'オン' : 'オフ'}`);
+  $('viewName').textContent = ''; $('viewName').append(VIEW[S.view], el('br'), 'から見る');
+  $('bView').setAttribute('aria-label', `視点：${VIEW[S.view]}から見る（押すと切り替え）`);
   $('dock').hidden = !!S.mode || !$('setup').hidden;
   renderDock();
   if (setup) renderGuide();
@@ -126,12 +131,19 @@ let rdTok = 0;
 async function readout(quick) {  // quick: distances only (while dragging a mark)
   const tok = ++rdTok, h = hole(), pin = pinLL(), sub = $('dSub');
   sub.textContent = '';
+  document.querySelector('.hud').classList.toggle('unreg', !inSetup() && !registered(h));  // no "Y" after the dash
   if (inSetup()) {  // registering: the hole's length as placed
     $('dNum').textContent = registered(h) ? Math.round(yards(h.tee, h.green)) : '—'; $('dLab').textContent = 'ティーからグリーン';
     sub.textContent = registered(h) ? '' : S.su.step === 'green' ? 'グリーンを置いてください' : 'ティーを置いてください';
     return;
   }
-  if (!registered(h)) { $('dNum').textContent = '—'; $('dLab').textContent = '未登録のホール'; sub.textContent = comp && comp.role !== 'org' ? '主催者がこのホールをまだ登録していません' : '右の「設定」→「コース登録」で登録できます'; return; }
+  if (!registered(h)) {
+    $('dNum').textContent = '—'; $('dLab').textContent = '未登録のホール';
+    if (comp && comp.role !== 'org') { sub.textContent = '主催者がこのホールをまだ登録していません'; return; }
+    const go = el('button', 'subgo', 'コースを登録する'); go.onclick = () => openSetup();
+    sub.append('このホールは距離が出ません', go);
+    return;
+  }
   if (S.tap) {
     // the big number is the first leg (from you, or from the farthest mark); the rest of the legs follow below
     const path = tapPath(pin), legs = path.slice(1).map((p, i) => Math.round(yards(path[i], p)));

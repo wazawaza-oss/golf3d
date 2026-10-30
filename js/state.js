@@ -22,7 +22,8 @@ const newId = p => p + Date.now().toString(36) + Math.random().toString(36).slic
 const defaultTees = () => [{ id: 'blue', name: '青', color: '#1f5fd1' }, { id: 'white', name: '白', color: '#ffffff' }, { id: 'red', name: '赤', color: '#d93025' }];
 const blankHole = n => ({ n, par: 4, tee: null, green: null, src: 'manual', ok: false, yd: {} });
 const blankNine = (name, id) => ({ id: id || newId('n'), name, holes: Array.from({ length: NINE }, (_, i) => blankHole(i + 1)) });
-const blankCourse = () => ({ v: 2, name: 'テストコース', center: DEFAULT_CENTER, nines: [blankNine('OUT', 'out'), blankNine('IN', 'in')], tees: defaultTees(), baseTee: 'white', area: null });
+const UNNAMED = '未登録のコース', OLD_UNNAMED = 'テストコース';  // the name before a golf club is chosen (older versions: テストコース)
+const blankCourse = () => ({ v: 2, name: UNNAMED, center: DEFAULT_CENTER, nines: [blankNine('OUT', 'out'), blankNine('IN', 'in')], tees: defaultTees(), baseTee: 'white', area: null });
 const isLL = p => Array.isArray(p) && p.length === 2 && p.every(v => typeof v === 'number' && isFinite(v));
 // a hole from a file or old data; holes placed by hand before this format count as checked
 const cleanHole = (h, i) => ({
@@ -86,6 +87,7 @@ function loadCourse() {
   if (old && !loadJSON('golf3d.course.v1backup')) saveJSON('golf3d.course.v1backup', raw);
   const c = toCourse(raw) || blankCourse();
   if (old) saveJSON('golf3d.course', c);
+  if (c.name === OLD_UNNAMED && !c.nines.some(x => x.holes.some(h => h.tee && h.green))) c.name = UNNAMED;  // the old placeholder name, nothing placed yet
   return c;
 }
 
@@ -101,6 +103,7 @@ const S = {
   score: (() => { const s = loadJSON('golf3d.score'); return s && Array.isArray(s.players) && s.players.length ? s : { players: [{ id: 'p1', name: '自分' }], strokes: {} }; })(),
   is3D: false, view: 'tee', mode: null, me: null, tap: null, watch: null, wake: null, page: 'map'
 };
+S.view = ['tee', 'top', 'green'].includes(S.prefs.view) ? S.prefs.view : 'tee';  // kept over a reload (3D: S.prefs.is3D, turned on once the map is in)
 let N = clampHole(S.prefs.n);
 function clampHole(n) { return Math.min(ROUND, Math.max(1, n | 0 || 1)); }
 const nineOf = id => S.course.nines.find(x => x.id === id) || S.course.nines[0];
@@ -136,7 +139,7 @@ const roundTee = () => (!inSetup() && S.round.tees[N]) || hole().tee;
 const holeNo = () => inSetup() ? S.su.n : N;  // the number shown in the panel
 const saveCourse = () => saveJSON('golf3d.course', S.course);
 const saveRound = () => saveJSON('golf3d.round', S.round);
-const savePrefs = () => { S.prefs.n = N; saveJSON('golf3d.prefs', S.prefs); };
+const savePrefs = () => { S.prefs.n = N; S.prefs.view = S.view; if (!inSetup()) S.prefs.is3D = S.is3D; saveJSON('golf3d.prefs', S.prefs); };  // the guide turns 3D off for a while
 const registered = h => !!(h.tee && h.green);
 
 /* small shared helpers: a short message at the top of the screen; making an element */

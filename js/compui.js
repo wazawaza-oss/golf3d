@@ -19,15 +19,35 @@ function renderCompRow() {
 $('goComp').onclick = () => {
   if (comp) { renderComp(); mShow('mComp'); return; }
   renderCompNew();
-  if (!$('cpName').value) $('cpName').value = `${S.course.name || ''}コンペ`.slice(0, 40);
+  if (!$('cpName').value && S.course.name && S.course.name !== UNNAMED) $('cpName').value = `${S.course.name}コンペ`.slice(0, 40);  // else the placeholder (例：秋の月例会)
   $('cpDate').value = $('cpDate').value || today();
   mShow('mCompNew');
 };
-const renderCompNew = () => $('cpNewNineV').textContent = localNines().map(x => x.name).join(' → ');
+// the 18 holes that would be handed out, and how many of them have both tee and green
+const compRegCount = () => { const hs = localNines().flatMap(x => x.holes); return { n: hs.filter(registered).length, all: hs.length }; };
+function renderCompNew() {
+  $('cpNewNineV').textContent = localNines().map(x => x.name).join(' → ');
+  const r = compRegCount();
+  $('cpNeedReg').hidden = r.n > 0;
+  $('cpNeedRegT').textContent = `先にコースを登録してください（今は ${r.n} / ${r.all}ホール）。コースがないと距離も順位も出せません。`;
+  $('cpCreate').disabled = r.n === 0;
+}
 $('cpNewNine').onclick = () => { renderNinePick(); mShow('mNine'); };
-$('cpCreate').onclick = async () => {
-  const name = $('cpName').value.trim();
+$('cpGoReg').onclick = () => openSetup();
+$('cpCreate').onclick = () => {
+  const name = $('cpName').value.trim(), r = compRegCount();
   if (!name) { toast('コンペ名を入れてください'); $('cpName').focus(); return; }
+  if (!r.n) return;
+  const sure = () => ask('作成します。よろしいですか？',
+    `コンペ名：${name.slice(0, 40)}\n日付：${($('cpDate').value || today()).replace(/-/g, '/')}\n回るコース：${localNines().map(x => x.name).join(' → ')}\n作ったコンペは${COMP_DAYS}日間使えて、そのあと自動で消えます（途中で消すことはできません）`,
+    '作成する', compCreateRun, { go: true });
+  if (r.n < r.all) ask('コースが一部しか登録されていません。先に登録しますか？',
+    `登録済みは ${r.n} / ${r.all}ホールです。登録していないホールは、参加者の地図に距離が出ません`,
+    '登録へ進む', () => openSetup(), { go: true, alt: ['このまま作成', sure] });
+  else sure();
+};
+async function compCreateRun() {
+  const name = $('cpName').value.trim();
   $('cpCreate').disabled = true; toast('作成中…');
   try {
     await compCreate(name.slice(0, 40), $('cpDate').value || today());
@@ -52,6 +72,8 @@ function renderComp() {
   $('cpRosterV').textContent = `${rosterList().length}人・${teams().length}組`;
   $('cpNote').textContent = compEnded() ? 'このコンペは期限を過ぎたので、見るだけになっています。' : comp.role === 'org' ? '主催者が配ったコース・パー・ピン位置で、全員の順位を計算します。' : '';
   $('cpLeave').textContent = 'このコンペから抜ける';
+  $('cpLeaveNote').textContent = 'このスマホをコンペから外します。コンペ自体と、ほかの人のスコアは消えません。' +
+    (comp.role === 'org' ? '主催者に戻るには「主催者用リンク」が必要です。' : 'もう一度リンクを開けば、また参加できます。');
 }
 const setMeta = patch => {
   const meta = Object.assign({}, comp.meta, patch); comp.meta = meta; saveComp();
@@ -64,7 +86,7 @@ $('cpRoster').onclick = () => { renderRoster(); mShow('mRoster'); };
 $('cpLinks').onclick = () => { renderLinks(); mShow('mLinks'); };
 $('cpMyName').onclick = () => { renderPick(); mShow('mPick'); };  // the organizer may also play under a roster name
 $('cpLeave').onclick = () => ask(`「${(comp.meta && comp.meta.name) || 'コンペ'}」から抜けますか？`,
-  comp.role === 'org' ? '主催者が抜けると、このスマホではコンペを管理できなくなります（主催者の引き継ぎ用リンクを開けば戻れます）' : 'もう一度リンクを開けば、また参加できます',
+  comp.role === 'org' ? '主催者が抜けると、このスマホではコンペを管理できなくなります（主催者用リンクを開けば戻れます）' : 'もう一度リンクを開けば、また参加できます',
   '抜ける', () => { compLeave(); mShow('mMain'); renderMenu(); toast('コンペから抜けました'); });
 
 /* organizer: names, teams and each team's lead (changes reach everyone at once, also mid-round) */
@@ -85,7 +107,12 @@ function renderRoster() {
       const row = el('div', 'mrow rrow'), l1 = el('div', 'r1'), l2 = el('div', 'r2');
       const inp = el('input'), sel = el('select'), on = leadOf(t) === r.id;
       inp.type = 'text'; inp.value = r.name; inp.maxLength = 12; inp.setAttribute('aria-label', '名前');
-      inp.onchange = () => { const v = inp.value.trim(); if (v) compRosterSet(r.id, { name: v.slice(0, 12), team: r.team }); else inp.value = r.name; };
+      nameLimit(inp);
+      inp.onchange = () => {  // an empty box goes back to the name it had; a second "山田" becomes 山田（2）
+        if (!inp.value.trim()) { inp.value = r.name; toast('名前は空にできません'); return; }
+        const v = inp.value = cleanName(inp.value, list.filter(x => x.id !== r.id).map(x => x.name), r.name);
+        compRosterSet(r.id, { name: v, team: r.team });
+      };
       const del = el('button', 'x', '✕'); del.setAttribute('aria-label', `${r.name}を名簿から外す`);
       del.onclick = () => ask(`「${r.name}」を名簿から外しますか？`, 'この人のスコアも消えます', '外す', () => { compRosterDel(r.id); renderRoster(); });
       l1.append(inp, del);
@@ -117,7 +144,8 @@ function renderRoster() {
   });
 }
 function rosterAddTo(team) {
-  const n = rosterList().length + 1, pid = 'p' + rid(8);
+  let n = rosterList().length + 1; const pid = 'p' + rid(8);
+  while (rosterList().some(r => r.name === `参加者${n}`)) n++;
   rosterExtra.delete(team);
   compRosterSet(pid, { name: `参加者${n}`, team });
   renderRoster();
@@ -132,13 +160,16 @@ let qrP = null;
 const loadQr = () => qrP || (qrP = new Promise((ok, no) => { const s = document.createElement('script'); s.src = QR_LIB; s.onload = ok; s.onerror = () => { qrP = null; no(); }; document.head.appendChild(s); }));
 function renderLinks() {
   const box = $('linkList'); box.textContent = '';
-  [{ label: '参加者用（全員に送る）', role: 'player', note: '開いた人は名簿から自分の名前を選びます。組と代表は「参加者と組」で決めた内容になります' },
-   { label: '主催者の引き継ぎ用', role: 'org', note: '開いたスマホも主催者になります。スマホを替えるときや、手伝ってもらうときに使います' }].forEach(it => {
-    box.appendChild(el('div', 'grp-t', it.label));
-    const g = el('div', 'grp'), row = el('div', 'mrow lbtns');
-    const mk = (txt, fn) => { const b = el('button', '', txt); b.onclick = async () => {
-      let url; try { url = linkFor(await ensureInvite(it.role), it.role); } catch (e) { toast(offlineMsg); return; }
-      fn(url);
+  [{ head: '参加者に送る', label: '参加者用リンク', role: 'player', note: '参加者全員に、この同じリンクを送ります。開いた人は名簿から自分の名前を選びます' },
+   { head: '主催者を交代する・手伝ってもらう', label: '主催者用リンク', role: 'org', note: '渡した相手が主催者になり、名簿・コース・全員のスコアを変えられます。参加者には送らないでください。自分のスマホを替えるときや、主催者を手伝ってもらうときだけ使います' }].forEach(it => {
+    const t = el('div', 'grp-t' + (it.role === 'org' ? ' lorg' : ''), it.head);
+    if (it.role === 'org') t.prepend(el('span', 'danger-tag', '注意'));
+    box.appendChild(t);
+    const g = el('div', 'grp' + (it.role === 'org' ? ' lorg' : '')), row = el('div', 'mrow lbtns');
+    const mk = (txt, fn) => { const b = el('button', '', txt); b.onclick = () => {
+      const go = async () => { let url; try { url = linkFor(await ensureInvite(it.role), it.role); } catch (e) { toast(offlineMsg); return; } fn(url); };
+      if (it.role === 'org') ask('主催者用リンクを出しますか？', '渡した相手が主催者になります（名簿・コース・全員のスコアを変えられます）。参加者に送るのは「参加者用リンク」です', '主催者用を出す', go);
+      else go();
     }; return b; };
     row.append(
       mk('LINEで送る', async url => { try { if (navigator.share) { await navigator.share({ title: comp.meta.name, text: `${comp.meta.name}（${it.label}）`, url }); return; } } catch (e) { if (e.name === 'AbortError') return; } copyText(url); }),

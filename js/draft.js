@@ -29,11 +29,11 @@ async function fetchOSM(bbox) {
   const ac = new AbortController(), t = setTimeout(() => ac.abort(), 30000);
   let r;
   try { r = await fetch(OVERPASS, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, signal: ac.signal }); }
-  catch (err) { throw new Error(err.name === 'AbortError' ? '時間切れになりました（30秒）。手動で置いてください' : 'OSMに接続できませんでした。電波を確かめるか、手動で置いてください'); }
+  catch (err) { throw new Error(err.name === 'AbortError' ? '時間切れになりました（30秒）。手動で置いてください' : '地図データに接続できませんでした。電波を確かめるか、手動で置いてください'); }
   finally { clearTimeout(t); }
-  if ([429, 502, 503, 504].includes(r.status)) throw new Error('OSMのサーバーが混んでいます。しばらくしてからもう一度、または手動で置いてください');
-  if (!r.ok) throw new Error(`OSMから取得できませんでした（${r.status}）。手動で置いてください`);
-  try { return await r.json(); } catch (err) { throw new Error('OSMの返事を読めませんでした。手動で置いてください'); }
+  if ([429, 502, 503, 504].includes(r.status)) throw new Error('地図データのサーバーが混んでいます。しばらくしてからもう一度、または手動で置いてください');
+  if (!r.ok) throw new Error(`地図データを取得できませんでした（${r.status}）。手動で置いてください`);
+  try { return await r.json(); } catch (err) { throw new Error('地図データを読めませんでした。手動で置いてください'); }
 }
 
 /* Overpass JSON → output (no network: tests feed it sample data).
@@ -69,8 +69,8 @@ function osmToDraft(json, input) {
   });
   const candidates = { greens: greens.filter(p => !used.has(p)), tees: tees.filter(p => !used.has(p)) };
   const note = holes.length || greens.length || tees.length
-    ? `${holes.length}ホールを仮置きしました。番号のないグリーン${candidates.greens.length}・ティー${candidates.tees.length}を候補として表示します`
-    : 'このゴルフ場にはOSMのデータがありませんでした。手動で置いてください';
+    ? `${holes.length}ホールを自動で置きました（位置を確かめてください）。番号のないグリーン${candidates.greens.length}・ティー${candidates.tees.length}を候補として表示します`
+    : 'このゴルフ場には地図データがありませんでした。手動で置いてください';
   return { holes, candidates, note };
 }
 

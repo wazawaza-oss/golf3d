@@ -20,6 +20,9 @@ const map = new maplibregl.Map({
     ]
   }
 });
+// "地図を読み込み中…" until the first view is drawn (or 20 s at most, e.g. with no signal and nothing saved)
+const mapLoaded = () => $('mapLoading').hidden = true;
+map.once('idle', mapLoaded); setTimeout(mapLoaded, 20000);
 // no attribution badge on the map; the GSI credit is shown in the menu sheet instead
 map.touchZoomRotate.enableRotation();
 
@@ -82,8 +85,8 @@ map.on('load', () => {
     layout: { 'line-join': 'round' }, paint: { 'line-color': '#ffd84d', 'line-width': 3, 'line-dasharray': [2, 1.6] } });
   mapReady = true;
   refresh();
-  if (registered(hole())) camera(S.view, 0);
-  else if (!allHoles().some(registered)) $('onboard').hidden = false;
+  if (registered(hole())) { if (S.prefs.is3D) { set3D(true); refresh(); } else camera(S.view, 0); }  // as left last time
+  else if (obDue() && !comp) $('onboard').hidden = false;  // a competition's player gets the course from the organizer
 });
 
 /* camera presets per hole */
