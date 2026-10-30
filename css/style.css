@@ -394,7 +394,7 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 .a2btn button{flex:1;height:48px;border-radius:12px;background:#eceef1;font-size:16px;font-weight:900;color:var(--ink)}
 .a2btn button.go{flex:1.6;background:var(--accent);color:#fff}
 /* tap areas: score rows at least 44px tall (the 9 holes of a half share the width) */
-.sc tr:not(.par) td{height:44px;padding:0}
+.sc tr:not(.par) td{height:44px;padding-top:0;padding-bottom:0}  /* the name column keeps its left margin */
 .sc.my tr.mine td{height:48px}
 
 /* tablet / computer (768px and wider): bigger side buttons, wider panels; sheets (settings, participants, the guide)
