@@ -165,6 +165,10 @@ check('別のコース：座標のないホールは未設定', !pn.nines[2].hol
 const po = applyCard(base, pc, tmap, 'over');
 check('上書き：置いてあるホール（東1番）の位置はそのまま、ほかは仮に入る', po.nines[1].holes[0].tee[0] === 139 && po.nines[1].holes[0].src === 'manual' && po.nines[1].holes[1].src === 'ai');
 check('上書き：置いた位置があれば中心は変えない', po.center[0] === base.center[0]);
+const far = Object.assign(JSON.parse(JSON.stringify(base)), { area: { bbox: [139.09, 35.21, 139.11, 35.23], osm: null, name: '別' } });
+const near = Object.assign(JSON.parse(JSON.stringify(base)), { area: { bbox: [140.19, 35.29, 140.21, 35.31], osm: null, name: '同じ' } });
+check('前に探した別のゴルフ場の範囲は、カードの中心から遠ければ外す（案内が中心へ行く）', applyCard(far, pc, tmap, 'over').area === null && applyCard(far, pc, tmap, 'new').area === null);
+check('カードの中心に近い範囲はそのまま', applyCard(near, pc, tmap, 'over').area.name === '同じ');
 check('座標なしのカードも今までどおり', applyCard(base, rd.card, tmap, 'over').nines[0].holes[0].tee === null);
 check('位置を入れたコースは保存の形として正しい（src・ok が残る）', (() => { const t = toCourse(JSON.parse(JSON.stringify(pn))); return t && t.nines[0].holes[0].src === 'ai' && t.nines[0].holes[0].ok === false; })());
 

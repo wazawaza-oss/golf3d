@@ -143,7 +143,8 @@ function cardTeeMap(card, c) {
 }
 
 /* the card's values into a copy of the course c (the draft). Positions on the card fill holes with none (never one already placed);
-   they are the base colour's tee. The centre is the card's (else its first position) for a new course or one with nothing placed.
+   they are the base colour's tee. The centre is the card's (else its first position) for a new course or one with nothing placed;
+   a searched area more than 3 km from it is dropped.
    over: nines matched by name, else in order among the ones left; unknown nines are added, the others stay as they are;
          a blank value on the card keeps the course's value.
    new:  the card's nines only, the colours it uses; the base colour is レギュラー / 白 or the middle one. */
@@ -169,6 +170,9 @@ function applyCard(c, card, teeMap, mode) {
   const placed = c.nines.some(x => x.holes.some(h => h.tee || h.green));
   const first = card.nines.flatMap(x => x.holes).map(h => (h.green || h.tee || {}).ll).find(Boolean);
   if (mode === 'new' || !placed) out.center = (card.center || first || out.center).slice();
+  // the area searched earlier is another golf club when it is far from the card's centre (the guide looks at the area first)
+  const a = out.area, ac = a && [(a.bbox[0] + a.bbox[2]) / 2, (a.bbox[1] + a.bbox[3]) / 2];
+  if (ac && (card.center || first) && distM(ac, card.center || first) > 3000) out.area = null;
   if (mode === 'new') {
     out.nines = card.nines.map(x => { const n = blankNine(x.name); n.holes.forEach((h, i) => fill(h, x.holes[i])); return n; });
     const reg = card.tees.find(t => /白|ホワイト|white|レギュラー|regular/i.test(t.label)) || card.tees[Math.floor((card.tees.length - 1) / 2)];
