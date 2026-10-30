@@ -36,8 +36,11 @@ document.addEventListener('pointermove', e => {
   if (!sw || e.pointerId !== sw.id) return;
   const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
   if (!sw.to) {
-    if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { sw = null; return; }
-    if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
+    // a finger: wait for swipeTouchMove to judge the direction (it comes right after this event)
+    if (e.pointerType === 'touch' && !sw.axis && Math.abs(dx) + Math.abs(dy) < 40) return;
+    const side = sw.axis === 'x';  // a finger already judged sideways
+    if (!side && Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { sw = null; return; }
+    if (Math.abs(dx) < 12 || (!side && Math.abs(dx) < Math.abs(dy) * 1.3)) return;
     // finger moving left reveals the page on the right, and vice versa
     sw.to = sw.from === 'map' ? (dx < 0 ? 'score' : 'rank') : (PAGE_POS[sw.from] > 0) === (dx > 0) ? 'map' : null;
     if (!sw.to) { sw = null; return; }
@@ -58,7 +61,26 @@ function swipeEnd(e) {
 document.addEventListener('pointerup', swipeEnd);
 document.addEventListener('pointercancel', swipeEnd);
 document.addEventListener('click', e => { if (swallowClick) { e.preventDefault(); e.stopPropagation(); swallowClick = false; } }, true);
-[document.querySelector('.hud'), $('pRank'), $('pScore')].forEach(x => x.addEventListener('pointerdown', swipeStart));
+/* a finger: the direction is decided here on its first move, not by the browser. Only a clearly vertical move
+   (twice as much up/down as sideways, within ~27° of straight) scrolls the page; anything else is a page swipe,
+   and the browser is kept from scrolling (it would otherwise take a slanted move as scrolling and cut the swipe off) */
+let tStart = null, tAxis = null;
+function swipeTouchStart(e) { tAxis = null; tStart = e.touches.length === 1 ? [e.touches[0].clientX, e.touches[0].clientY] : null; }
+function swipeTouchMove(e) {
+  if (!tStart || e.touches.length !== 1) return;  // two fingers: zoom as usual
+  if (!tAxis) {
+    const dx = e.touches[0].clientX - tStart[0], dy = e.touches[0].clientY - tStart[1];
+    if (Math.abs(dx) + Math.abs(dy) < 3) return;  // too small to tell yet (the browser does not scroll this early either)
+    tAxis = Math.abs(dy) >= Math.abs(dx) * 2 ? 'y' : 'x';
+    if (tAxis === 'y') sw = null; else if (sw) sw.axis = 'x';
+  }
+  if (tAxis === 'x' && sw && e.cancelable) e.preventDefault();
+}
+[document.querySelector('.hud'), $('pRank'), $('pScore')].forEach(x => {
+  x.addEventListener('pointerdown', swipeStart);
+  x.addEventListener('touchstart', swipeTouchStart, { passive: true });
+  x.addEventListener('touchmove', swipeTouchMove, { passive: false });
+});
 $('dkRank').onclick = () => goPage('rank');
 $('dkCard').onclick = () => goPage('score');
 document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => goPage(b.dataset.go));
