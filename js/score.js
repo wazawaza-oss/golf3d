@@ -80,7 +80,8 @@ function fixNote(p, i) {
 function scoreStepper(p, i, after, title) {
   const hp = playHoles()[i].par, v = strokesOf(p)[i], box = el('div', 'stepper');
   const set = nv => { setStroke(p, i, nv); after(); };
-  const hd = el('div', 'sh'); hd.append(el('b', '', `${title ? title + ' ' : ''}${i + 1}番`), el('span', '', `Par ${hp}`));
+  const hd = el('div', 'sh');  // with a name (scoreboard): the name on top, the hole under it, so a long name never hides the hole
+  hd.append(el('b', '', title || `${i + 1}番`), el('span', '', title ? `${i + 1}番・Par ${hp}` : `Par ${hp}`));
   const stp = el('div', 'stp'), minus = el('button', '', '−'), plus = el('button', '', '＋');
   const val = el('div', 'val ' + scoreCls(v, hp));
   val.append(el('b', '', v == null ? '—' : v), el('small', '', v == null ? '未入力' : termOf(v, hp)));
