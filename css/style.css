@@ -280,7 +280,7 @@ input[type=text]{flex:1 1 200px}
 .stp .val small{display:block;font-size:10.5px;color:var(--muted);font-weight:700;white-space:nowrap}
 .stp .val.under b{color:var(--sc-under)}.stp .val.over2 b{color:var(--sc-over)}
 /* ranking table: about 5 rows tall, scrolls inside when there are more players */
-.rk{background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);max-height:262px;overflow-y:auto;overscroll-behavior:contain}
+.rk{background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);max-height:262px;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y pinch-zoom}  /* a scroll box of its own: without this the browser takes sideways moves inside it and the page swipe stops */
 .rkt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 .rkt th{position:sticky;top:0;background:#f1f4ee;font-size:12px;color:var(--muted);font-weight:700;padding:8px 6px;text-align:center}
 .rkt td{padding:9px 6px;text-align:center;border-top:1px solid #eef2ea;font-size:14px;color:var(--muted)}
