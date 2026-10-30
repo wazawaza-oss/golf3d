@@ -332,15 +332,12 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 @keyframes tapRing{0%{transform:rotate(45deg) scale(1);opacity:.6}100%{transform:rotate(45deg) scale(2.6);opacity:0}}
 /* leg distance between two marks: small dark pill beside the line */
 .mk.leg{font:700 12px/1 system-ui,sans-serif;color:#fff;background:rgba(10,19,34,.45);border:1px solid rgba(255,255,255,.3);border-radius:9px;padding:3px 7px;white-space:nowrap;font-variant-numeric:tabular-nums}
-/* course registration guide: green / base tee (draggable, big enough for a finger), other colours' estimates, OSM candidates */
+/* course registration guide: green / base tee (draggable, big enough for a finger), other colours' estimates */
 .mk.gg,.mk.gt{width:34px;height:34px;box-sizing:border-box;border-radius:50%;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.55);font:900 15px/28px system-ui,sans-serif;text-align:center;pointer-events:auto;cursor:grab;touch-action:none;z-index:3}
 .mk.gg{background:#1f9d48;color:#fff}
 .mk.gt{color:#fff}
 .mk.gt.light,.mk.gest.light{color:#0a1322}
 .mk.gest{width:24px;height:24px;box-sizing:border-box;border-radius:50%;border:2px dashed #fff;font:900 11px/20px system-ui,sans-serif;text-align:center;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.5);opacity:.9}
-.mk.cand{width:40px;height:40px;box-sizing:border-box;border-radius:50%;border:3px dashed #fff;background:rgba(255,255,255,.12);pointer-events:auto;cursor:pointer;box-shadow:0 0 0 2px rgba(0,0,0,.35)}
-.mk.cand.green{border-color:#7dff9a}
-.mk.cand.tee{border-color:#9cc3ff}
 .mk.num{font:700 11px/1 system-ui,sans-serif;background:rgba(20,34,58,.88);color:#fff;border-radius:10px;padding:4px 7px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 /* Safari only: a small, closable "add to home screen" card under the distance panel, left of the button column */

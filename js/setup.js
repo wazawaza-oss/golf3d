@@ -6,13 +6,12 @@
 Object.assign(M_TITLE, { mReg: 'コース登録', mRegNines: 'ハーフとティー', mRegYard: 'パーとヤード' });
 Object.assign(M_RENDER, { mReg: () => renderReg(), mRegNines: () => renderRegNines(), mRegYard: () => renderYard() });
 const nextNineName = () => NINE_NAMES.find(n => !S.draft.course.nines.some(x => x.name === n)) || `ハーフ${S.draft.course.nines.length + 1}`;
-const cleanCand = c => ({ greens: ((c && c.greens) || []).filter(isLL), tees: ((c && c.tees) || []).filter(isLL) });
-// the draft left from last time, or a fresh copy of the course as it is
+// the draft left from last time, or a fresh copy of the course as it is (older drafts also kept OSM candidates: dropped)
 function loadDraft() {
   if (S.draft) return;
   const d = loadJSON(DRAFT_KEY), c = d && toCourse(d.course);
-  S.draft = c ? { course: c, cand: cleanCand(d.cand), fresh: !!d.fresh, named: !!d.named }
-    : { course: toCourse(JSON.parse(JSON.stringify(S.course))), cand: cleanCand(null), fresh: false, named: false };
+  S.draft = c ? { course: c, fresh: !!d.fresh, named: !!d.named }
+    : { course: toCourse(JSON.parse(JSON.stringify(S.course))), fresh: false, named: false };
 }
 function openSetup() {
   loadDraft(); $('onboard').hidden = true;
@@ -61,21 +60,6 @@ $('rgGuide').onclick = () => {
   const c = S.draft.course;
   const nine = c.nines.find(x => x.holes.some(h => !registered(h))) || c.nines[0];
   guideStart(nine.id, (nine.holes.find(h => !registered(h)) || nine.holes[0]).n, false);
-};
-// OSM: tees and greens of numbered holes are placed; the rest become candidates in the guide
-$('rgOsm').onclick = async () => {
-  const c = S.draft.course, info = $('rgOsmInfo'), btn = $('rgOsm');
-  const say = (t, bad) => { info.textContent = t; info.classList.toggle('err', !!bad); };
-  if (!c.area) { say('先に「1. ゴルフ場を探す」でゴルフ場を選んでください。', true); return; }
-  btn.disabled = true; say('地図データを取得しています…（最大30秒）');
-  try {
-    const out = await draftCourse({ area: c.area, baseTee: c.baseTee,
-      nines: c.nines.map(x => ({ id: x.id, name: x.name, holes: x.holes.map(h => ({ n: h.n, par: h.par, yd: Object.assign({}, h.yd) })) })) });
-    const n = applyDraft(c, out);
-    S.draft.cand = cleanCand(out.candidates); saveDraft();
-    say(out.note + (n < out.holes.length ? `（手で置いた${out.holes.length - n}ホールはそのままにしました）` : ''));
-  } catch (e) { say(e.message, true); }
-  btn.disabled = false; renderReg();
 };
 /* 確定: the draft becomes the course. Same golf club: the round goes on (unless one of its nines was deleted);
    a different golf club (fresh) starts a new round, as importing a course does. */

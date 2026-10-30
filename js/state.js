@@ -125,7 +125,7 @@ const playHoles = () => playNines().flatMap(x => x.holes);  // holes 1–18 of t
 const allHoles = () => S.course.nines.flatMap(x => x.holes);
 const halves = () => playNines().map((x, k) => ({ name: x.name, from: k * NINE }));  // score-card blocks: front, back
 /* course registration works on a copy (the draft) until 確定; the copy is kept in golf3d.courseDraft so a reload
-   does not lose it: { course, cand: { greens, tees }, fresh } (fresh: a different golf club, starts a new round) */
+   does not lose it: { course, fresh, named } (fresh: a different golf club, starts a new round) */
 const DRAFT_KEY = 'golf3d.courseDraft';
 const saveDraft = () => { if (S.draft) saveJSON(DRAFT_KEY, S.draft); };
 const draftNine = id => S.draft.course.nines.find(x => x.id === id) || S.draft.course.nines[0];

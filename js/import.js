@@ -116,7 +116,7 @@ $('rcGo').onclick = () => {
     if (rc.mode === 'new') {
       out.name = name;
       if (!d.fresh) out.area = null;  // the area searched for the old golf club does not fit; search again in 1
-      Object.assign(d, { fresh: true, named: true, cand: cleanCand(null) });
+      Object.assign(d, { fresh: true, named: true });
     } else if (name && name !== d.course.name) { out.name = name; d.named = true; }
     d.course = out; saveDraft();
     rc = null; $('rcText').value = ''; $('rcInfo').textContent = '';

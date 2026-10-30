@@ -229,16 +229,13 @@
     <div class="grp-t">2. ハーフ（OUT・INなど）とティーの色</div>
     <div class="grp"><button class="mrow" id="rgNines"><span class="mtx">ハーフ・ティーの色・ヤード<small id="rgNinesS"></small></span><span class="chev">›</span></button>
       <button class="mrow" id="rgCard"><span class="mtx">スコアカードから取り込む<small>AIで作ったJSONから、パー・HDCP・ヤードをまとめて入れます</small></span><span class="chev">›</span></button></div>
-    <div class="grp-t">3. 地図データから自動で置く（データがあるゴルフ場だけ）</div>
-    <div class="grp"><button class="mrow center" id="rgOsm">地図データから自動で置く</button></div>
-    <p class="grp-f" id="rgOsmInfo">データがないゴルフ場でも、このまま4へ進んで手で置けます。自動で置いた位置は、4で確かめてください。</p>
-    <div class="grp-t">4. グリーンとティーを置く</div>
+    <div class="grp-t">3. グリーンとティーを置く</div>
     <div class="grp"><button class="mrow center big" id="rgGuide">案内を始める</button></div>
     <p class="grp-f">ホールを押すと、そのホールだけ置き直せます。</p>
     <div id="rgHoles"></div>
     <div class="grp mgap"><button class="mrow center big go" id="rgSave">確定して保存</button></div>
     <div class="grp wipe"><button class="mrow danger" id="rgDiscard">下書きを捨てる</button></div>
-    <p class="grp-f credit">ゴルフ場の検索と地図データ：© OpenStreetMap contributors（Nominatim・Overpass API）／地名検索：国土地理院</p>
+    <p class="grp-f credit">ゴルフ場の検索：© OpenStreetMap contributors（Nominatim）／地名検索：国土地理院</p>
   </div>
 
   <div class="mbody" id="mRegNines" hidden>
@@ -337,7 +334,7 @@
   <div class="onboard" role="dialog" aria-modal="true" aria-labelledby="obT">
     <p class="oblead">コースの距離を見ながら、みんなのスコアを集められます。</p>
     <h2 id="obT">はじめにコースを登録します</h2>
-    <p>ゴルフ場の名前で探して、1番ホールから順にグリーンとティーを地図でタップしていきます（約10分）。地図データがあるゴルフ場は、自動で置くこともできます。一度登録すれば次から使えます。</p>
+    <p>ゴルフ場の名前で探して、1番ホールから順にグリーンとティーを地図でタップしていきます（約10分）。パー・HDCP・ヤードは、スコアカードから作ったJSONでまとめて入れられます。一度登録すれば次から使えます。</p>
     <div class="row"><button class="btn primary" id="obStart">登録を始める</button><button class="btn" id="obLater">あとで</button></div>
   </div>
 </div>
@@ -395,7 +392,6 @@
 <script src="js/interactions.js"></script>
 <script src="js/menu.js"></script>
 <script src="js/course.js"></script>
-<script src="js/draft.js"></script>
 <script src="js/cardjson.js"></script>
 <script src="js/search.js"></script>
 <script src="js/setup.js"></script>

@@ -28,12 +28,11 @@
 </script>
 <script src="../js/state.js"></script>
 <script src="../js/geo.js"></script>
-<script src="../js/draft.js"></script>
 <script src="../js/cardjson.js"></script>
 </head>
 <body>
 <h1>コースデータのテスト</h1>
-<p>古い形式のコースを新しい形式に変換できるか、OSMのデータ（ダミー）から仮置きができるかを確かめます。このページは本物の保存データには触りません。</p>
+<p>古い形式のコースを新しい形式に変換できるか、スコアカードのJSON（ダミー）を取り込めるかを確かめます。このページは本物の保存データには触りません。</p>
 <div id="sum"></div>
 <div id="log"></div>
 <script>
@@ -81,41 +80,11 @@ check('パー3で500mは「要確認」', !!holeIssue(Object.assign({}, h, { par
 check('入力ヤードと地図が大きく違えば「要確認」', !!holeIssue(Object.assign({}, h, { yd: { reg: 250 } }), c3));
 check('ティーかグリーンがなければ「未設定」', holeState(Object.assign({}, h, { tee: null }), c3) === 'none');
 
-/* 5. OSM → draft (dummy Overpass data) */
-const sq = (x, y, r) => [[x - r, y - r], [x + r, y - r], [x + r, y + r], [x - r, y + r], [x - r, y - r]].map(([lon, lat]) => ({ lon, lat }));
-const osm = { elements: [
-  { type: 'way', tags: { golf: 'hole', ref: '1', par: '4' }, geometry: [{ lon: 139.100, lat: 35.200 }, { lon: 139.1001, lat: 35.2015 }, { lon: 139.100, lat: 35.2030 }] },
-  { type: 'way', tags: { golf: 'green' }, geometry: sq(139.1002, 35.2031, .0001) },
-  { type: 'node', tags: { golf: 'tee' }, lon: 139.1001, lat: 35.1999 },
-  { type: 'way', tags: { golf: 'hole', ref: '12', par: '3' }, geometry: [{ lon: 139.110, lat: 35.200 }, { lon: 139.110, lat: 35.2015 }] },
-  { type: 'way', tags: { golf: 'hole', ref: '5' }, geometry: [{ lon: 139.12, lat: 35.2 }, { lon: 139.12, lat: 35.203 }] },
-  { type: 'way', tags: { golf: 'hole', ref: '5' }, geometry: [{ lon: 139.13, lat: 35.2 }, { lon: 139.13, lat: 35.203 }] },
-  { type: 'way', tags: { golf: 'hole' }, geometry: [{ lon: 139.14, lat: 35.2 }, { lon: 139.14, lat: 35.203 }] },
-  { type: 'way', tags: { golf: 'green' }, geometry: sq(139.15, 35.21, .0001) },
-  { type: 'node', tags: { golf: 'tee' }, lon: 139.16, lat: 35.21 }
-] };
-const input = { area: { bbox: [139.09, 35.19, 139.17, 35.22] }, nines: blankCourse().nines.map(x => ({ id: x.id, name: x.name, holes: x.holes.map(y => ({ n: y.n, par: y.par, yd: y.yd })) })), baseTee: 'white' };
-const out = osmToDraft(osm, input);
-const h1 = out.holes.find(x => x.nine === 'out' && x.n === 1), h12 = out.holes.find(x => x.nine === 'in' && x.n === 3);
-check('ref=1 は OUT 1番、パー4', h1 && h1.par === 4 && h1.src === 'osm');
-check('1番のグリーンは近くのグリーンの中心に合う', h1 && Math.abs(h1.green[0] - 139.1002) < 1e-6 && Math.abs(h1.green[1] - 35.2031) < 1e-6);
-check('1番のティーは近くのティーに合う', h1 && h1.tee[0] === 139.1001 && h1.tee[1] === 35.1999);
-check('ref=12 は IN 3番、パー3（近くに形がなければ線の端）', h12 && h12.par === 3 && h12.green[1] === 35.2015);
-check('同じ番号が2つ（ref=5）なら仮置きしない', !out.holes.some(x => x.nine === 'out' && x.n === 5));
-check('番号のないグリーン・ティーは候補になる（使ったものは除く）', out.candidates.greens.length === 1 && out.candidates.tees.length === 1);
-check('データがないときは手動の案内', /手動/.test(osmToDraft({ elements: [] }, input).note));
-
-const course = blankCourse();
-course.nines[0].holes[0] = Object.assign(blankHole(1), { tee: [1, 1], green: [1, 2], src: 'manual', ok: true });
-const n = applyDraft(course, out);
-check('手で置いたホールは仮置きで上書きしない', course.nines[0].holes[0].tee[0] === 1 && n === 1);
-check('仮置きしたホールは「自動」で未確認', course.nines[1].holes[2].src === 'osm' && !course.nines[1].holes[2].ok);
-
-/* 6. HDCP is kept; older holes get null */
+/* 5. HDCP is kept; older holes get null */
 check('HDCPは1〜18だけ残り、ほかは null', toCourse(Object.assign({}, v2, { nines: v2.nines.map(x => ({ id: x.id, name: x.name, holes: x.holes.map((h, i) => Object.assign({}, h, { hdcp: [7, 0, 19, '3', 2.5][i] })) })) }))
   .nines[0].holes.slice(0, 5).map(h => h.hdcp).join() === '7,,,,' && c2.nines[0].holes[0].hdcp === null);
 
-/* 7. score card JSON (schemaVersion 1) */
+/* 6. score card JSON (schemaVersion 1) */
 const PARS = [4, 3, 5, 4, 4, 3, 4, 5, 4];
 const cardNine = (name, d) => ({ name, holes: PARS.map((par, i) => ({ no: i + 1, par, hdcp: i * 2 + 1, dist: { t1: [400, 180, 520, 390, 380, 160, 370, 510, 410][i] + d, t2: [380, 165, 500, 370, 360, 150, 350, 490, 390][i] + d } })),
   printedTotals: { par: 36 } });

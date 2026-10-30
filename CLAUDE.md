@@ -13,7 +13,7 @@ The user is a Japanese speaker new to Git: answer in plain Japanese, say what wa
 - Never rename localStorage keys or change the Firebase data shape without a migration (users' data lives there).
 - Firebase rules live in `firebase-rules.json`; after changing them, publish in the console and run `tests/rules.html`.
 - Push only when the user asks. No browser `confirm()`: use `ask()` (in-page dialog).
-- External APIs (Nominatim, Overpass, msearch.gsi.go.jp): button-press only, one request at a time (Nominatim ≥1 s apart, Overpass ≥10 s),
+- External APIs (Nominatim, msearch.gsi.go.jp): button-press only, one request at a time (Nominatim ≥1 s apart),
   and keep the credit "© OpenStreetMap contributors" on the registration screen and guide. GSI tile credit stays in the menu.
 - Tee colours and yardages stay on the phone; competitions still get only `{par, tee, green}` (base tee).
 
@@ -30,12 +30,11 @@ The user is a Japanese speaker new to Git: answer in plain Japanese, say what wa
 | `js/interactions.js` | `placeAt`, measuring marks, hole arrows `goHole`, map buttons (3D/view/me/pin), GPS | taps, pins, GPS, side buttons |
 | `js/menu.js` | settings sheet: screen stack `mShow`/`openMenu`, `ask`, nines picker, pin reset, undo bar | settings screens, back button |
 | `js/course.js` | jump to another course, export/import backup, wipe | course switching, backup |
-| `js/draft.js` | `draftCourse(input)` → tee/green first guess from OSM (Overpass), `osmToDraft` (no network), `applyDraft`. Swap in an AI version here (same input/output) | OSM draft, AI draft |
 | `js/cardjson.js` | score card JSON (schemaVersion 1, made by an outside AI): `readCard`, `cardIssues` (warnings), `cardTeeMap`, `applyCard` (上書き / 別のコース). No network, no screen | card import rules, mapping |
 | `js/search.js` | golf club search: Nominatim, GSI place-name fallback, `regUsePlace` (map + area) | search |
 | `js/setup.js` | course registration screens in settings (`mReg`, `mRegNines`, `mRegYard`): draft, nines, tee colours, par/yardage, hole list, 確定 | course registration, tee colours |
 | `js/import.js` | スコアカードから取り込む screen (`mRegCard`): paste / file, preview with editable cells, tee colour choice → into the draft | card import screen |
-| `js/guide.js` | guide panel `#setup`: green → tee per hole, tap / candidates / drag, back/skip/next, camera | the guide |
+| `js/guide.js` | guide panel `#setup`: green → tee per hole, tap / drag, back/skip/next, camera | the guide |
 | `js/score.js` | score page, −/＋ stepper, bottom dock, solo participants sheet | score entry, dock |
 | `js/rank.js` | ranking page, everyone's scoreboard (editable cells), JPEG scorecard | ranking, scoreboard, image |
 | `js/pages.js` | swipe ranking ← map → score, `goPage` | page swipe |
@@ -48,7 +47,7 @@ The user is a Japanese speaker new to Git: answer in plain Japanese, say what wa
 | `sw.js` | service worker: app files cache `golf3d-app-<VERSION>` | every push (VERSION), new files |
 | `firebase-rules.json` | database rules (the real permission check) | permissions |
 | `tests/rules.html` | live allow/deny test of the rules (~80 checks, ~2 min) | after rule changes |
-| `tests/course.html` | course conversion, tee estimates, checks, OSM draft, score card import with dummy data (no network, fake localStorage) | course model, draft.js, cardjson.js |
+| `tests/course.html` | course conversion, tee estimates, checks, score card import with dummy data (no network, fake localStorage) | course model, cardjson.js |
 | `FIREBASE.md` | Japanese guide for the user (console, rules, test page) | Firebase how-to |
 
 ## Saved data
@@ -56,7 +55,7 @@ localStorage (per browser; Safari and the home-screen app are separate):
 | Key | Shape |
 |---|---|
 | `golf3d.course` | `{v:2, name, center, nines:[{id, name, holes:[{n, par, hdcp, tee, green, src, ok, yd:{teeId:yards}}×9]}], tees:[{id,name,color}], baseTee, area:{bbox,osm,name}}` — `tee` is the base colour's; older data gets blue/white/red, base white; `hdcp` 1–18 or null (older data: null; phone only, not sent to competitions) |
-| `golf3d.courseDraft` | course registration in progress: `{course, cand:{greens,tees}, fresh, named}`; removed on 確定 / 下書きを捨てる |
+| `golf3d.courseDraft` | course registration in progress: `{course, fresh, named}` (older drafts also had `cand`, ignored); removed on 確定 / 下書きを捨てる |
 | `golf3d.course.v1backup` | the old 18-hole course, kept once when migrated |
 | `golf3d.round` | `{pins:{1..18:[lng,lat]}, tees:{1..18:[lng,lat]}, front, back}` (nine ids); `tees` = today's tee moved with 今日のピン位置 (ピン／ティー) (this phone only, never sent) |
 | `golf3d.prefs` | `{elev, rings, ringsAlpha, device, devAdj, gps, n, setupMin, seen, obLater, swipeHint, view, is3D}` (rings: dotted 50Y rings, ringsAlpha 10–100 their strength; device: index in `IPHONES` (js/hud.js) or null = 自動, devAdj: manual px for the bottom edge; seen: time of the first visit (add-to-home card waits for the second); obLater: time 「あとで」 was pressed on the course registration card (hidden for 7 days); swipeHint: the swipe tip on 順位表 / スコア表 was shown; view: tee|top|green and is3D, restored on reload) |

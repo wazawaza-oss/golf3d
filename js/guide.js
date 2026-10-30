@@ -3,10 +3,9 @@
    Plain scripts loaded in order from index.html (no build step); they share top-level names. */
 "use strict";
 
-/* markers: the green and the base tee can be dragged; the other colours' tees are estimates ("仮");
-   candidates are OSM greens / tees without a hole number — tap one to use it */
+/* markers: the green and the base tee can be dragged; the other colours' tees are estimates ("仮") */
 const GM = { green: new maplibregl.Marker({ element: mkEl('gg hit', 'G'), draggable: true }), tee: new maplibregl.Marker({ element: mkEl('gt hit', 'T'), draggable: true }) };
-let gExtra = [];  // estimate and candidate markers, rebuilt on every draw
+let gExtra = [];  // estimate markers, rebuilt on every draw
 const sameLL = (a, b) => !!(a && b && a[0] === b[0] && a[1] === b[1]);
 function guideDrop(kind) {
   const p = GM[kind].getLngLat(), h = hole();
@@ -30,14 +29,6 @@ function guideMarkers() {
     const e = mkEl('gest', '仮'); e.style.background = t.color; e.classList.toggle('light', isLight(t.color)); e.title = `${t.name}（仮）`;
     gExtra.push(new maplibregl.Marker({ element: e }).setLngLat(p).addTo(map));
   });
-  // candidates of the kind being placed now, unless some hole already uses them
-  const all = c.nines.flatMap(x => x.holes), kind = S.su.step;
-  (kind === 'green' ? S.draft.cand.greens : S.draft.cand.tees).forEach(p => {
-    if (all.some(x => sameLL(x[kind], p))) return;
-    const e = mkEl('cand hit ' + kind); e.setAttribute('role', 'button'); e.setAttribute('aria-label', kind === 'green' ? 'グリーンの候補' : 'ティーの候補');
-    e.addEventListener('click', ev => { ev.stopPropagation(); guideTap(p.slice()); });
-    gExtra.push(new maplibregl.Marker({ element: e }).setLngLat(p).addTo(map));
-  });
 }
 const isLight = hex => { const n = parseInt(hex.slice(1), 16); return ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000 > 150; };
 
@@ -53,13 +44,11 @@ function renderGuide() {
     : `${cardNo(c, nine, h.n)}番の${item}をタップしてください`;
   const issue = holeIssue(h, c);
   $('gWarn').hidden = !issue; if (issue) $('gWarn').textContent = `確認してください：${issue}`;
-  const cand = (green ? S.draft.cand.greens : S.draft.cand.tees).length;
   const notes = [];
-  if (has && h.src !== 'manual') notes.push(h.src === 'osm' ? '地図データから自動で置きました。位置を確かめてください' : '自動で置きました。位置を確かめてください');
-  if (cand) notes.push(`点線の丸は${green ? 'グリーン' : 'ティー'}の候補です。タップするとそこに置きます`);
+  if (has && h.src !== 'manual') notes.push(h.src === 'osm' ? '地図データから自動で置きました。位置を確かめてください' : '自動で置きました。位置を確かめてください');  // courses placed before this was removed
   if (!green && c.tees.length > 1 && h.tee) notes.push('「仮」はほかの色のティーの目安です（ヤードの差から計算）');
   $('gNote').textContent = notes.join('。');
-  $('gCredit').hidden = !(S.draft.cand.greens.length || S.draft.cand.tees.length || c.nines.some(x => x.holes.some(z => z.src === 'osm')));
+  $('gCredit').hidden = !c.nines.some(x => x.holes.some(z => z.src === 'osm'));  // positions taken from OSM earlier
   const first = S.su.nine === c.nines[0].id && h.n === 1 && green;
   $('gBack').disabled = first;
   $('gNext').textContent = green ? '次へ ›' : S.su.only ? '一覧へ ›' : '次のホール ›';

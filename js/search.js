@@ -117,7 +117,7 @@ function regUsePlace(p) {
   const apply = fresh => {
     if (fresh) {
       const n = blankCourse(); n.tees = c.tees; n.baseTee = c.baseTee;
-      d.course = n; d.cand = cleanCand(null); d.fresh = true;
+      d.course = n; d.fresh = true;
     }
     Object.assign(d.course, { center: p.center, area });
     if (fresh || d.named || [UNNAMED, OLD_UNNAMED].includes(S.course.name) || !S.course.name) { d.course.name = p.name.slice(0, 40); d.named = true; }
