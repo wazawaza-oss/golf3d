@@ -138,6 +138,7 @@ check('別のコース：カードの3ハーフだけ、位置なし', nw.nines.
 check('別のコース：色はバック（青）・レギュラー（白）、地図に置く色はレギュラー', nw.tees.map(t => t.name + t.color).join() === 'バック#1f5fd1,レギュラー#ffffff' && nw.tees[1].id === nw.baseTee);
 check('別のコース：メートルはヤードに換算（380m → 416Y）', nw.nines[0].holes[0].yd[nw.baseTee] === 416);
 check('別のコース：950m（1039Y）は入れない', !(nw.tees[0].id in nw.nines[0].holes[0].yd));
+check('新しい色の名前から「Tee」を外す（Green Tee → Green）', (() => { const c = readCard(JSON.stringify({ schemaVersion: 1, course: { tees: [{ id: 'g', label: 'Green Tee' }], nines: [{ name: 'OUT', holes: Array.from({ length: 9 }, (_, i) => ({ no: i + 1, par: 4, dist: { g: 300 } })) }] } })).card; return applyCard(base, c, { g: 'new' }, 'new').tees[0].name === 'Green'; })());
 
 // positions on the card: { lat, lng } → [lng, lat], checks, into holes with none
 const pj = JSON.parse(JSON.stringify(cardJ));

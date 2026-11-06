@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>参加者のまね（ラウンドテスト）</title>
+<style>
+  body{margin:0;padding:16px;font:14px/1.6 system-ui,-apple-system,"Hiragino Sans",sans-serif;background:#f0f1f4;color:#1b2430}
+  h1{font-size:18px;margin:0 0 8px}
+  #log div{border-top:1px solid #dde;padding:3px 0}
+</style>
+</head>
+<body>
+<h1>参加者のまね（ラウンドテスト）</h1>
+<p>本物のアプリと同じ書き方で、参加者のスマホを何台でもまねします（1人1台、別の匿名ログイン）。操作は開発者ツールから window.sim を呼びます。</p>
+<div id="log"></div>
+<script type="module">
+// each simulated phone: its own Firebase app and anonymous user, writing exactly as js/share.js / js/roster.js do
+const SDK = 'https://www.gstatic.com/firebasejs/12.4.0/';
+const CFG = {  // same as js/share.js
+  apiKey: 'AIzaSyD4ZvWQsx_0xXq7KJL4V123kdl8L3N2xPM',
+  authDomain: 'golfscoreapp-f2d31.firebaseapp.com',
+  databaseURL: 'https://golfscoreapp-f2d31-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId: 'golfscoreapp-f2d31',
+  appId: '1:513780302035:web:155d3e482323ebebf2d426'
+};
+const [A, Au, D] = await Promise.all(['app', 'auth', 'database'].map(m => import(`${SDK}firebase-${m}.js`)));
+const B62 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+const rid = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => B62[b % 62]).join('');
+const hk = i => 'h' + String(i + 1).padStart(2, '0');
+const timeout = (p, ms = 12000) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), ms))]);
+const log = s => { const d = document.createElement('div'); d.textContent = `${new Date().toLocaleTimeString()} ${s}`; document.getElementById('log').prepend(d); };
+const res = async p => { try { await timeout(p); return 'ok'; } catch (e) { return /permission/i.test(String(e.code || e.message)) ? 'denied' : 'error: ' + e.message; } };
+
+const phones = {};
+const sim = window.sim = {
+  phones,
+  // a new phone (name = label only)
+  async phone(label) {
+    const app = A.initializeApp(CFG, `${label}-${rid(6)}`);
+    const auth = Au.initializeAuth(app, { persistence: Au.inMemoryPersistence });
+    const cred = await Au.signInAnonymously(auth);
+    const p = phones[label] = { label, app, uid: cred.user.uid, db: D.getDatabase(app), comp: null, outbox: {} };
+    log(`${label}: 新しいスマホ uid=${p.uid.slice(0, 6)}`);
+    return p.uid;
+  },
+  // opening the players' link: compJoin + compConnect (listens to the same paths as the app)
+  async join(label, link) {
+    const p = phones[label], q = new URL(link).searchParams, cid = q.get('c'), key = q.get('k'), role = q.get('r');
+    const r = await res(D.update(D.ref(p.db, `comps/${cid}/members/${p.uid}`), { role, key, t: Date.now() }));
+    if (r !== 'ok') { log(`${label}: 参加できない (${r})`); return r; }
+    p.comp = { cid, key, role, player: null, meta: null, course: null, roster: {}, leads: {}, scores: {}, taken: {}, pins: {} };
+    const on = (path, fn) => D.onValue(D.ref(p.db, `comps/${cid}/${path}`), s => fn(s.val()), e => log(`${label}: ${path} 読めない ${e.code}`));
+    on('meta', v => { if (v) p.comp.meta = v; }); on('course', v => { p.comp.course = v; });
+    on('roster', v => { p.comp.roster = v || {}; }); on('leads', v => { p.comp.leads = v || {}; });
+    on('taken', v => { p.comp.taken = v || {}; }); on('pins', v => { p.comp.pins = v || {}; });
+    on('scores', v => { p.comp.scores = v || {}; });
+    on(`members/${p.uid}`, v => { if (v) { p.comp.role = v.role; p.comp.player = v.player || null; } });
+    D.onValue(D.ref(p.db, '.info/connected'), s => { p.live = !!s.val(); });
+    log(`${label}: 参加した`);
+    return 'ok';
+  },
+  pidOf(label, name) { const r = Object.entries(phones[label].comp.roster).find(([, x]) => x.name === name); return r && r[0]; },
+  // choosing a name: compPick
+  async pick(label, name) {
+    const p = phones[label], pid = sim.pidOf(label, name);
+    if (!pid) return 'no such name';
+    const r = await res(D.update(D.ref(p.db, `comps/${p.comp.cid}`), { [`taken/${pid}`]: p.uid, [`members/${p.uid}/player`]: pid }));
+    if (r === 'ok') p.comp.player = pid;
+    log(`${label}: 「${name}」を選ぶ → ${r}`);
+    return r;
+  },
+  // a score: compSetScore + compSend (newest wins, fix when changing someone else's value)
+  async score(label, name, hole, v, opts = {}) {
+    const p = phones[label], pid = sim.pidOf(label, name), k = hk(hole - 1), t = opts.t || Date.now(), bp = p.comp.player || 'org';
+    const prev = (p.comp.scores[pid] || {})[k];
+    const fix = v != null && bp !== pid && !!prev && prev.v != null && (prev.bp !== bp ? +prev.v !== v : !!prev.fix);
+    const rec = Object.assign({ v, by: p.uid, bp, t }, fix ? { fix: true } : {});
+    if (opts.offline) { p.outbox[`${pid}/${k}`] = { rec, v }; return 'queued'; }
+    return sim._send(p, pid, k, v, rec);
+  },
+  async _send(p, pid, k, v, rec) {
+    const ref = D.ref(p.db, `comps/${p.comp.cid}/scores/${pid}/${k}`);
+    let r;
+    try {
+      const cur = (await timeout(D.get(ref))).val();
+      r = (!cur || !cur.t || cur.t <= rec.t) ? await res(D.set(ref, v == null ? null : rec)) : 'older (skipped)';
+    } catch (e) { r = /permission/i.test(String(e.code || e.message)) ? 'denied' : 'error: ' + e.message; }
+    return r;
+  },
+  async flush(label) {
+    const p = phones[label], out = [];
+    for (const [path, e] of Object.entries(p.outbox)) { const [pid, k] = path.split('/'); out.push(await sim._send(p, pid, k, e.v, e.rec)); delete p.outbox[path]; }
+    return out;
+  },
+  offline(label) { D.goOffline(phones[label].db); },
+  online(label) { D.goOnline(phones[label].db); },
+  // what this phone's ranking would show: name, team, holes played, total
+  board(label) {
+    const c = phones[label].comp;
+    return Object.entries(c.roster).map(([id, r]) => {
+      const s = c.scores[id] || {}, vs = Array.from({ length: 18 }, (_, i) => s[hk(i)] ? +s[hk(i)].v : null);
+      return { name: r.name, team: r.team, n: vs.filter(Boolean).length, total: vs.reduce((a, x) => a + (x || 0), 0) };
+    }).sort((a, b) => a.team - b.team || a.name.localeCompare(b.name, 'ja'));
+  },
+  sig(label) { return JSON.stringify(sim.board(label)); },
+  raw(label, path) { const p = phones[label]; return timeout(D.get(D.ref(p.db, `comps/${p.comp.cid}/${path}`))).then(s => s.val()); },
+  log
+};
+log('準備できました');
+window.simReady = true;
+</script>
+</body>
+</html>

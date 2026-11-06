@@ -48,6 +48,7 @@ The user is a Japanese speaker new to Git: answer in plain Japanese, say what wa
 | `firebase-rules.json` | database rules (the real permission check) | permissions |
 | `tests/rules.html` | live allow/deny test of the rules (~80 checks, ~2 min) | after rule changes |
 | `tests/course.html` | course conversion, tee estimates, checks, score card import with dummy data (no network, fake localStorage) | course model, cardjson.js |
+| `tests/round.html` | simulated phones for a live round test: `window.sim` (phone / join / pick / score / offline / board), each its own anonymous user, writing as share.js does | competition flow, sending scores |
 | `FIREBASE.md` | Japanese guide for the user (console, rules, test page) | Firebase how-to |
 
 ## Saved data

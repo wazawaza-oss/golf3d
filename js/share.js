@@ -126,16 +126,21 @@ async function compSend() {
   let f; try { f = await fb(); } catch (e) { return; }
   if (!compLive) return;  // the SDK would only hold it in memory; it stays in the outbox until connected
   sending = true;
+  let stuck = false;
   try {
     for (const [path, e] of Object.entries(comp.outbox)) {
       const r = f.D.ref(f.db, cp('scores/' + path));
+      // remove the entry only if it is still the one sent: a newer tap on the same cell meanwhile goes out next
+      const done = () => { if (comp && comp.outbox && comp.outbox[path] === e) delete comp.outbox[path]; };
       try {
         const cur = (await withTimeout(f.D.get(r), 10000)).val();
         if (!cur || !cur.t || cur.t <= e.t) await withTimeout(f.D.set(r, e.v == null ? null : scoreRec(e)), 10000);
-        delete comp.outbox[path];
-      } catch (err) { if (denied(err)) delete comp.outbox[path]; else break; }
+        done();
+      } catch (err) { if (denied(err)) done(); else { stuck = true; break; } }
     }
   } finally { sending = false; if (comp) saveComp(); }
+  // entries made while this pass was sending (a lead entering the whole cart) go out now; a failed pass waits for the connection
+  if (!stuck && comp && Object.keys(comp.outbox || {}).length) compSend();
 }
 // pins placed by the organizer are handed out to everyone
 function compSetPin(n, ll) {

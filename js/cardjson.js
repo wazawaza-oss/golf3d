@@ -157,7 +157,8 @@ function applyCard(c, card, teeMap, mode) {
     const have = id !== 'new' && c.tees.find(x => x.id === id);
     if (have) { ids[t.id] = have.id; if (!tees.some(x => x.id === have.id)) tees.push(Object.assign({}, have)); return; }
     const g = teeGuess(t.label), nid = newId('t');
-    tees.push({ id: nid, name: t.label.slice(0, 8), color: g ? g[2] : '#888888' }); ids[t.id] = nid;
+    const name = t.label.replace(/\s*(tees?|ティー)$/i, '') || t.label;  // "Green Tee" → "Green" (names keep 8 characters)
+    tees.push({ id: nid, name: name.slice(0, 8), color: g ? g[2] : '#888888' }); ids[t.id] = nid;
   });
   out.tees = tees;
   // positions go in as automatic and not checked yet (src 'ai', ok false), and only where the hole has none
