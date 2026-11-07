@@ -1,16 +1,7 @@
-/* golf3d — course: switching course location, export / import, deleting the course
+/* golf3d — course: the list of earlier courses (switching), export / import, deleting the course
    Plain scripts loaded in order from index.html (no build step); they share top-level names. */
 "use strict";
 
-$('jumpGo').onclick = () => {
-  const u = $('jumpUrl').value;
-  let m = u.match(/lat=(-?[\d.]+)&lon=(-?[\d.]+)/) || null, ll = null, z = 16;
-  if (m) ll = [+m[2], +m[1]];
-  else if ((m = u.match(/#(\d+(?:\.\d+)?)\/(-?[\d.]+)\/(-?[\d.]+)/))) { z = +m[1]; ll = [+m[3], +m[2]]; }
-  if (!ll || !isFinite(ll[0]) || !isFinite(ll[1])) { toast('URLから場所を読み取れませんでした'); return; }
-  S.course.center = ll; saveCourse(); $('menu').hidden = true;
-  map.jumpTo({ center: ll, zoom: Math.max(15, Math.min(18, z)), bearing: 0, pitch: S.is3D ? 60 : 0 });
-};
 /* courses used before on this phone (golf3d.courses, js/state.js): tap one to use it again, × to forget it */
 function renderLib() {
   const g = $('libList'), lib = loadLib(); g.textContent = '';
