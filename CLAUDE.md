@@ -33,7 +33,7 @@ The user is a Japanese speaker new to Git: answer in plain Japanese, say what wa
 | `js/cardjson.js` | score card JSON (schemaVersion 1, made by an outside AI): `readCard`, `cardIssues` (warnings), `cardTeeMap`, `applyCard` (上書き / 別のコース; tee/green positions → holes with none, src ai, ok false). No network, no screen | card import rules, mapping |
 | `js/search.js` | golf club search: Nominatim, GSI place-name fallback, `regUsePlace` (map + area) | search |
 | `js/setup.js` | course registration screens in settings (`mReg`, `mRegNines`, `mRegYard`): draft, nines, tee colours, par/yardage, hole list, 確定 | course registration, tee colours |
-| `js/import.js` | スコアカードから取り込む screen (`mRegCard`): paste / file, preview with editable cells, tee colour choice → into the draft | card import screen |
+| `js/import.js` | スコアカードから取り込む screen (`mRegCard`): 4 steps + `cardPrompt()` (the request copied for the user's own AI, matching readCard), paste / file, preview with editable cells, tee colour choice → into the draft | card import screen |
 | `js/guide.js` | guide panel `#setup`: green → tee per hole, tap / drag, back/skip/next, camera | the guide |
 | `js/score.js` | score page, −/＋ stepper, bottom dock, solo participants sheet | score entry, dock |
 | `js/rank.js` | ranking page, everyone's scoreboard (editable cells), JPEG scorecard | ranking, scoreboard, image |

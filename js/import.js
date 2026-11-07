@@ -8,7 +8,69 @@ Object.assign(M_TITLE, { mRegCard: 'スコアカードの取り込み' });
 Object.assign(M_RENDER, { mRegCard: () => renderCard() });
 let rc = null;  // { card, mode: 'over'|'new', map: { cardTeeId: course tee id | 'new' }, cells: { key: td } }
 
-$('rgCard').onclick = () => { mShow('mRegCard'); renderCard(); };
+/* the request people send to their own AI (ChatGPT, Gemini, Claude…): it asks for the card in the format readCard reads.
+   The golf club's name goes on the first line (the draft's name when it has one). */
+function cardPrompt() {
+  const n = S.draft && S.draft.course.name, name = n && ![UNNAMED, OLD_UNNAMED].includes(n) ? n : '（ここにゴルフ場の名前を書いてください）';
+  return `ゴルフ場名：${name}
+
+上のゴルフ場のスコアカード（各ホールのパー・ハンディキャップ・ティーごとの距離）を調べて、下の形式のJSONにしてください。ゴルフアプリに取り込みます。
+スコアカードの写真を一緒に送った場合は、写真の値をいちばん優先してください。
+
+【ルール】
+- 答えは JSON だけを、\`\`\`json のコードブロック1つで返してください。前後の説明は要りません。
+- 調べるときは、ゴルフ場の公式サイトのスコアカードやコースガイドを優先し、使ったページのURLを sourceUrl に入れてください（写真だけなら null）。
+- ハーフ（OUT・IN、東・西・南など）ごとに nines に入れます。holes は必ず9件、no は 1〜9 です。
+  18ホールのコースは OUT（1〜9番）と IN（10〜18番）に分け、IN の no も 1〜9 にします。3ハーフ以上あれば全部入れてください。
+- par はパー（3〜5）、hdcp はハンディキャップ（1〜18、なければ null）。
+- tees はカードの距離の列（バック・レギュラー・レディースなど）です。id は "t1"、"t2"… と順に付け、label にカードの表記（色や名前）を入れます。
+  ベント・コーライなどグリーンによって距離が違うときは、別のティーとして分けてください。
+- dist は各ティーの id ごとの距離です。unit はカードの単位で "yard" か "meter"。
+- 分からない値は推測で埋めず null にしてください。
+- printedTotals はカードに印刷されているハーフの合計（なければこの項目ごと省いてください）。
+- tee と green は各ホールのティーとグリーンの位置（緯度 lat・経度 lng）です。分かるときだけ入れ、分からなければ null。
+  source は調べ方（"official"：公式の資料、"osm"：OpenStreetMap、"map_view"：地図や航空写真を見て判断）、confidence は "high"・"medium"・"low"。
+  center はコースのおおよその中心です。
+- 自信のない値や気になる点は、warnings に日本語で短く書いてください。
+
+【形式】（holes は各ハーフ9件。例は1件だけ書いています）
+{
+  "schemaVersion": 1,
+  "course": {
+    "name": "〇〇カントリークラブ",
+    "unit": "yard",
+    "sourceUrl": "https://example.com/course/",
+    "center": { "lat": 35.0, "lng": 139.0 },
+    "tees": [
+      { "id": "t1", "label": "バック" },
+      { "id": "t2", "label": "レギュラー" },
+      { "id": "t3", "label": "レディース" }
+    ],
+    "nines": [
+      {
+        "name": "OUT",
+        "holes": [
+          { "no": 1, "par": 4, "hdcp": 7, "dist": { "t1": 385, "t2": 360, "t3": 310 },
+            "tee": { "lat": 35.0012, "lng": 139.0021, "source": "map_view", "confidence": "low" },
+            "green": { "lat": 35.0040, "lng": 139.0005, "source": "map_view", "confidence": "low" } }
+        ],
+        "printedTotals": { "par": 36, "dist": { "t1": 3400, "t2": 3200, "t3": 2800 } }
+      }
+    ]
+  },
+  "warnings": []
+}`;
+}
+$('rcPrompt').onclick = async () => {
+  const s = cardPrompt(); $('rcPromptText').value = s;
+  try { await navigator.clipboard.writeText(s); toast('お願い文をコピーしました。AIのアプリに貼り付けてください'); }
+  catch (e) {  // older browsers: copy the selected text, else leave it shown and selected for a long press
+    const d = $('rcPromptText'); d.closest('details').open = true; d.focus(); d.setSelectionRange(0, s.length);
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e2) {}
+    toast(ok ? 'お願い文をコピーしました。AIのアプリに貼り付けてください' : 'コピーできませんでした。下の文を長押しして全部選び、コピーしてください');
+  }
+};
+$('rgCard').onclick = () => { $('rcPromptText').value = cardPrompt(); mShow('mRegCard'); renderCard(); };
 $('rcFile').onclick = () => $('rcFileIn').click();
 $('rcFileIn').onchange = async e => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;

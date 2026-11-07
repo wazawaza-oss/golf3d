@@ -143,6 +143,17 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .ck.no{border:3px solid #e0a800}
 /* the 3 preparation steps: a numbered circle, green ✓ when done */
 .stepn{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:15px;font-weight:900;background:#eef3fa;color:#0b5cad;box-shadow:inset 0 0 0 2px #0b5cad}
+.rcsteps{list-style:none;margin:0;padding:4px 14px;background:#fff;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.rcsteps li{display:flex;gap:12px;padding:12px 0}
+.rcsteps li+li{border-top:1px solid #e3e5e9}
+.rcsteps li>div{flex:1;min-width:0}
+.rcsteps b{display:block;font-size:15.5px;font-weight:900;color:var(--ink);line-height:30px}
+.rcsteps p{margin:2px 0 0;font-size:13.5px;line-height:1.55;font-weight:600;color:#3a4350}
+.rcsteps code{padding:0 4px;border-radius:4px;background:#eef0f3;font-weight:800}
+.rcsteps .mrow.center.go{margin-top:10px;border-radius:10px;min-height:48px}
+.rcpdet{margin-top:8px;font-size:13px;font-weight:700;color:#0b5cad}
+.rcpdet summary{padding:6px 0;cursor:pointer}
+.rcpdet textarea{width:100%;box-sizing:border-box;margin-top:4px;padding:8px;border:1px solid var(--line);border-radius:8px;font:12px/1.5 ui-monospace,Menlo,monospace;color:#3a4350;background:#f7f8fa}
 .stepn.ok{background:#1f9d48;color:#fff;box-shadow:none}
 .mrow:disabled .stepn,.mrow:disabled .mtx,.mrow:disabled .mic,.mrow:disabled .chev{opacity:.45}
 /* iOS-style switch (the whole row is the switch) */

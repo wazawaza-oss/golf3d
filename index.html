@@ -259,7 +259,22 @@
 
   <!-- score card JSON (made by an outside AI) → par, HDCP, yardages of the draft (js/import.js, js/cardjson.js) -->
   <div class="mbody" id="mRegCard" hidden>
-    <p class="grp-f">スコアカードの写真などから、外部のAIで作ったJSONを貼り付けるか、ファイルを選んでください。パー・HDCP・ティーごとの距離が下書きに入ります。JSONにティー・グリーンの座標があれば、まだ置いていないホールに仮の位置として入ります（地図に置いた位置は変わりません）。</p>
+    <p class="grp-f">ふだん使っているAI（ChatGPT・Gemini・Claude など）にコースの情報をまとめてもらい、パー・HDCP・ティーごとの距離をまとめて入れます。</p>
+    <div class="grp-t">取り込みの手順</div>
+    <ol class="rcsteps">
+      <li><span class="stepn">1</span><div><b>AIへのお願い文をコピー</b>
+        <p>下のボタンを押すと、AIに送る文章がまるごとコピーされます。</p>
+        <button class="mrow center go" id="rcPrompt">お願い文をコピー</button>
+        <details class="rcpdet"><summary>お願い文の中身を見る</summary><textarea id="rcPromptText" rows="8" readonly aria-label="AIへのお願い文"></textarea></details></div></li>
+      <li><span class="stepn">2</span><div><b>AIに貼り付けて送る</b>
+        <p>AIのアプリを開いて、入力欄に貼り付けます。1行目の「ゴルフ場名」を行きたいゴルフ場に書き換えて送ってください。スコアカードの写真があれば一緒に送ると、より正確になります。</p></div></li>
+      <li><span class="stepn">3</span><div><b>AIの答えをコピー</b>
+        <p>AIが <code>{</code> で始まる文字（JSON）を返します。コードの右上などにある「コピー」を押して、まるごとコピーします。</p></div></li>
+      <li><span class="stepn">4</span><div><b>ここに貼り付けて「読み込む」</b>
+        <p>下の欄に貼り付けて「読み込む」を押すと、表が出ます。黄色のマスを確かめてから登録してください。</p></div></li>
+    </ol>
+    <p class="grp-f">AIの答えは間違っていることがあります。表とスコアカードを見比べてください。JSONにティー・グリーンの座標があれば、まだ置いていないホールに仮の位置として入ります（地図に置いた位置は変わりません）。</p>
+    <div class="grp-t">AIの答え（JSON）を貼り付け</div>
     <div class="grp"><textarea id="rcText" rows="6" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder='{"schemaVersion": 1, "course": { … } }' aria-label="スコアカードのJSON"></textarea></div>
     <div class="rcbtns"><button class="mrow center" id="rcFile">ファイルを選ぶ</button><button class="mrow center go" id="rcRead">読み込む</button></div>
     <input type="file" id="rcFileIn" accept=".json,.txt,application/json,text/plain" hidden>
