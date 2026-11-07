@@ -2,7 +2,7 @@
    Bump VERSION with every release: the new worker stores the new files and deletes the old set, so no stale mix remains.
    Map tiles live in their own cache (golf3d-tiles-v1, filled by 端末に保存) and are never touched here;
    GSI tiles and Firebase go straight to the network. */
-const VERSION = '2026-11-07.4';
+const VERSION = '2026-11-07.5';
 const APP = 'golf3d-app-' + VERSION;
 const FILES = [
   './', 'index.html', 'css/style.css',
@@ -14,7 +14,9 @@ const FILES = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(APP).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // cache: 'reload' skips the browser's own HTTP cache (GitHub Pages lets it keep files 10 minutes), so a new release
+  // never stores the previous release's files under its new name
+  e.waitUntil(caches.open(APP).then(c => c.addAll(FILES.map(f => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {

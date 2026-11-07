@@ -60,7 +60,10 @@ if ('serviceWorker' in navigator) {
   const hadWorker = !!navigator.serviceWorker.controller;
   let reloaded = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadWorker && !reloaded) { reloaded = true; location.reload(); } });
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    // a home-screen app is often brought back rather than opened anew: look for a new version then too
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+  }).catch(() => {});
 }
 
 /* Add to Home Screen: on a phone, in any browser (not the home-screen app), a card with the steps for that
