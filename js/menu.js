@@ -27,7 +27,7 @@ const courseSig = () => JSON.stringify((comp ? playHoles() : allHoles()).map(h =
 const offSaved = () => { const o = loadJSON(OFF_KEY); return !!(o && o.sig === courseSig()); };
 let offState = null;  // { pct } while the map is being saved
 const M_TITLE = { mMain: '設定', mJump: 'コースの切り替え', mNine: '回るコースの選択', mTest: 'テスト用の機能', mMore: '詳細設定' };
-const M_RENDER = { mMain: () => renderMenu(), mNine: () => renderNinePick() };  // redraw a screen when coming back to it
+const M_RENDER = { mMain: () => renderMenu(), mNine: () => renderNinePick(), mJump: () => renderLib() };  // redraw a screen when coming back to it
 let mStack = ['mMain'];  // the screens passed through to get here; ‹ goes back one
 function mShow(id, replace) {  // the main list, or one of its sub-screens
   if (id === 'mMain') mStack = ['mMain'];
@@ -91,7 +91,7 @@ $('mBack').onclick = () => { mStack.pop(); const id = mStack[mStack.length - 1];
 // course name: pencil turns the name into a text field
 function cnDone() {
   const inp = $('courseName'); if (inp.hidden) return;
-  const v = inp.value.trim(); if (v) { S.course.name = v; saveCourse(); }
+  const v = inp.value.trim(); if (v) { const old = S.course.name; S.course.name = v; saveCourse(old); }
   inp.hidden = true; $('cnText').hidden = false; renderMenu();
 }
 $('cnEdit').onclick = () => {
@@ -107,7 +107,7 @@ $('stLinks').onclick = () => { if (!comp) return; renderComp(); mShow('mComp'); 
 $('goMore').onclick = () => mShow('mMore');
 $('ckOff').onclick = () => offSaveRun();
 $('ckA2').onclick = () => { if (a2.app || !a2.on) { toast(a2.app ? 'もうホーム画面のアプリで開いています' : 'パソコンではホーム画面への追加は必要ありません'); return; } $('menu').hidden = true; a2Show(); };
-$('goJump').onclick = () => mShow('mJump');
+$('goJump').onclick = () => { renderLib(); mShow('mJump'); };
 $('goTest').onclick = () => mShow('mTest');
 // front / back nine of the round: one list each; the same nine twice is allowed (9-hole courses)
 function renderNinePick() {

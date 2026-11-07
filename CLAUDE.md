@@ -22,14 +22,14 @@ The user is a Japanese speaker new to Git: answer in plain Japanese, say what wa
 |---|---|---|
 | `index.html` | All HTML (sheets, sub-screens, buttons), script order | layout, labels, new buttons |
 | `css/style.css` | All styles | looks |
-| `js/state.js` | `$`, `el`, `toast`, load/save JSON, course model (nines/holes), state `S`, `N`, `hole()`, `pinLL()` | data model, migration, shared state |
+| `js/state.js` | `$`, `el`, `toast`, load/save JSON, course model (nines/holes), state `S`, `N`, `hole()`, `pinLL()`, saved course list `keepCourse` / `loadLib` | data model, migration, shared state |
 | `js/geo.js` | distance, yards, bearing, tile x/y | distance math |
 | `js/tiles.js` | GSI photo/DEM tiles, tile cache, `heights`, `elevAt`, map protocols | tiles, elevation |
 | `js/map.js` | the map, markers (`M`, `TM`, `LM`), pin rings, `camera()`, `set3D()` | camera, 3D, markers |
 | `js/hud.js` | `refresh()` (redraws everything), crosshair, `centerOn`, distance panel `readout()` | top distance panel, what refresh shows |
 | `js/interactions.js` | `placeAt`, measuring marks, hole arrows `goHole`, map buttons (3D/view/me/pin), GPS | taps, pins, GPS, side buttons |
 | `js/menu.js` | settings sheet: screen stack `mShow`/`openMenu`, `ask`, nines picker, pin reset, undo bar | settings screens, back button |
-| `js/course.js` | jump to another course, export/import backup, wipe | course switching, backup |
+| `js/course.js` | course list (`renderLib`: earlier courses, tap to switch), jump to a map place, export/import backup, wipe | course switching, backup |
 | `js/cardjson.js` | score card JSON (schemaVersion 1, made by an outside AI): `readCard`, `cardIssues` (warnings), `cardTeeMap`, `applyCard` (上書き / 別のコース; tee/green positions → holes with none, src ai, ok false). No network, no screen | card import rules, mapping |
 | `js/search.js` | golf club search: Nominatim, GSI place-name fallback, `regUsePlace` (map + area) | search |
 | `js/setup.js` | course registration screens in settings (`mReg`, `mRegNines`, `mRegYard`): draft, nines, tee colours, par/yardage, hole list, 確定 | course registration, tee colours |
@@ -64,6 +64,7 @@ localStorage (per browser; Safari and the home-screen app are separate):
 | `golf3d.offline` | `{sig, at}` of the course whose tiles were saved |
 | `golf3d.comp` | this phone's copy of the competition (+ `outbox` of unsent scores) |
 | `golf3d.a2hsClosed` | time the add-to-home card was closed (shown again after 20 h; older versions saved `true`) |
+| `golf3d.courses` | courses used on this phone, last used first: `[{name, at, course}]` (one per name, max 30; only courses with a placed hole). Updated by every `saveCourse()`; shown on 別のコースに切り替え |
 
 Caches: `golf3d-tiles-v1` (map tiles, never cleared by updates), `golf3d-app-<VERSION>` (app files).
 

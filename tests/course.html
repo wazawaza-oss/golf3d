@@ -173,6 +173,23 @@ check('カードの中心に近い範囲はそのまま', applyCard(near, pc, tm
 check('座標なしのカードも今までどおり', applyCard(base, rd.card, tmap, 'over').nines[0].holes[0].tee === null);
 check('位置を入れたコースは保存の形として正しい（src・ok が残る）', (() => { const t = toCourse(JSON.parse(JSON.stringify(pn))); return t && t.nines[0].holes[0].src === 'ai' && t.nines[0].holes[0].ok === false; })());
 
+/* the list of courses used on this phone (golf3d.courses) */
+const lib = () => JSON.parse(localStorage.getItem('golf3d.courses'));
+check('一覧：前からあるコースが最初に入る', lib().length === 1 && lib()[0].name === S.course.name && lib()[0].course.nines.length === 2);
+const keep0 = S.course;
+S.course = toCourse(JSON.parse(JSON.stringify(pn))); S.course.name = '別のGC'; saveCourse();
+check('一覧：別のコースを保存すると先頭に足される', lib().length === 2 && lib()[0].name === '別のGC' && lib()[1].name === keep0.name);
+S.course.nines[0].holes[0].par = 5; saveCourse();
+check('一覧：同じ名前は1つのまま、新しい内容になる', lib().length === 2 && lib()[0].course.nines[0].holes[0].par === 5);
+S.course.name = '別のGC改'; saveCourse('別のGC');
+check('一覧：名前を変えると古い名前は残らない', lib().length === 2 && lib()[0].name === '別のGC改' && !lib().some(e => e.name === '別のGC'));
+S.course = blankCourse(); S.course.name = '空のコース'; saveCourse();
+check('一覧：位置が1つもないコースは入らない', lib().length === 2);
+for (let i = 0; i < 35; i++) { S.course = toCourse(JSON.parse(JSON.stringify(pn))); S.course.name = 'GC' + i; saveCourse(); }
+check('一覧：30コースまで（古いものから消える）', lib().length === 30 && lib()[0].name === 'GC34' && !lib().some(e => e.name === keep0.name));
+check('一覧：入っているコースは読み込める形', lib().every(e => toCourse(e.course)));
+S.course = keep0;
+
 /* show the results */
 const bad = results.filter(r => !r.ok).length;
 const sum = document.getElementById('sum');

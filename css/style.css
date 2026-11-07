@@ -115,6 +115,11 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .mic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none}
 .mic svg{display:block}
 .mtx{flex:1;min-width:0}
+.mrow.lib{padding:0 0 0 14px;gap:4px}
+.libgo{min-height:52px;padding:8px 0;text-align:left;font:inherit;color:inherit;background:none;border:0}
+.libgo:disabled{cursor:default}
+.lib .mval{padding-right:14px;color:#1f7a3a}
+.libdel{flex:none;width:48px;min-height:52px;font-size:22px;color:#8a909a;background:none;border:0}
 .mtx small{display:block;margin-top:1px;font-size:12.5px;font-weight:600;color:#3a4350}
 .mval{font-size:15px;font-weight:700;color:#3a4350;white-space:nowrap}
 .chev{font-size:24px;line-height:1;color:#8a909a;margin-left:-4px}

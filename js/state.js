@@ -139,10 +139,21 @@ const target = () => hasPin() ? 'ピン' : 'グリーン';  // what the distance
 // today's tee: one you moved for this round (this phone only), else the registered one
 const roundTee = () => (!inSetup() && S.round.tees[N]) || hole().tee;
 const holeNo = () => inSetup() ? S.su.n : N;  // the number shown in the panel
-const saveCourse = () => saveJSON('golf3d.course', S.course);
+const saveCourse = old => { saveJSON('golf3d.course', S.course); keepCourse(S.course, old); };  // old: the name before a rename
 const saveRound = () => saveJSON('golf3d.round', S.round);
 const savePrefs = () => { S.prefs.n = N; S.prefs.view = S.view; if (!inSetup()) S.prefs.is3D = S.is3D; saveJSON('golf3d.prefs', S.prefs); };  // the guide turns 3D off for a while
 const registered = h => !!(h.tee && h.green);
+/* every course used on this phone, so an earlier one can be picked again (別のコースに切り替え):
+   golf3d.courses = [{name, at, course}], last used first, one per name; a course goes in once a hole is placed */
+const LIB_KEY = 'golf3d.courses', LIB_MAX = 30;
+const loadLib = () => { const a = loadJSON(LIB_KEY); return Array.isArray(a) ? a.filter(e => e && e.course && typeof e.name === 'string') : []; };
+function keepCourse(c, old) {
+  if (!c || !c.nines.some(x => x.holes.some(registered))) return;
+  const lib = loadLib().filter(e => e.name !== c.name && e.name !== old);
+  lib.unshift({ name: c.name, at: Date.now(), course: c });
+  saveJSON(LIB_KEY, lib.slice(0, LIB_MAX));
+}
+if (!loadJSON(LIB_KEY)) keepCourse(S.course);  // phones from before the list: start it with the course they have
 
 /* small shared helpers: a short message at the top of the screen; making an element */
 let toastT = null;
