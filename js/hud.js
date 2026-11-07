@@ -21,7 +21,7 @@ function refresh() {
     const f = [], pin = pinLL();
     if (setup) setupNine.forEach(x => { if (registered(x)) f.push(ln(x.tee, x.green, 'setup')); });
     else if (S.tap) { const p = tapLine(); if (p) f.push(p); }  // while marks are up, only their path to the pin
-    else if (registered(h) && !S.me) f.push(ln(tee, pin, 'hole'));  // no line from you to the pin until you tap
+    else if (registered(h) && !onPlay()) f.push(ln(tee, pin, 'hole'));  // no line from you to the pin until you tap
     map.getSource('lines').setData(fc(f));
     // rings reach a little past the tee (or the player, if farther)
     const reach = pin && !setup && S.prefs.rings ? Math.max(tee ? yards(tee, pin) : 0, S.me ? yards(S.me.ll, pin) : 0, 150) + 25 : 0;
@@ -162,6 +162,12 @@ async function readout(quick) {  // quick: distances only (while dragging a mark
   if (!S.me) {
     $('dNum').textContent = Math.round(yards(roundTee(), pin)); $('dLab').textContent = `ティーから${target()}`;
     sub.textContent = S.watch ? '現在地を取得中…' : 'GPSをオンにすると現在地からの距離が出ます'; return;
+  }
+  if (!onPlay()) {  // another hole than the one you are playing: its own length, and the way back
+    const p = playNo(), back = el('button', 'subgo', `${p}番に戻る`), here = el('button', 'subgo', 'ここをプレー中に');
+    back.onclick = () => goHole(p); here.onclick = () => setPlay(N);
+    $('dNum').textContent = Math.round(yards(roundTee(), pin)); $('dLab').textContent = `ティーから${target()}`;
+    sub.append(`プレー中 ${p}番`, back, here); return;
   }
   const y = yards(S.me.ll, pin);
   $('dNum').textContent = Math.round(y); $('dLab').textContent = `${target()}まで`;

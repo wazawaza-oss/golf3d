@@ -27,7 +27,7 @@ The user is a Japanese speaker new to Git: answer in plain Japanese, say what wa
 | `js/tiles.js` | GSI photo/DEM tiles, tile cache, `heights`, `elevAt`, map protocols | tiles, elevation |
 | `js/map.js` | the map, markers (`M`, `TM`, `LM`), pin rings, `camera()`, `set3D()` | camera, 3D, markers |
 | `js/hud.js` | `refresh()` (redraws everything), crosshair, `centerOn`, distance panel `readout()` | top distance panel, what refresh shows |
-| `js/interactions.js` | `placeAt`, measuring marks, hole arrows `goHole`, map buttons (3D/view/me/pin), GPS | taps, pins, GPS, side buttons |
+| `js/interactions.js` | `placeAt`, the hole being played (`playNo`, `onPlay`, `followPlay`, `setPlay`: GPS distance only there), measuring marks, hole arrows `goHole`, map buttons (3D/view/me/pin), GPS | taps, pins, GPS, side buttons |
 | `js/menu.js` | settings sheet: screen stack `mShow`/`openMenu`, `ask`, nines picker, pin reset, undo bar | settings screens, back button |
 | `js/course.js` | course list (`renderLib`: earlier courses, tap to switch), export/import backup, wipe | course switching, backup |
 | `js/cardjson.js` | score card JSON (schemaVersion 1, made by an outside AI): `readCard`, `cardIssues` (warnings), `cardTeeMap`, `applyCard` (上書き / 別のコース; tee/green positions → holes with none, src ai, ok false). No network, no screen | card import rules, mapping |
@@ -58,7 +58,7 @@ localStorage (per browser; Safari and the home-screen app are separate):
 | `golf3d.course` | `{v:2, name, center, nines:[{id, name, holes:[{n, par, hdcp, tee, green, src, ok, yd:{teeId:yards}}×9]}], tees:[{id,name,color}], baseTee, area:{bbox,osm,name}}` — `tee` is the base colour's; older data gets blue/white/red, base white; `hdcp` 1–18 or null (older data: null; phone only, not sent to competitions) |
 | `golf3d.courseDraft` | course registration in progress: `{course, fresh, named}` (older drafts also had `cand`, ignored); removed on 確定 / 下書きを捨てる |
 | `golf3d.course.v1backup` | the old 18-hole course, kept once when migrated |
-| `golf3d.round` | `{pins:{1..18:[lng,lat]}, tees:{1..18:[lng,lat]}, front, back}` (nine ids); `tees` = today's tee moved with 今日のピン位置 (ピン／ティー) (this phone only, never sent) |
+| `golf3d.round` | `{pins:{1..18:[lng,lat]}, tees:{1..18:[lng,lat]}, front, back, play, green}` (nine ids; play = the hole being played 1–18, green = its green was reached; js/interactions.js `followPlay`); `tees` = today's tee moved with 今日のピン位置 (ピン／ティー) (this phone only, never sent) |
 | `golf3d.prefs` | `{elev, rings, ringsAlpha, device, devAdj, gps, n, setupMin, seen, obLater, swipeHint, view, is3D}` (rings: dotted 50Y rings, ringsAlpha 10–100 their strength; device: index in `IPHONES` (js/hud.js) or null = 自動, devAdj: manual px for the bottom edge; seen: time of the first visit (add-to-home card waits for the second); obLater: time 「あとで」 was pressed on the course registration card (hidden for 7 days); swipeHint: the swipe tip on 順位表 / スコア表 was shown; view: tee|top|green and is3D, restored on reload) |
 | `golf3d.score` | solo: `{players:[{id,name}], strokes:{id:[18]}}` |
 | `golf3d.offline` | `{sig, at}` of the course whose tiles were saved |

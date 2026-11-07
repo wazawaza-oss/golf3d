@@ -14,7 +14,7 @@ function placeAt(ll) {
       S.round.tees[N] = ll; saveRound(); S.mode = null;
       toast(`${N}番のティーを置きました（今日のラウンドだけ）`);
       break;
-    case 'me': S.me = { ll, acc: null, src: 'sim' }; S.mode = null; break;
+    case 'me': S.me = { ll, acc: null, src: 'sim' }; S.mode = null; followPlay(); break;
     default: return;
   }
   refresh();
@@ -32,7 +32,7 @@ $('bannerPlace').onclick = () => placeAt(crossLL());
 let tapT = null;
 // the measured path: the marks farthest-first, then the pin. With one mark it starts from your position
 // (when known); with two the marks alone are the path, so there is no line from you
-const tapFromMe = () => !!(S.me && S.tap && S.tap.length === 1);
+const tapFromMe = () => !!(onPlay() && S.tap && S.tap.length === 1);
 const tapPath = pin => S.tap && pin ? (tapFromMe() ? [S.me.ll] : []).concat(S.tap.slice().sort((a, b) => yards(b, pin) - yards(a, pin)), [pin]) : null;
 const tapLine = () => { const p = tapPath(pinLL()); return p && { type: 'Feature', properties: { kind: 'tap' }, geometry: { type: 'LineString', coordinates: p } }; };
 function tapIdle() {
@@ -79,6 +79,32 @@ function goHole(n) {
   camSave = null;  // the new hole gets its own view
   refresh();
   camera(S.view);
+}
+/* the hole being played (S.round.play, 1–18): distances from your position only there; looking at another hole
+   shows that hole's own length (tee → pin), so the holes before and after can be looked at without the GPS getting
+   in the way. It moves on by itself in playing order: once you have been near its green (S.round.green) or entered
+   your score, coming near the next hole's tee makes that the hole being played. ここをプレー中に sets it by hand. */
+const PLAY_GREEN = 40, PLAY_TEE = 50;  // metres
+const playNo = () => S.round.play || N;  // before the first GPS fix: the hole on screen
+const onPlay = () => !!S.me && !inSetup() && N === playNo();
+const playPin = n => S.round.pins[n] || compPin(n) || playHoles()[n - 1].green;
+function setPlay(n) {
+  S.round.play = n; S.round.green = false; saveRound(); refresh();
+  toast(`${n}番をプレー中にしました`);
+}
+function followPlay() {
+  if (!S.me || inSetup()) return;
+  if (!S.round.play) { S.round.play = N; S.round.green = false; saveRound(); }
+  const p = S.round.play, holes = playHoles(), h = holes[p - 1];
+  if (!S.round.green && registered(h) && Math.min(distM(S.me.ll, playPin(p)), distM(S.me.ll, h.green)) <= PLAY_GREEN) { S.round.green = true; saveRound(); }
+  const who = me(), scored = !!who && strokesOf(who)[p - 1] != null;
+  if (!S.round.green && !scored) return;
+  const q = p % ROUND + 1, nh = holes[q - 1];
+  if (!registered(nh)) return;
+  const tees = [S.round.tees[q], nh.tee, ...S.course.tees.map(t => teeLL(nh, t.id, S.course))];
+  if (!tees.some(t => t && distM(S.me.ll, t) <= PLAY_TEE)) return;
+  S.round.play = q; S.round.green = false; saveRound();
+  if (N === p) { goHole(q); toast(`${q}番ホールに進みました`); }
 }
 $('prevHole').onclick = () => goHole(holeNo() - 1);
 $('nextHole').onclick = () => goHole(holeNo() + 1);
@@ -142,7 +168,7 @@ function gpsStart() {
   if (!('geolocation' in navigator)) { toast('この端末では位置情報を使えません'); return; }
   S.watch = navigator.geolocation.watchPosition(p => {
     S.me = { ll: [p.coords.longitude, p.coords.latitude], acc: p.coords.accuracy, src: 'gps' };
-    refresh();
+    followPlay(); refresh();
   }, err => {
     toast(err.code === 1 ? '位置情報が許可されていません。ブラウザの設定で許可してください' : '現在地を取得できませんでした。空の見える場所でお試しください');
     if (err.code === 1) gpsStop();

@@ -19,7 +19,7 @@ $('askNo').onclick = () => $('ask').hidden = true;
 // something to lose when the course or the round's nines change: scores entered or pins placed
 const roundHasData = () => Object.keys(S.round.pins).length > 0 || Object.keys(S.round.tees).length > 0 || Object.values(S.score.strokes).some(a => a && a.some(v => v != null));
 function clearRound() {
-  S.round.pins = {}; S.round.tees = {}; saveRound();
+  S.round.pins = {}; S.round.tees = {}; delete S.round.play; delete S.round.green; saveRound();
   S.score.strokes = {}; saveScore();
 }
 const OFF_KEY = 'golf3d.offline';  // { sig } of the course whose map was last saved to this phone
@@ -176,6 +176,6 @@ $('pinReset').onclick = () => {
   // the organizer's reset also takes back the pins handed out in the competition (undo puts them back)
   const org = comp && comp.role === 'org', prevComp = org ? comp.pins || {} : null;
   const setCompPins = p => { comp.pins = p; saveComp(); fb().then(f => f.D.set(f.D.ref(f.db, cp('pins')), Object.keys(p).length ? p : null)).catch(() => {}); };
-  S.round.pins = {}; S.round.tees = {}; saveRound(); if (org) setCompPins({}); refresh(); renderMenu();  // keep the round's front / back nines
+  S.round.pins = {}; S.round.tees = {}; delete S.round.play; delete S.round.green; saveRound(); if (org) setCompPins({}); refresh(); renderMenu();  // keep the round's front / back nines
   snack('ピンとティーを登録した位置に戻しました', () => { S.round.pins = prev; S.round.tees = prevTees; saveRound(); if (org && comp) setCompPins(prevComp); refresh(); if (!$('menu').hidden) renderMenu(); });
 };
