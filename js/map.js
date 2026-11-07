@@ -83,7 +83,7 @@ map.on('load', () => {
     layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 5.5, 'line-opacity': .5 } });
   map.addLayer({ id: 'lines-tap', type: 'line', source: 'lines', filter: ['==', ['get', 'kind'], 'tap'],
     layout: { 'line-join': 'round' }, paint: { 'line-color': '#ffd84d', 'line-width': 3, 'line-dasharray': [2, 1.6] } });
-  mapReady = true;
+  mapReady = true; lookPaint();  // the chosen line colours (js/look.js)
   refresh();
   if (registered(hole())) { camera(S.view, 0); if (S.prefs.is3D) { set3D(true); refresh(); } }  // as left last time: aimed flat first, then 3D over the hole
   else if (obDue() && !comp) $('onboard').hidden = false;  // a competition's player gets the course from the organizer
