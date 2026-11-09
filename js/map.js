@@ -107,14 +107,34 @@ function camera(view, duration = 900, settle = true) {
   let opt;
   if (view === 'top') opt = { center: lerpLL(t, h.green, .5), bearing: brg, pitch: 0, zoom: flat, offset: mid };
   else if (!pitch3) opt = { center: lerpLL(t, h.green, .5), bearing: view === 'green' ? (brg + 180) % 360 : brg, pitch: 0, zoom: flat, offset: mid };
-  else if (view === 'green') opt = { center: lerpLL(t, h.green, .45), bearing: (brg + 180) % 360, pitch: 62, zoom: base + .35 };
-  else opt = { center: lerpLL(t, h.green, .6), bearing: brg, pitch: 62, zoom: base + .35 };
+  // 3D: the whole hole, tee to pin (and the flag above it), in the same band as the flat views
+  else opt = fitCam({ center: lerpLL(t, h.green, .5), bearing: view === 'green' ? (brg + 180) % 360 : brg, pitch: 60, zoom: base },
+    [t, h.green, pinLL()], { top: top + 22, bottom: low - 14, left: 24, right: (el.clientWidth || innerWidth) - 24 });
   // freezeElevation: MapLibre then reads the ground height again when the move ends; without it the height stays
   // frozen at whatever it was (0 m on a hill course), the camera sits inside the hillside and the view looks hugely zoomed in
   map.easeTo(Object.assign(opt, { duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : duration, freezeElevation: true }));
   // in 3D the ground height under the new view is known only after its elevation tiles load;
   // aim again once they have, otherwise the camera can end up inside the hillside (looks hugely zoomed in)
   if (S.is3D && settle) { const tok = ++camTok; map.once('idle', () => { if (S.is3D && tok === camTok) camera(view, 400, false); }); }
+}
+/* a tilted view where every point lands inside box (screen pixels): with perspective there is no formula, so try the
+   camera, see where the points fall, move and zoom by what is off, a few times; the map is put back before it animates */
+function fitCam(opt, pts, box) {
+  const save = { center: map.getCenter(), zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() };
+  const el = map.getContainer(), W = el.clientWidth || innerWidth, H = el.clientHeight || innerHeight;
+  const bw = box.right - box.left, bh = box.bottom - box.top, bx = (box.left + box.right) / 2, by = (box.top + box.bottom) / 2;
+  const o = Object.assign({}, opt);
+  try {
+    for (let i = 0; i < 5; i++) {
+      map.jumpTo(o);
+      const ps = pts.map(p => map.project(p)), xs = ps.map(p => p.x), ys = ps.map(p => p.y);
+      const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+      const c = map.unproject([W / 2 + (x0 + x1) / 2 - bx, H / 2 + (y0 + y1) / 2 - by]);
+      o.center = [c.lng, c.lat];
+      o.zoom = Math.min(19, Math.max(12, o.zoom + Math.log2(Math.min(bw / Math.max(x1 - x0, 1), bh / Math.max(y1 - y0, 1)) * .96)));
+    }
+  } finally { map.jumpTo(save); }
+  return o;
 }
 /* turn terrain on/off; the camera moves only after the elevation tiles are in, so its height is right */
 function set3D(on) {
