@@ -109,7 +109,7 @@ function camera(view, duration = 900, settle = true) {
   else if (!pitch3) opt = { center: lerpLL(t, h.green, .5), bearing: view === 'green' ? (brg + 180) % 360 : brg, pitch: 0, zoom: flat, offset: mid };
   // 3D: the whole hole, tee to pin (and the flag above it), in the same band as the flat views
   else opt = fitCam({ center: lerpLL(t, h.green, .5), bearing: view === 'green' ? (brg + 180) % 360 : brg, pitch: 60, zoom: base },
-    [t, h.green, pinLL()], { top: top + 22, bottom: low - 14, left: 24, right: (el.clientWidth || innerWidth) - 24 });
+    [t, h.green, pinLL()], { top: top + 8, bottom: low - 14, left: 24, right: (el.clientWidth || innerWidth) - 24 });
   // freezeElevation: MapLibre then reads the ground height again when the move ends; without it the height stays
   // frozen at whatever it was (0 m on a hill course), the camera sits inside the hillside and the view looks hugely zoomed in
   map.easeTo(Object.assign(opt, { duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : duration, freezeElevation: true }));
