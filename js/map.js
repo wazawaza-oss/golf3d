@@ -6,6 +6,7 @@
 const map = new maplibregl.Map({
   container: 'map',
   center: S.course.center || DEFAULT_CENTER, zoom: 16, maxZoom: 19.5, maxPitch: 80,
+  doubleClickZoom: false,  // two quick taps (often by mistake) must not zoom in; pinch still zooms
   attributionControl: false,
   style: {
     version: 8,

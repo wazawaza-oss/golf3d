@@ -9,7 +9,7 @@
      --fixb: how far iOS's "bottom" is from the real screen bottom in the home-screen app (set in js/hud.js) */
   --home:env(safe-area-inset-bottom,0px); --fixb:0px; --sab:calc(var(--home) + var(--fixb));
 }
-html,body{height:100%;margin:0}
+html,body{height:100%;margin:0;touch-action:manipulation}  /* no double-tap page zoom on buttons (iPhone); pinch still works */
 /* home-screen app with black-translucent: the page starts under the status bar and iOS can leave a strip of
    that height empty at the bottom; letting the root reach past it is the usual fix */
 @media (display-mode: standalone){html{min-height:calc(100% + env(safe-area-inset-top,0px))}}
