@@ -3,7 +3,7 @@
     "expiry": {
       ".read": "auth != null",
       "$cid": {
-        ".write": "auth != null && ((!data.exists() && newData.isNumber() && newData.parent().parent().child('comps/' + $cid + '/meta/owner').val() === auth.uid && newData.parent().parent().child('comps/' + $cid + '/meta/expires').val() === newData.val()) || (data.exists() && !newData.exists() && data.val() < now))"
+        ".write": "auth != null && ((!data.exists() && newData.isNumber() && newData.parent().parent().child('comps/' + $cid + '/meta/owner').val() === auth.uid && newData.parent().parent().child('comps/' + $cid + '/meta/expires').val() === newData.val()) || (data.exists() && newData.isNumber() && newData.val() >= data.val() && data.val() > now && root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'org' && newData.parent().parent().child('comps/' + $cid + '/meta/expires').val() === newData.val()) || (data.exists() && !newData.exists() && data.val() < now))"
       }
     },
     "comps": {
@@ -12,7 +12,7 @@
         "meta": {
           ".read": "auth != null && root.child('comps/' + $cid + '/members/' + auth.uid).exists()",
           ".write": "auth != null && ((!data.exists() && $cid.matches(/^[A-Za-z0-9]{10}$/) && newData.child('owner').val() === auth.uid) || (root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'org' && newData.exists() && data.child('expires').val() > now))",
-          ".validate": "newData.hasChildren(['name', 'date', 'owner', 'created', 'expires']) && newData.child('expires').val() <= newData.child('created').val() + 1209600000 && (data.exists() ? newData.child('owner').val() === data.child('owner').val() && newData.child('created').val() === data.child('created').val() && newData.child('expires').val() === data.child('expires').val() : newData.child('created').val() <= now + 60000)",
+          ".validate": "newData.hasChildren(['name', 'date', 'owner', 'created', 'expires']) && newData.child('expires').val() <= newData.child('created').val() + 8640000000 && (data.exists() ? newData.child('owner').val() === data.child('owner').val() && newData.child('created').val() === data.child('created').val() && newData.child('expires').val() >= data.child('expires').val() && (newData.child('expires').val() === data.child('expires').val() || newData.parent().parent().parent().child('expiry/' + $cid).val() === newData.child('expires').val()) : newData.child('created').val() <= now + 60000)",
           "name": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40" },
           "date": { ".validate": "newData.isString() && newData.val().length <= 10" },
           "owner": { ".validate": "newData.isString()" },

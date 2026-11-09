@@ -7,6 +7,7 @@ Object.assign(M_TITLE, { mCompNew: 'コンペを作る', mComp: 'コンペ', mRo
 Object.assign(M_RENDER, { mCompNew: () => renderCompNew(), mComp: () => renderComp(), mRoster: () => renderRoster(), mLinks: () => renderLinks(), mPick: () => comp && renderPick() });
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const compEnded = () => comp && comp.meta && comp.meta.expires < Date.now();
+const fmtDay = t => { const d = new Date(t); return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`; };
 const offlineMsg = '接続できませんでした。電波のある所でもう一度お試しください';
 
 // the 「コンペ」 row on the main settings list
@@ -31,6 +32,7 @@ function renderCompNew() {
   $('cpNeedReg').hidden = r.n > 0;
   $('cpNeedRegT').textContent = `先にコースを登録してください（今は ${r.n} / ${r.all}ホール）。コースがないと距離も順位も出せません。`;
   $('cpCreate').disabled = r.n === 0;
+  $('cpDate').min = today(); $('cpDate').max = compLastDate(Date.now());
 }
 $('cpNewNine').onclick = () => { renderNinePick(); mShow('mNine'); };
 $('cpGoReg').onclick = () => openSetup();
@@ -39,7 +41,7 @@ $('cpCreate').onclick = () => {
   if (!name) { toast('コンペ名を入れてください'); $('cpName').focus(); return; }
   if (!r.n) return;
   const sure = () => ask('作成します。よろしいですか？',
-    `コンペ名：${name.slice(0, 40)}\n日付：${($('cpDate').value || today()).replace(/-/g, '/')}\n回るコース：${localNines().map(x => x.name).join(' → ')}\n作ったコンペは${COMP_DAYS}日間使えて、そのあと自動で消えます（途中で消すことはできません）`,
+    `コンペ名：${name.slice(0, 40)}\n日付：${($('cpDate').value || today()).replace(/-/g, '/')}\n回るコース：${localNines().map(x => x.name).join(' → ')}\nこのコンペは${fmtDay(compExpires($('cpDate').value || today(), Date.now()))}まで使えて、そのあと自動で消えます（途中で消すことはできません）`,
     '作成する', compCreateRun, { go: true });
   if (r.n < r.all) ask('コースが一部しか登録されていません。先に登録しますか？',
     `登録済みは ${r.n} / ${r.all}ホールです。登録していないホールは、参加者の地図に距離が出ません`,
@@ -70,17 +72,37 @@ function renderComp() {
   if (document.activeElement !== $('cpDateE')) $('cpDateE').value = m.date || '';
   $('cpNineV').textContent = localNines().map(x => x.name).join(' → ');
   $('cpRosterV').textContent = `${rosterList().length}人・${teams().length}組`;
-  $('cpNote').textContent = compEnded() ? 'このコンペは期限を過ぎたので、見るだけになっています。' : comp.role === 'org' ? '主催者が配ったコース・パー・ピン位置で、全員の順位を計算します。' : '';
+  $('cpNote').textContent = compEnded() ? `このコンペは期限（${fmtDay(m.expires)}）を過ぎたので、見るだけになっています。`
+    : `${comp.role === 'org' ? '主催者が配ったコース・パー・ピン位置で、全員の順位を計算します。' : ''}このコンペは${fmtDay(m.expires)}まで使えます。`;
+  $('cpAgainG').hidden = !(compEnded() && comp.role === 'org');
+  if (comp.meta && comp.meta.created) $('cpDateE').max = compLastDate(comp.meta.created);
   $('cpLeave').textContent = 'このコンペから抜ける';
   $('cpLeaveNote').textContent = 'このスマホをコンペから外します。コンペ自体と、ほかの人のスコアは消えません。' +
     (comp.role === 'org' ? '主催者に戻るには「主催者用リンク」が必要です。' : 'もう一度リンクを開けば、また参加できます。');
 }
+// a later date also keeps the competition open longer (until 3 days after it); the cleanup index moves with it
 const setMeta = patch => {
-  const meta = Object.assign({}, comp.meta, patch); comp.meta = meta; saveComp();
-  fb().then(f => f.D.set(f.D.ref(f.db, cp('meta')), meta)).catch(() => toast(offlineMsg));
+  const meta = Object.assign({}, comp.meta, patch);
+  if (patch.date && meta.created) meta.expires = Math.max(meta.expires, compExpires(patch.date, meta.created));
+  const longer = meta.expires !== comp.meta.expires, cid = comp.cid;
+  comp.meta = meta; saveComp(); renderComp();
+  fb().then(f => longer ? f.D.update(f.D.ref(f.db), { [`comps/${cid}/meta`]: meta, [`expiry/${cid}`]: meta.expires }) : f.D.set(f.D.ref(f.db, cp('meta')), meta))
+    .catch(() => toast(offlineMsg));
 };
 $('cpNameE').onchange = () => { const v = $('cpNameE').value.trim(); if (v) setMeta({ name: v.slice(0, 40) }); };
 $('cpDateE').onchange = () => { if ($('cpDateE').value) setMeta({ date: $('cpDateE').value }); };
+// an organizer whose competition ran out: a new one with the same name, date, names, teams and leads (scores start empty)
+$('cpAgain').onclick = () => {
+  const old = comp, m = old.meta || {}, n = Object.keys(old.roster || {}).length;
+  const date = m.date && m.date >= today() ? m.date : today();
+  ask('同じ名簿でコンペを作り直しますか？', `コンペ名：${m.name || 'コンペ'}\n日付：${date.replace(/-/g, '/')}\n参加者${n}人・組分け・カート代表をそのまま使います。スコアは引き継ぎません。参加者には新しいリンクを送り直してください`, '作り直す', async () => {
+    toast('作成中…');
+    try {
+      await compCreate((m.name || 'コンペ').slice(0, 40), date, { roster: old.roster, leads: old.leads });
+      renderMenu(); renderComp(); toast('作り直しました。「リンクを送る」から参加者にリンクを送ってください');
+    } catch (e) { toast(offlineMsg); }
+  }, { go: true });
+};
 $('cpNine').onclick = () => { renderNinePick(); mShow('mNine'); };
 $('cpRoster').onclick = () => { renderRoster(); mShow('mRoster'); };
 $('cpLinks').onclick = () => { renderLinks(); mShow('mLinks'); };

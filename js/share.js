@@ -27,7 +27,15 @@ const FB_CONFIG = {
   appId: '1:513780302035:web:155d3e482323ebebf2d426'
 };
 const FB_SDK = 'https://www.gstatic.com/firebasejs/12.4.0/';
-const COMP_DAYS = 7;  // a competition can be changed for a week; after that any app may delete it
+const COMP_DAYS = 7, COMP_AFTER = 3, COMP_MAX = 100;  // days (COMP_MAX: the database rules allow up to 100 days after it is made)
+// a competition stays open a week after it is made, or until 3 days after its date when that is later; after that
+// it is only for looking, and any app may delete it
+function compExpires(date, created) {
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(date || '') ? new Date(date + 'T23:59:59').getTime() : 0;
+  return Math.min(created + COMP_MAX * 864e5 - 6e4, Math.max(created + COMP_DAYS * 864e5, d + COMP_AFTER * 864e5));
+}
+// the latest date that still fits in those 100 days (for the date pickers)
+const compLastDate = created => { const t = new Date(created + (COMP_MAX - COMP_AFTER - 1) * 864e5); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
 const ROLE_NAME = { org: '主催者', player: '参加者' };  // what a link makes you; a team lead is a player the organizer marked
 const B62 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 const rid = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => B62[b % 62]).join('');
@@ -166,8 +174,10 @@ async function compClearRound() {
 /* ---------- create, join, connect, leave ---------- */
 const blankComp = (cid, uid, key, role) => ({ cid, uid, key, role, player: null, meta: null, course: null,
   roster: {}, leads: {}, scores: {}, pins: {}, taken: {}, invites: {}, outbox: {}, dock: null, seen: null });
-async function compCreate(name, date) {
-  const f = await withTimeout(fb(), 15000), cid = rid(10), now = Date.now(), exp = now + COMP_DAYS * 864e5;
+// carry: { roster, leads } of an earlier competition, to make it again with the same names and teams
+async function compCreate(name, date, carry) {
+  if (compOff) compOff();  // making it again: stop following the old one
+  const f = await withTimeout(fb(), 15000), cid = rid(10), now = Date.now(), exp = compExpires(date, now);
   const meta = { name, date, owner: f.uid, created: now, expires: exp };
   await withTimeout(f.D.update(f.D.ref(f.db), {
     [`comps/${cid}/meta`]: meta,
@@ -176,6 +186,10 @@ async function compCreate(name, date) {
   }), 15000);
   comp = blankComp(cid, f.uid, 'owner', 'org'); comp.meta = meta; saveComp();
   await compPublishCourse();
+  if (carry && Object.keys(carry.roster || {}).length) {  // the names go in once this phone is the organizer (the rules read that from the database)
+    comp.roster = carry.roster; comp.leads = carry.leads || {}; saveComp();
+    await withTimeout(f.D.update(f.D.ref(f.db, `comps/${cid}`), { roster: comp.roster, leads: comp.leads }), 15000);
+  }
   compConnect();
 }
 async function compJoin(cid, key, role) {
