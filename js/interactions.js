@@ -49,8 +49,8 @@ function tapDraw(dragging) {
 function tapPaint(dragging) {
   const path = tapPath(pinLL());
   TM.forEach((m, i) => place(m, S.tap && S.tap[i]));
-  LM.forEach((m, i) => {  // a label on every leg once there are two or more
-    const on = path && path.length >= 3 && i < path.length - 1, e = m.getElement();
+  LM.forEach((m, i) => {  // a label beside every leg, also when there is only one (mark → pin)
+    const on = path && path.length >= 2 && i < path.length - 1, e = m.getElement();
     if (on) { const t = `${Math.round(yards(path[i], path[i + 1]))}Y`; if (e.textContent !== t) e.textContent = t; }
     place(m, on ? lerpLL(path[i], path[i + 1], .5) : null);
   });

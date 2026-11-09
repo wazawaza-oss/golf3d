@@ -47,7 +47,7 @@ const TM = [0, 1].map(i => {
   m.getElement().addEventListener('click', e => { e.stopPropagation(); tapIdle(); });  // touching a mark keeps it up
   return m;
 });
-// leg distances shown on the map when there are two marks
+// leg distances shown on the map beside each measured line
 const LM = [0, 1, 2].map(() => new maplibregl.Marker({ element: mkEl('leg'), anchor: 'left', offset: [12, 0] }));
 let numMarkers = [];
 function place(m, ll) { if (ll) { m.setLngLat(ll); if (!m._shown) { m.addTo(map); m._shown = true; } } else if (m._shown) { m.remove(); m._shown = false; } }
