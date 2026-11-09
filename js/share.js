@@ -185,7 +185,10 @@ async function compCreate(name, date, carry) {
     [`expiry/${cid}`]: exp
   }), 15000);
   comp = blankComp(cid, f.uid, 'owner', 'org'); comp.meta = meta; saveComp();
-  await compPublishCourse();
+  if (carry && carry.course) {  // made again: the same course as before, whatever this phone shows now
+    comp.course = carry.course; saveComp();
+    await withTimeout(f.D.set(f.D.ref(f.db, cp('course')), carry.course), 15000);
+  } else await compPublishCourse();
   if (carry && Object.keys(carry.roster || {}).length) {  // the names go in once this phone is the organizer (the rules read that from the database)
     comp.roster = carry.roster; comp.leads = carry.leads || {}; saveComp();
     await withTimeout(f.D.update(f.D.ref(f.db, `comps/${cid}`), { roster: comp.roster, leads: comp.leads }), 15000);

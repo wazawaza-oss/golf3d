@@ -95,10 +95,10 @@ $('cpDateE').onchange = () => { if ($('cpDateE').value) setMeta({ date: $('cpDat
 $('cpAgain').onclick = () => {
   const old = comp, m = old.meta || {}, n = Object.keys(old.roster || {}).length;
   const date = m.date && m.date >= today() ? m.date : today();
-  ask('同じ名簿でコンペを作り直しますか？', `コンペ名：${m.name || 'コンペ'}\n日付：${date.replace(/-/g, '/')}\n参加者${n}人・組分け・カート代表をそのまま使います。スコアは引き継ぎません。参加者には新しいリンクを送り直してください`, '作り直す', async () => {
+  ask('同じ名簿でコンペを作り直しますか？', `コンペ名：${m.name || 'コンペ'}\n日付：${date.replace(/-/g, '/')}\nコース・参加者${n}人・組分け・カート代表をそのまま使います。スコアは引き継ぎません。参加者には新しいリンクを送り直してください`, '作り直す', async () => {
     toast('作成中…');
     try {
-      await compCreate((m.name || 'コンペ').slice(0, 40), date, { roster: old.roster, leads: old.leads });
+      await compCreate((m.name || 'コンペ').slice(0, 40), date, { roster: old.roster, leads: old.leads, course: old.course });
       renderMenu(); renderComp(); toast('作り直しました。「リンクを送る」から参加者にリンクを送ってください');
     } catch (e) { toast(offlineMsg); }
   }, { go: true });
