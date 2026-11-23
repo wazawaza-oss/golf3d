@@ -117,6 +117,7 @@
       <button class="mrow" id="bRings" role="switch" aria-checked="true"><span class="mic" style="background:#0e8a8a"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="2 2.5" aria-hidden="true"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9"/></svg></span><span class="mtx">距離の輪を表示<small>ピンを中心に50ヤードごとの点線</small></span><span class="sw" aria-hidden="true"></span></button>
       <div class="mrow slide" id="ringsRow"><span class="mtx">輪の濃さ</span><input type="range" id="ringsAlpha" min="10" max="100" step="5" aria-label="距離の輪の濃さ"><span class="mval" id="ringsVal"></span></div>
       <button class="mrow" id="goLook"><span class="mic" style="background:#d63c8e"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 22V3" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M8 3l11 4.5L8 12z" fill="#fff"/></svg></span><span class="mtx">ピン・マーク・線のデザイン<small>色や形を変えられます</small></span><span class="chev">›</span></button>
+      <button class="mrow" id="goArt"><span class="mic" style="background:#3f8f3a"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="16" cy="9" r="1.6" fill="#fff"/></svg></span><span class="mtx">マップのデザイン<small>コースの絵を地図に重ねる（対応コースのみ）</small></span><span class="mval" id="mvArt"></span><span class="chev">›</span></button>
     </div>
 
     <div class="grp-t" data-show="solo org">コース</div>
@@ -151,6 +152,7 @@
   </div>
 
   <div class="mbody" id="mLook" hidden><div id="lookBody"></div></div>
+  <div class="mbody" id="mArt" hidden><div id="artBody"></div></div>
 
   <div class="mbody" id="mJump" hidden>
     <div class="grp-t">これまでのコース</div>
@@ -412,6 +414,7 @@
 <script src="js/interactions.js"></script>
 <script src="js/menu.js"></script>
 <script src="js/look.js"></script>
+<script src="js/art.js"></script>
 <script src="js/course.js"></script>
 <script src="js/cardjson.js"></script>
 <script src="js/search.js"></script>

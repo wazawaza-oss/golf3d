@@ -79,6 +79,7 @@ function renderMenu() {
   $('bElev').setAttribute('aria-checked', !!S.prefs.elev);
   $('bRings').setAttribute('aria-checked', !!S.prefs.rings);
   $('mvDevice').textContent = devName();
+  if (typeof artLabel === 'function') $('mvArt').textContent = artCourse() ? artLabel() : 'なし';
   $('ringsRow').hidden = !S.prefs.rings;  // the strength slider only while the rings are shown
   $('ringsAlpha').value = S.prefs.ringsAlpha; $('ringsVal').textContent = `${S.prefs.ringsAlpha}%`;
 }

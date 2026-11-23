@@ -6,7 +6,7 @@
    (Saving "the map on screen" could mean thousands of tiles when zoomed out.) */
 const OFF_MAX = 3000;  // never more tiles than this in one save
 // bytes per tile measured on GSI tiles (Oct 2026): photos ~10 KB (z14+) / ~70 KB (z12–13), elevation ~110 KB
-const offBytes = list => list.reduce((s, t) => s + (t.kind === 'dem' ? 110 : t.z >= 14 ? 11 : 70), 0) * 1024;
+const offBytes = list => list.reduce((s, t) => s + (t.kind === 'art' ? 1000 : t.kind === 'dem' ? 110 : t.z >= 14 ? 11 : 70), 0) * 1024;
 const offMB = list => Math.max(1, Math.round(offBytes(list) / 1048576));
 function offTiles() {
   // in a competition: the organizer's course; otherwise every nine of this phone's course
@@ -19,6 +19,7 @@ function offTiles() {
   const range = (z, fn) => { const x0 = Math.floor(lng2x(w, z)), x1 = Math.floor(lng2x(e, z)), y0 = Math.floor(lat2y(n, z)), y1 = Math.floor(lat2y(s, z)); for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) fn(x, y); };
   for (let z = 12; z <= 18; z++) range(z, (x, y) => list.push({ kind: 'photo', z, x, y }));
   for (let z = 12; z <= 15; z++) range(z, (x, y) => list.push({ kind: 'dem', z, x, y }));
+  artSaveList().forEach(url => list.push({ kind: 'art', url }));  // the course's map designs (js/art.js)
   return { list, fromHoles: true };
 }
 // save the aerial photos and elevation around the course to this phone, after saying how much; progress shows in settings
@@ -38,7 +39,8 @@ async function offSave(list) {
     while (i < list.length) {
       const t = list[i++];
       try {
-        if (t.kind === 'photo') { if (!(await tileBlob(`${GSI}seamlessphoto/${t.z}/${t.x}/${t.y}.jpg`))) fail++; }
+        if (t.kind === 'art') { if (!(await tileBlob(t.url))) fail++; }
+        else if (t.kind === 'photo') { if (!(await tileBlob(`${GSI}seamlessphoto/${t.z}/${t.x}/${t.y}.jpg`))) fail++; }
         else if (!(await heights(t.z, t.x, t.y))) fail++;
       } catch (e) { fail++; }
       const p = Math.floor(++done / list.length * 100);
