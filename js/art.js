@@ -1,22 +1,26 @@
 /* golf3d — art: illustrated map designs laid over the aerial photo, for the few courses that have them
    (settings › 表示 › マップのデザイン). Each design is one picture of the whole course, made in the separate 3D project
-   (Documents/golf-3d/golf-3d-prototype, tools/export-app-art.mjs), placed on the map as an image source by its
-   four corners; it drapes over the 3D terrain like the photo. Outside its rectangle the usual GSI photo shows.
-   The choice is S.prefs.art (missing = 'aerial'); 'off' = the plain GSI photo. The picture is fetched through the
-   tile cache (tileBlob), so once seen — or saved with マップを端末に保存 — it shows with no signal.
+   (Documents/golf-3d/golf-3d-prototype, tools/export-app-art.mjs) and cut into map tiles (XYZ, 256 px, transparent
+   WebP) inside the course's box: art/<course>/<design>/<z>/<x>/<y>.webp. Shown as a raster layer over the photo, so it
+   drapes over the 3D terrain like the photo (one big image source did not: with terrain only part of it was drawn).
+   Outside the box the usual GSI photo shows.
+   The choice is S.prefs.art (missing = 'aerial'); 'off' = the plain GSI photo. Tiles come through the tile cache
+   (tileBlob, protocol golfart://), so once seen — or saved with マップを端末に保存 — they show with no signal.
    Plain scripts loaded in order from index.html (no build step); they share top-level names. */
 "use strict";
 
 const ART_DESIGNS = [
-  ['aerial', '航空写真（標準）', '航空写真をもとに、芝・バンカー・池をくっきり', 'jpg'],
-  ['flat', 'フラット・ミニマル', '色数をしぼった塗り分け。白い破線がティーからグリーンへの道筋', 'jpg'],
-  ['navi', 'ゴルフナビ', '黄色の線が道筋、白丸はグリーン中心まで200・150・100ヤード', 'jpg'],
-  ['pixel', 'ドット絵', 'レトロゲーム風のドット絵', 'png'],
+  ['aerial', '航空写真（標準）', '航空写真をもとに、芝・バンカー・池をくっきり'],
+  ['flat', 'フラット・ミニマル', '色数をしぼった塗り分け。白い破線がティーからグリーンへの道筋'],
+  ['navi', 'ゴルフナビ', '黄色の線が道筋、白丸はグリーン中心まで200・150・100ヤード'],
+  ['pixel', 'ドット絵', 'レトロゲーム風のドット絵'],
 ];
-// courses with designs: the picture's rectangle [west, south, east, north] (WGS84), and where its files are
+// courses with designs: the picture's rectangle [west, south, east, north] (WGS84), its tile zooms, where its files are,
+// and MB per design (for the offline-save estimate); all from art/<course>/tiles.json written by the export
 const ART_COURSES = [
   { id: 'moonlake-tsurumai', name: 'ムーンレイクゴルフクラブ 鶴舞コース', dir: 'art/moonlake-tsurumai/',
-    box: [140.1912432, 35.3046898, 140.2057588, 35.3265022],
+    box: [140.1912432, 35.3046898, 140.2057588, 35.3265022], minzoom: 12, maxzoom: 18,
+    mb: { aerial: 3.1, flat: .3, navi: .9, pixel: .5 },
     credit: 'コース図：地理院タイル（全国最新写真）と GreenOn のコース図をもとに作図／© OpenStreetMap contributors (ODbL)' },
 ];
 const artChoice = () => ART_DESIGNS.some(d => d[0] === S.prefs.art) || S.prefs.art === 'off' ? S.prefs.art : 'aerial';
@@ -29,29 +33,39 @@ function artCourse() {
     return pts.length && inside >= pts.length / 2;
   }) || null;
 }
-const artUrl = (c, id) => c.dir + id + '.' + ART_DESIGNS.find(d => d[0] === id)[3];
+const artTiles = (c, id) => `golfart://${c.id}/${id}/{z}/{x}/{y}`;
+maplibregl.addProtocol('golfart', async (params, ac) => {
+  const [cid, id, z, x, y] = params.url.replace('golfart://', '').split('/'), c = ART_COURSES.find(k => k.id === cid);
+  const b = c && await tileBlob(new URL(`${c.dir}${id}/${z}/${x}/${y}.webp`, location.href).href, ac && ac.signal);
+  if (!b) throw new Error('art tile unavailable');
+  return { data: await b.arrayBuffer() };
+});
 
-let artShown = '', artTok = 0;  // artShown = url on the map now ('' = none)
-async function artSync() {
+let artShown = '';  // tiles on the map now ('' = none)
+function artSync() {
   if (!mapReady) return;
-  const c = artCourse(), id = artChoice(), url = c && id !== 'off' ? artUrl(c, id) : '';
+  const c = artCourse(), id = artChoice(), url = c && id !== 'off' ? artTiles(c, id) : '';
   if (url === artShown) return;
-  artShown = url; const tok = ++artTok;
-  if (!url) { if (map.getLayer('art')) map.removeLayer('art'); if (map.getSource('art')) map.removeSource('art'); return; }
-  const blob = await tileBlob(new URL(url, location.href).href);
-  if (tok !== artTok) return;  // chosen again meanwhile
-  if (!blob) { artShown = ''; toast('マップのデザインを読み込めませんでした。電波の良い場所でもう一度お試しください'); return; }
-  const [w, s, e, n] = c.box, src = URL.createObjectURL(blob), coords = [[w, n], [e, n], [e, s], [w, s]];
-  if (map.getSource('art')) { const old = map.getSource('art'); old.updateImage({ url: src, coordinates: coords }); }
-  else {
-    map.addSource('art', { type: 'image', url: src, coordinates: coords });
-    map.addLayer({ id: 'art', type: 'raster', source: 'art', paint: { 'raster-fade-duration': 0 } }, 'rings');  // over the photo, under every line
-  }
-  map.setPaintProperty('art', 'raster-resampling', id === 'pixel' ? 'nearest' : 'linear');  // dots stay square
-  setTimeout(() => URL.revokeObjectURL(src), 10000);
+  artShown = url;
+  if (map.getLayer('art')) map.removeLayer('art');
+  if (map.getSource('art')) map.removeSource('art');
+  if (!url) return;
+  map.addSource('art', { type: 'raster', tiles: [url], tileSize: 256, bounds: c.box, minzoom: c.minzoom, maxzoom: c.maxzoom });
+  map.addLayer({ id: 'art', type: 'raster', source: 'art',
+    paint: { 'raster-fade-duration': 0, 'raster-resampling': id === 'pixel' ? 'nearest' : 'linear' } }, 'rings');  // over the photo, under every line
 }
-// the designs of the course on screen, for マップを端末に保存 (all of them, so switching works with no signal too)
-const artSaveList = () => { const c = artCourse(); return c ? ART_DESIGNS.map(d => new URL(artUrl(c, d[0]), location.href).href) : []; };
+// the tiles of every design of the course on screen, for マップを端末に保存 (all of them, so switching works with no signal too)
+function artSaveList() {
+  const c = artCourse(); if (!c) return [];
+  const [w, s, e, n] = c.box, out = [];
+  for (let z = c.minzoom; z <= c.maxzoom; z++) {
+    const x0 = Math.floor(lng2x(w, z)), x1 = Math.floor(lng2x(e, z)), y0 = Math.floor(lat2y(n, z)), y1 = Math.floor(lat2y(s, z));
+    for (const d of ART_DESIGNS) for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++)
+      out.push(new URL(`${c.dir}${d[0]}/${z}/${x}/${y}.webp`, location.href).href);
+  }
+  return out;
+}
+const artSaveMB = () => { const c = artCourse(); return c ? Object.values(c.mb).reduce((a, b) => a + b, 0) : 0; };
 
 /* ---------- the settings screen ---------- */
 Object.assign(M_TITLE, { mArt: 'マップのデザイン' });

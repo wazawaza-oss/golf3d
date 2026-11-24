@@ -6,8 +6,8 @@
    (Saving "the map on screen" could mean thousands of tiles when zoomed out.) */
 const OFF_MAX = 3000;  // never more tiles than this in one save
 // bytes per tile measured on GSI tiles (Oct 2026): photos ~10 KB (z14+) / ~70 KB (z12–13), elevation ~110 KB
-const offBytes = list => list.reduce((s, t) => s + (t.kind === 'art' ? 1000 : t.kind === 'dem' ? 110 : t.z >= 14 ? 11 : 70), 0) * 1024;
-const offMB = list => Math.max(1, Math.round(offBytes(list) / 1048576));
+const offBytes = list => list.reduce((s, t) => s + (t.kind === 'art' ? 0 : t.kind === 'dem' ? 110 : t.z >= 14 ? 11 : 70), 0) * 1024;
+const offMB = list => Math.max(1, Math.round(offBytes(list) / 1048576 + (list.some(t => t.kind === 'art') ? artSaveMB() : 0)));  // map designs: their real size (js/art.js)
 function offTiles() {
   // in a competition: the organizer's course; otherwise every nine of this phone's course
   const pts = []; (comp ? playHoles() : allHoles()).forEach(h => { if (h.tee) pts.push(h.tee); if (h.green) pts.push(h.green); });
@@ -28,7 +28,7 @@ function offSaveRun() {
   const { list } = offTiles();
   if (!list.length) { snack('先にコースを登録してください。登録したホールの周りを保存します', () => openSetup(), '登録する'); return; }
   if (list.length > OFF_MAX) { toast(`範囲が広すぎます（${list.length}枚）。ホールの位置が離れすぎていないか、コース登録を確かめてください`); return; }
-  ask('マップを端末に保存しますか？', `航空写真と高低差のデータ ${list.length}枚、約${offMB(list)}MBを通信します。Wi-Fiのある所がおすすめです。保存済みの分は通信しません`,
+  ask('マップを端末に保存しますか？', `${list.some(t => t.kind === 'art') ? '航空写真・高低差・マップのデザイン' : '航空写真と高低差'}のデータ ${list.length}枚、約${offMB(list)}MBを通信します。Wi-Fiのある所がおすすめです。保存済みの分は通信しません`,
     '保存する', () => offSave(list), { go: true });
 }
 async function offSave(list) {
