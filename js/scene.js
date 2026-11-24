@@ -7,8 +7,8 @@
    The colour follows the hole's own shape (the "land", built once per round from the aerial photo, z17 ≈ 1 m a pixel):
    tree cover is found in the photo (darker, greener and rougher than turf), each hole's line of play is the way from tee
    to green that keeps to open ground (so it bends round a dogleg), and every spot belongs to the hole it is nearest to,
-   walking — crossing trees counts as a long way. A hole's area is its open ground and a band of the trees round it, up to
-   where a neighbour's begins. Until the land is ready (or with fading off for trees only) a capsule tee → green is used.
+   walking — crossing trees counts as a long way. A hole's area is its own ground within SPAN m either side of its line of
+   play (so the trees round it show too), up to where a neighbour's begins, and only a little behind the tee. Until the land is ready (or with fading off for trees only) a capsule tee → green is used.
    Trees are drawn from the same tree cover as low-poly 3D trees (fill-extrusion, two stacked six-sided blocks), only in
    3D. Each tree knows the hole whose area it stands in; the ones by the hole on screen are green, the rest grey.
    Plain scripts loaded in order from index.html (no build step); they share top-level names. */
@@ -71,8 +71,8 @@ function roundCalc() {
 /* ---------- the land: tree cover and each hole's area, on a grid of about 3 m ---------- */
 const LZ = 17, LC = 3;          // the photo zoom read, and the grid's cell in its pixels (≈ 2.9 m)
 const TREE_W = 4;               // walking through trees counts as this many times the distance
-const REACH = 95;               // how far (walking) from its line of play a hole's area goes, in metres
-const BAND = 22;                // and the band round that, in metres
+const SPAN = 62;                // how far a hole's area goes either side of its line of play, in metres
+const BEHIND = 25;              // and behind its tee
 let land = null, landKey = '', landTok = 0, landBusy = false;
 function boxMean(src, W, H, r) {
   const tmp = new Float32Array(W * H), out = new Float32Array(W * H), n = (2 * r + 1) ** 2;
@@ -157,7 +157,7 @@ async function landBuild() {
   const s = 2 ** LZ, m1 = mpp(LZ, R.lat), wide = R.holes.filter(o => o.n).flatMap(o => wideCaps(o.tee, o.green));
   // the grid: round all the round's holes, with room for their trees (in photo pixels at LZ)
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-  wide.forEach(c => { const pad = (c.r + REACH) / m1; [c.a, c.b].forEach(p => { const fx = lng2x(p[0], LZ) * 256, fy = lat2y(p[1], LZ) * 256;
+  wide.forEach(c => { const pad = (c.r + SPAN) / m1; [c.a, c.b].forEach(p => { const fx = lng2x(p[0], LZ) * 256, fy = lat2y(p[1], LZ) * 256;
     x0 = Math.min(x0, fx - pad); x1 = Math.max(x1, fx + pad); y0 = Math.min(y0, fy - pad); y1 = Math.max(y1, fy + pad); }); });
   x0 = Math.floor(x0 / LC) * LC; y0 = Math.floor(y0 / LC) * LC;
   const W = Math.ceil((x1 - x0) / LC), H = Math.ceil((y1 - y0) / LC);
@@ -165,7 +165,7 @@ async function landBuild() {
   const L = { x0, y0, W, H, cm: LC * m1, cov: new Uint8Array(W * H), tree: new Uint8Array(W * H),
     cx: lng => (lng2x(lng, LZ) * 256 - x0) / LC, cy: lat => (lat2y(lat, LZ) * 256 - y0) / LC };
   // tree cover from the photo tiles that touch the holes' wide areas (through the tile cache: saved maps work with no signal)
-  const need = [], reach = wide.map(c => Object.assign({}, c, { r: c.r + REACH }));
+  const need = [], reach = wide.map(c => Object.assign({}, c, { r: c.r + SPAN }));
   for (let tx = Math.floor(x0 / 256); tx <= Math.floor(x1 / 256); tx++) for (let ty = Math.floor(y0 / 256); ty <= Math.floor(y1 / 256); ty++)
     if (nearest(128, 128, capPx(reach, R.lat, LZ, tx, ty)) < 182) need.push([tx, ty]);
   const [, g] = canvasCtx(true), sum = new Float32Array(W * H);
@@ -186,33 +186,42 @@ async function landBuild() {
   for (let i = 0; i < W * H; i++) { L.cov[i] = Math.min(255, Math.round(sum[i] / (LC * LC) * 255)); L.tree[i] = L.cov[i] >= 128 ? 1 : 0; }
   await new Promise(r => setTimeout(r));
   // each hole's line of play: the cheapest walk tee → green inside its wide area (round a dogleg, keeping to open ground)
-  const seeds = [], labels = [];
+  const seeds = [], labels = [], pSeeds = [], pLabels = [], back = {};
   const disc = (ll, rM, lab) => { const cx = L.cx(ll[0]), cy = L.cy(ll[1]), r = rM / L.cm;
     for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++)
       if (x >= 0 && y >= 0 && x < W && y < H && Math.hypot(x - cx, y - cy) <= r) { seeds.push(y * W + x); labels.push(lab); } };
+  const inGrid = ll => { const x = Math.round(L.cx(ll[0])), y = Math.round(L.cy(ll[1])); return x >= 0 && y >= 0 && x < W && y < H ? y * W + x : -1; };
   for (const o of R.holes) {
     if (tok !== landTok) return;
-    const lab = o.n || 100, tc = Math.round(L.cy(o.tee[1])) * W + Math.round(L.cx(o.tee[0])), gc = Math.round(L.cy(o.green[1])) * W + Math.round(L.cx(o.green[0]));
-    const inT = Math.round(L.cx(o.tee[0])) >= 0 && Math.round(L.cx(o.tee[0])) < W && Math.round(L.cy(o.tee[1])) >= 0 && Math.round(L.cy(o.tee[1])) < H;
-    const inG = Math.round(L.cx(o.green[0])) >= 0 && Math.round(L.cx(o.green[0])) < W && Math.round(L.cy(o.green[1])) >= 0 && Math.round(L.cy(o.green[1])) < H;
-    if (!inT && !inG) continue;  // another nine's hole, away from the round
-    if (inT && inG) {
-      const area = capCells(L, wideCaps(o.tee, o.green)), w = walk(L, [tc], [1], j => area[j], Infinity, gc);
-      for (let i = gc; i >= 0; i = w.from[i]) { seeds.push(i); labels.push(lab); }
+    const lab = o.n || 100, tc = inGrid(o.tee), gc = inGrid(o.green);
+    if (tc < 0 && gc < 0) continue;  // another nine's hole, away from the round
+    if (tc >= 0 && gc >= 0) {
+      const area = capCells(L, wideCaps(o.tee, o.green)), w = walk(L, [tc], [1], j => area[j], Infinity, gc), path = [];
+      for (let i = gc; i >= 0; i = w.from[i]) path.push(i);
+      path.forEach(i => { seeds.push(i); labels.push(lab); pSeeds.push(i); pLabels.push(lab); });
+      // the way the hole starts (tee → a point about 40 m on): behind the tee its area stays short
+      const a = path[Math.max(0, path.length - 1 - Math.round(40 / L.cm))];
+      const tx = tc % W, ty = (tc - tx) / W, ax = a % W, ay = (a - ax) / W, l = Math.hypot(ax - tx, ay - ty) || 1;
+      if (lab < 100) back[lab] = { tx, ty, ux: (ax - tx) / l, uy: (ay - ty) / l };
     }
     disc(o.green, 16, lab); disc(o.tee, 8, lab);
     await new Promise(r => setTimeout(r));
   }
   if (tok !== landTok) return;
-  // whose area: walking from all the lines of play at once, each spot goes to the hole it is reached from first
-  const all = walk(L, seeds, labels, () => true, REACH + BAND * TREE_W);
-  // a hole's area: what it reaches (open ground, and trees just by it), then a band round that (BAND m, through trees
-  // too) so the trees round the hole show, never past where a neighbour's ground begins
-  const s0 = [], l0 = [];
-  for (let i = 0; i < W * H; i++) if (all.cost[i] <= REACH) { s0.push(i); l0.push(all.own[i]); }
-  const band = walk(L, s0, l0, (j, lab) => all.own[j] === lab, BAND, undefined, 1);
+  // whose ground: walking from all the lines of play at once (trees count as a long way), each spot goes to the hole
+  // it is reached from first
+  const all = walk(L, seeds, labels, () => true, SPAN * TREE_W);
+  // a hole's area: its own ground within SPAN m of its line of play (so the trees on both sides show), and only a
+  // little behind the tee
+  const near = walk(L, pSeeds, pLabels, (j, lab) => all.own[j] === lab, SPAN, undefined, 1);
   L.area = new Uint8Array(W * H);
-  for (let i = 0; i < W * H; i++) if (band.cost[i] <= BAND && band.own[i] < 100) L.area[i] = band.own[i];
+  for (let i = 0; i < W * H; i++) {
+    const lab = near.own[i]; if (near.cost[i] > SPAN || !lab || lab >= 100) continue;
+    const b = back[lab];
+    if (b) { const x = i % W, y = (i - x) / W, dx = x - b.tx, dy = y - b.ty;
+      if (dx * b.ux + dy * b.uy < 0 && Math.hypot(dx, dy) * L.cm > BEHIND) continue; }
+    L.area[i] = lab;
+  }
   landBusy = false; land = L; landKey = key;
   if (focus) { focusMask(); retile(); }
   if (treeKey !== roundKey) treeKey = '';
