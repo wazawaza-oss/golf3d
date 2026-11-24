@@ -113,6 +113,12 @@ maplibregl.addProtocol('gsiphoto', async (params, ac) => {
 maplibregl.addProtocol('gsidem', async (params) => {
   const [z, x, y] = parseZXY(params.url);
   const h = (await heights(z, x, y)) || new Float32Array(256 * 256);
-  return { data: await pixelsToPng(encodeRgb(h, new Uint8ClampedArray(256 * 256 * 4))) };
+  const px = encodeRgb(h, new Uint8ClampedArray(256 * 256 * 4));
+  // handed over as a bitmap: no PNG encode here and no decode in MapLibre (that work, on the main thread, made
+  // pinching and turning in 3D stutter while new ground loaded). PNG only where createImageBitmap is missing.
+  if (typeof createImageBitmap === 'function') {
+    try { return { data: await createImageBitmap(new ImageData(px, 256, 256), { premultiplyAlpha: 'none', colorSpaceConversion: 'none' }) }; } catch (e) {}
+  }
+  return { data: await pixelsToPng(px) };
 });
 

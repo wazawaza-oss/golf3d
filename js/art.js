@@ -12,7 +12,7 @@
 const ART_DESIGNS = [
   ['aerial', '航空写真（標準）', '航空写真をもとに、芝・バンカー・池をくっきり'],
   ['flat', 'フラット・ミニマル', '色数をしぼった塗り分け。白い破線がティーからグリーンへの道筋'],
-  ['navi', 'ゴルフナビ', '黄色の線が道筋、白丸はグリーン中心まで200・150・100ヤード'],
+  ['navi', 'ゴルフナビ', 'ナビ画面のような明るい塗り分け'],
   ['pixel', 'ドット絵', 'レトロゲーム風のドット絵'],
 ];
 // courses with designs: the picture's rectangle [west, south, east, north] (WGS84), its tile zooms, where its files are,
@@ -20,7 +20,8 @@ const ART_DESIGNS = [
 const ART_COURSES = [
   { id: 'moonlake-tsurumai', name: 'ムーンレイクゴルフクラブ 鶴舞コース', dir: 'art/moonlake-tsurumai/',
     box: [140.1912432, 35.3046898, 140.2057588, 35.3265022], minzoom: 12, maxzoom: 18,
-    mb: { aerial: 3.1, flat: .3, navi: .9, pixel: .5 },
+    mb: { aerial: 3.1, flat: .3, navi: .8, pixel: .5 },
+    ver: { navi: 2 },  // bump when a design's tiles are re-made: the tile cache keeps files by address, so old ones would stay
     credit: 'コース図：地理院タイル（全国最新写真）と GreenOn のコース図をもとに作図／© OpenStreetMap contributors (ODbL)' },
 ];
 const artChoice = () => ART_DESIGNS.some(d => d[0] === S.prefs.art) || S.prefs.art === 'off' ? S.prefs.art : 'aerial';
@@ -34,9 +35,10 @@ function artCourse() {
   }) || null;
 }
 const artTiles = (c, id) => `golfart://${c.id}/${id}/{z}/{x}/{y}`;
+const artFile = (c, id, z, x, y) => new URL(`${c.dir}${id}/${z}/${x}/${y}.webp${c.ver && c.ver[id] ? '?v=' + c.ver[id] : ''}`, location.href).href;
 maplibregl.addProtocol('golfart', async (params, ac) => {
   const [cid, id, z, x, y] = params.url.replace('golfart://', '').split('/'), c = ART_COURSES.find(k => k.id === cid);
-  const b = c && await tileBlob(new URL(`${c.dir}${id}/${z}/${x}/${y}.webp`, location.href).href, ac && ac.signal);
+  const b = c && await tileBlob(artFile(c, id, z, x, y), ac && ac.signal);
   if (!b) throw new Error('art tile unavailable');
   return { data: await b.arrayBuffer() };
 });
@@ -61,7 +63,7 @@ function artSaveList() {
   for (let z = c.minzoom; z <= c.maxzoom; z++) {
     const x0 = Math.floor(lng2x(w, z)), x1 = Math.floor(lng2x(e, z)), y0 = Math.floor(lat2y(n, z)), y1 = Math.floor(lat2y(s, z));
     for (const d of ART_DESIGNS) for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++)
-      out.push(new URL(`${c.dir}${d[0]}/${z}/${x}/${y}.webp`, location.href).href);
+      out.push(artFile(c, d[0], z, x, y));
   }
   return out;
 }

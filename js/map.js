@@ -6,6 +6,9 @@
 const map = new maplibregl.Map({
   container: 'map',
   center: S.course.center || DEFAULT_CENTER, zoom: 16, maxZoom: 19.5, maxPitch: 80,
+  // drawn at 2x at most: iPhones are 3x, and 3x of the photo, the design and the 3D ground is over twice the pixels
+  // for a picture the eye can't tell apart (the tiles have no 3x detail) — the GPU then keeps up when pinching and turning
+  pixelRatio: Math.min(devicePixelRatio || 1, 2),
   doubleClickZoom: false,  // two quick taps (often by mistake) must not zoom in; pinch still zooms
   attributionControl: false,
   style: {
@@ -137,10 +140,12 @@ function fitCam(opt, pts, box) {
   } finally { map.jumpTo(save); }
   return o;
 }
+// how much the 3D ground is stretched up and down: S.prefs.exag (0.5–3, missing = 1 = true height); only the look, never the distances
+const exag = () => { const v = +S.prefs.exag; return v >= .5 && v <= 3 ? v : 1; };
 /* turn terrain on/off; the camera moves only after the elevation tiles are in, so its height is right */
 function set3D(on) {
   S.is3D = on; camTok++;
-  map.setTerrain(on ? { source: 'dem', exaggeration: 1 } : null);
+  map.setTerrain(on ? { source: 'dem', exaggeration: exag() } : null);
   const aim = () => {
     if (S.is3D !== on) return;
     if (registered(hole()) && !(S.mode && S.mode.startsWith('setup'))) camera(S.view, 900);  // and aim once more when the ground is in

@@ -82,6 +82,7 @@ function renderMenu() {
   if (typeof artLabel === 'function') $('mvArt').textContent = artCourse() ? artLabel() : 'なし';
   $('ringsRow').hidden = !S.prefs.rings;  // the strength slider only while the rings are shown
   $('ringsAlpha').value = S.prefs.ringsAlpha; $('ringsVal').textContent = `${S.prefs.ringsAlpha}%`;
+  $('exag').value = exag(); $('exagVal').textContent = `×${exag().toFixed(1)}`;
 }
 $('bMenu').onclick = () => openMenu();
 $('menuClose').onclick = () => {
@@ -163,6 +164,13 @@ $('devAdj').onchange = () => savePrefs();
 $('goDevice').onclick = () => { renderDevice(); mShow('mDevice'); };
 $('bRings').onclick =() => { S.prefs.rings = !S.prefs.rings; savePrefs(); refresh(); renderMenu(); };
 // the map behind the sheet follows the slider as it moves; saved when the finger lifts
+$('exag').oninput = () => {
+  const v = Math.round(+$('exag').value * 10) / 10;
+  if (v === 1) delete S.prefs.exag; else S.prefs.exag = v;
+  $('exagVal').textContent = `×${v.toFixed(1)}`;
+  if (S.is3D && mapReady) map.setTerrain({ source: 'dem', exaggeration: v });
+};
+$('exag').onchange = () => savePrefs();
 $('ringsAlpha').oninput = () => { S.prefs.ringsAlpha = +$('ringsAlpha').value; $('ringsVal').textContent = `${S.prefs.ringsAlpha}%`; ringsPaint(); };
 $('ringsAlpha').onchange = () => savePrefs();
 // undo bar: a few seconds to take back the last action
