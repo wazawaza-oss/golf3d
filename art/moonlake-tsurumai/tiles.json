@@ -10,19 +10,19 @@
  "designs": {
   "aerial": {
    "tiles": 329,
-   "bytes": 3220368
+   "bytes": 3219296
   },
   "flat": {
    "tiles": 329,
-   "bytes": 325786
+   "bytes": 324064
   },
   "navi": {
    "tiles": 329,
-   "bytes": 865884
+   "bytes": 864242
   },
   "pixel": {
    "tiles": 329,
-   "bytes": 486300
+   "bytes": 485934
   }
  }
 }

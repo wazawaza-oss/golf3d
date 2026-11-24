@@ -29,6 +29,10 @@ const mapLoaded = () => $('mapLoading').hidden = true;
 map.once('idle', mapLoaded); setTimeout(mapLoaded, 20000);
 // no attribution badge on the map; the GSI credit is shown in the menu sheet instead
 map.touchZoomRotate.enableRotation();
+// markers always at full strength. In 3D MapLibre (4.7) fades a marker to 0.2 when it thinks the ground hides it, and on a
+// hill course the pin, T, marks and yardages sat "under" the ground and went pale; that check also reads the GPU depth
+// buffer for every marker as the map moves, which stalls a phone mid-gesture. A private method, so tied to the pinned 4.7.1.
+maplibregl.Marker.prototype._updateOpacity = function () { if (this._element.style.opacity !== this._opacity) this._element.style.opacity = this._opacity; };
 
 const mkEl = (cls, html) => { const d = document.createElement('div'); d.className = 'mk ' + cls; if (html) d.textContent = html; return d; };
 const M = {
@@ -146,6 +150,7 @@ const exag = () => { const v = +S.prefs.exag; return v >= .5 && v <= 3 ? v : 1; 
 function set3D(on) {
   S.is3D = on; camTok++;
   map.setTerrain(on ? { source: 'dem', exaggeration: exag() } : null);
+  lookPaint();  // line widths differ in 3D
   const aim = () => {
     if (S.is3D !== on) return;
     if (registered(hole()) && !(S.mode && S.mode.startsWith('setup'))) camera(S.view, 900);  // and aim once more when the ground is in

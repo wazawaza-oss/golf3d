@@ -37,10 +37,13 @@ function applyLook() {
 function lookPaint() {
   if (!mapReady) return;
   const L = look(), set = (id, k, v) => map.setPaintProperty(id, k, v);
-  set('lines-tap', 'line-color', L.tapColor); set('lines-tap', 'line-width', 3 * LOOK_W[L.tapWidth]);
+  // in 3D the lines are drawn into the ground's texture and come out thinner and paler, so they are drawn wider there
+  const k = S.is3D ? 1.6 : 1;
+  set('lines-tap', 'line-color', L.tapColor); set('lines-tap', 'line-width', 3 * LOOK_W[L.tapWidth] * k);
   set('lines-tap', 'line-dasharray', lookDash(L.tapDash, [2, 1.6]) || undefined);
-  set('lines-case', 'line-width', 5.5 * LOOK_W[L.tapWidth]);
-  set('lines-dash', 'line-color', L.holeColor); set('lines-dash', 'line-width', 2 * LOOK_W[L.holeWidth]);
+  set('lines-case', 'line-width', 5.5 * LOOK_W[L.tapWidth] * k); set('lines-case', 'line-opacity', S.is3D ? .7 : .5);
+  set('lines-dash', 'line-color', L.holeColor); set('lines-dash', 'line-width', 2 * LOOK_W[L.holeWidth] * k);
+  set('lines-dash', 'line-opacity', S.is3D ? .95 : .8);
   set('lines-dash', 'line-dasharray', lookDash(L.holeDash, [2, 2]) || undefined);
 }
 applyLook();

@@ -366,7 +366,7 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 .lseg button{flex:1;min-width:0;min-height:36px;border-radius:8px;font-size:13.5px;font-weight:800;color:#3a4350;background:none;border:0;white-space:nowrap}
 .lseg button[aria-pressed="true"]{background:#fff;color:#0b5cad;box-shadow:0 1px 3px rgba(0,0,0,.15)}
 /* leg distance between two marks: small dark pill beside the line */
-.mk.leg{font:700 12px/1 system-ui,sans-serif;color:#fff;background:rgba(10,19,34,.45);border:1px solid rgba(255,255,255,.3);border-radius:9px;padding:3px 7px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.mk.leg{font:700 12px/1 system-ui,sans-serif;color:#fff;background:rgba(10,19,34,.62);border:1px solid rgba(255,255,255,.3);border-radius:9px;padding:3px 7px;white-space:nowrap;font-variant-numeric:tabular-nums}
 /* course registration guide: green / base tee (draggable, big enough for a finger), other colours' estimates */
 .mk.gg,.mk.gt{width:34px;height:34px;box-sizing:border-box;border-radius:50%;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.55);font:900 15px/28px system-ui,sans-serif;text-align:center;pointer-events:auto;cursor:grab;touch-action:none;z-index:3}
 .mk.gg{background:#1f9d48;color:#fff}

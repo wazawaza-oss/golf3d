@@ -21,7 +21,7 @@ const ART_COURSES = [
   { id: 'moonlake-tsurumai', name: 'ムーンレイクゴルフクラブ 鶴舞コース', dir: 'art/moonlake-tsurumai/',
     box: [140.1912432, 35.3046898, 140.2057588, 35.3265022], minzoom: 12, maxzoom: 18,
     mb: { aerial: 3.1, flat: .3, navi: .8, pixel: .5 },
-    ver: { navi: 2 },  // bump when a design's tiles are re-made: the tile cache keeps files by address, so old ones would stay
+    ver: { aerial: 2, flat: 2, navi: 3, pixel: 2 },  // bump when a design's tiles are re-made: the tile cache keeps files by address, so old ones would stay
     credit: 'コース図：地理院タイル（全国最新写真）と GreenOn のコース図をもとに作図／© OpenStreetMap contributors (ODbL)' },
 ];
 const artChoice = () => ART_DESIGNS.some(d => d[0] === S.prefs.art) || S.prefs.art === 'off' ? S.prefs.art : 'aerial';
