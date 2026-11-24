@@ -39,9 +39,14 @@ function applyRoles() {
   document.querySelectorAll('[data-show]').forEach(e => { e.hidden = !e.dataset.show.split(' ').includes(roleKind()); });
 }
 // a small label under the distance panel: as whom, and which competition
+const BADGE_GRACE = 6000;  // ms after opening
+setTimeout(() => { if (typeof comp !== 'undefined' && comp) renderBadge(); }, BADGE_GRACE + 100);
 function renderBadge() {
   const b = $('roleBadge'); b.hidden = !comp; if (!comp) return;
   const r = comp.player && (comp.roster || {})[comp.player];
-  b.textContent = `${roleLabel()}${r ? ' ' + r.name : ''}${comp.meta && comp.meta.name ? ' ・ ' + comp.meta.name : ''}${compLive ? '' : ' ・ オフライン'}`;
-  b.classList.toggle('off', !compLive);
+  // offline goes first (the badge is cut with … when long), with how many scores wait to be sent
+  // (not in the first seconds after opening, while it is still connecting: that would flash 「オフライン」 every time)
+  const wait = Object.keys(comp.outbox || {}).length, off = !compLive && performance.now() > BADGE_GRACE;
+  b.textContent = `${off ? `オフライン${wait ? `・未送信${wait}件` : ''} ｜ ` : ''}${roleLabel()}${r ? ' ' + r.name : ''}${comp.meta && comp.meta.name ? ' ・ ' + comp.meta.name : ''}`;
+  b.classList.toggle('off', off);
 }

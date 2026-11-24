@@ -3,7 +3,8 @@
    Fading follows the hole on screen (hole(): on hole 11 only hole 11 keeps its colour; the other holes, the other nines
    and the golf club next door turn grey). It is done on each map tile as it arrives (photo and map design both, through
    their protocols): round the hole, tee → green, the tile keeps its colour; farther out it turns grey and lighter, with a
-   soft edge. Tile addresses carry the hole's key, so the map loads its tiles again when the hole changes.
+   soft edge. When the hole changes the tiles on screen are loaded again in place (the old ones stay until the new ones
+   are in), so there is no blank flash.
    Trees are found once per round in the aerial photo (z17, about 1 m a pixel: tree cover is darker, greener and rougher
    than turf), over the area of all the round's holes, and drawn as low-poly 3D trees (fill-extrusion, two stacked
    six-sided blocks) only in 3D. Each tree knows which holes it stands by; the ones by the hole on screen are green,
@@ -91,8 +92,6 @@ async function tileOut(blob, z, x, y) {
   const f = await fadeTile(blob, z, x, y);
   return { data: f || await blob.arrayBuffer() };
 }
-// tile addresses carry the hole, so the map loads them again when it changes
-const fadeQ = () => focus ? '?f=' + focusKey : '';
 
 /* ---------- trees ---------- */
 const TREE_Z = 17, TREE_STEP = 8;  // look at z17 photo tiles; one tree every 8 m at most (the photo's pixels ≈ 1 m)
@@ -186,14 +185,18 @@ function treesShow() {
 }
 
 /* ---------- keeping it in step with the hole and the round ---------- */
-let photoQ = '';  // the photo's tile addresses end in this now
+// the photo and design tiles drawn now were faded for this hole ('' = none)
+let tilesFor = '';
+// MapLibre's own reload (a private part of the pinned 4.7.1): keeps each tile on screen until its new one is in;
+// setTiles instead dropped them all at once
+const reloadTiles = id => { const sc = map.style && map.style.sourceCaches && map.style.sourceCaches[id]; if (sc) sc.reload(); };
 function sceneSync() {
   const f = focusCalc(), fk = f ? keyOf([f.n, f.caps.map(c => [c.a, c.b])]) : '';
   if (fk !== focusKey) { focus = f; focusKey = fk; }
   const r = roundCalc(), rk = r ? keyOf(r.caps.map(c => [c.a, c.b])) : '';
   if (rk !== roundKey) { round = r; roundKey = rk; treeTok++; treeBusy = false; treeKey = ''; if (mapReady && map.getSource('trees')) map.getSource('trees').setData(fc([])); }
   if (!mapReady) return;
-  if (fadeQ() !== photoQ) { photoQ = fadeQ(); map.getSource('photo').setTiles([`gsiphoto://{z}/{x}/{y}${photoQ}`]); }
+  if (focusKey !== tilesFor) { tilesFor = focusKey; reloadTiles('photo'); reloadTiles('art'); }
   treesShow();
 }
 map.on('load', () => {

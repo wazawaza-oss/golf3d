@@ -102,7 +102,9 @@ function renderDock() {
   const p = me(), i = N - 1, hp = playHoles()[i].par, v = p ? strokesOf(p)[i] : null, many = comp && roleKind() !== 'player';
   $('dkMinus').disabled = $('dkPlus').disabled = !p;
   $('dkVal').className = 'dv ' + scoreCls(v, hp) + (many ? ' who' : '');
-  $('dkHole').textContent = !p ? '名前を選んでください' : comp ? `${p.name}${many ? '▸' : ''}・${N}番 P${hp}` : `${N}番 Par ${hp}`;
+  // in a competition: whose score it is (the hole and par are in the panel at the top; with both, a long name pushed them off)
+  $('dkHole').textContent = !p ? '名前を選んでください' : comp ? `${p.name}${many ? ' ▸' : ''}` : `${N}番 Par ${hp}`;
+  if (comp) renderBadge();  // the count of scores not sent yet
   $('dkNum').textContent = v == null ? '—' : v;
   $('dkTerm').textContent = v == null ? '未入力' : termOf(v, hp);
 }

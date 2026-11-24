@@ -146,7 +146,7 @@ async function compSend() {
         done();
       } catch (err) { if (denied(err)) done(); else { stuck = true; break; } }
     }
-  } finally { sending = false; if (comp) saveComp(); }
+  } finally { sending = false; if (comp) { saveComp(); renderBadge(); } }
   // entries made while this pass was sending (a lead entering the whole cart) go out now; a failed pass waits for the connection
   if (!stuck && comp && Object.keys(comp.outbox || {}).length) compSend();
 }

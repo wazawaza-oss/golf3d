@@ -13,6 +13,7 @@ function refresh() {
   place(M.me, S.me && S.me.ll);
   M.me.getElement().classList.toggle('sim', !!(S.me && S.me.src === 'sim'));
   tapDraw();
+  if (!$('onboard').hidden && (comp || allHoles().some(registered))) $('onboard').hidden = true;  // the course came another way (a file, a list, a link)
   if (typeof sceneSync === 'function') sceneSync();  // colour round the round's holes, trees (js/scene.js)
   if (typeof artSync === 'function') artSync();  // the course's map design (js/art.js), when the course changes
   numMarkers.forEach(m => m.remove()); numMarkers = [];
@@ -129,18 +130,20 @@ const fmtElev = (d, y) => {
   span.textContent = Math.abs(d) < .5 ? '高低差なし' : `${d >= 0 ? '↑' : '↓'}${Math.abs(d).toFixed(0)}m ${word}`;
   return [span, `実質${Math.round(y + d / YD)}Y`];  // the pill already separates the two
 };
+// the label beside the distance: each part (「ティーから」「グリーン」) stays whole when it wraps
+function setLab(s) { const e = $('dLab'); e.textContent = ''; String(s).split(/(?<=から|まで)/).forEach(p => e.append(el('span', 'nw', p))); }
 let rdTok = 0;
 async function readout(quick) {  // quick: distances only (while dragging a mark)
   const tok = ++rdTok, h = hole(), pin = pinLL(), sub = $('dSub');
   sub.textContent = '';
   document.querySelector('.hud').classList.toggle('unreg', !inSetup() && !registered(h));  // no "Y" after the dash
   if (inSetup()) {  // registering: the hole's length as placed
-    $('dNum').textContent = registered(h) ? Math.round(yards(h.tee, h.green)) : '—'; $('dLab').textContent = 'ティーからグリーン';
+    $('dNum').textContent = registered(h) ? Math.round(yards(h.tee, h.green)) : '—'; setLab('ティーからグリーン');
     sub.textContent = registered(h) ? '' : S.su.step === 'green' ? 'グリーンを置いてください' : 'ティーを置いてください';
     return;
   }
   if (!registered(h)) {
-    $('dNum').textContent = '—'; $('dLab').textContent = '未登録のホール';
+    $('dNum').textContent = '—'; setLab('未登録のホール');
     if (comp && comp.role !== 'org') { sub.textContent = '主催者がこのホールをまだ登録していません'; return; }
     const go = el('button', 'subgo', 'コースを登録する'); go.onclick = () => openSetup();
     sub.append('このホールは距離が出ません', go);
@@ -151,7 +154,7 @@ async function readout(quick) {  // quick: distances only (while dragging a mark
     const path = tapPath(pin), legs = path.slice(1).map((p, i) => Math.round(yards(path[i], p)));
     const [a, b] = path, y = yards(a, b);
     $('dNum').textContent = Math.round(y);
-    $('dLab').textContent = legs.length === 1 ? `マークから${target()}` : tapFromMe() ? 'マークまで' : 'マーク間';
+    setLab(legs.length === 1 ? `マークから${target()}` : tapFromMe() ? 'マークまで' : 'マーク間');
     const rest = legs.length === 3 ? `マーク間 ${legs[1]}Y・そこから${target()} ${legs[2]}Y` : legs.length === 2 ? `そこから${target()} ${legs[1]}Y` : '';
     sub.textContent = rest;
     if (S.prefs.elev && !quick) {
@@ -162,17 +165,17 @@ async function readout(quick) {  // quick: distances only (while dragging a mark
     return;
   }
   if (!S.me) {
-    $('dNum').textContent = Math.round(yards(roundTee(), pin)); $('dLab').textContent = `ティーから${target()}`;
+    $('dNum').textContent = Math.round(yards(roundTee(), pin)); setLab(`ティーから${target()}`);
     sub.textContent = S.watch ? '現在地を取得中…' : 'GPSをオンにすると現在地からの距離が出ます'; return;
   }
   if (!onPlay()) {  // another hole than the one you are playing: its own length, and the way back
     const p = playNo(), back = el('button', 'subgo', `${p}番に戻る`), here = el('button', 'subgo', 'ここをプレー中に');
     back.onclick = () => goHole(p); here.onclick = () => setPlay(N);
-    $('dNum').textContent = Math.round(yards(roundTee(), pin)); $('dLab').textContent = `ティーから${target()}`;
+    $('dNum').textContent = Math.round(yards(roundTee(), pin)); setLab(`ティーから${target()}`);
     sub.append(`プレー中 ${p}番`, back, here); return;
   }
   const y = yards(S.me.ll, pin);
-  $('dNum').textContent = Math.round(y); $('dLab').textContent = `${target()}まで`;
+  $('dNum').textContent = Math.round(y); setLab(`${target()}まで`);
   // 4th line: elevation only (GPS accuracy is on the GPS button)
   const test = S.me.src === 'sim' ? 'テスト位置' : '';
   sub.textContent = test;

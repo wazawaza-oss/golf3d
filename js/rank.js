@@ -86,7 +86,10 @@ function scoreCardCanvas() {
   g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
   // header
   text(fit(cardName() || 'コース', W - 2 * M, 44, 900), M, M + 26, 44, 900, '#0a1322', 'left');
-  text(new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }), M, M + 80, 26, 700, '#36414d', 'left');
+  // in a competition: its own date and name (saved the next day it still shows the round's day), else today
+  const cd = comp && comp.meta && /^\d{4}-\d{2}-\d{2}$/.test(comp.meta.date || '') ? new Date(comp.meta.date + 'T12:00:00') : new Date();
+  const sub = cd.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' }) + (comp && comp.meta && comp.meta.name ? `　${comp.meta.name}` : '');
+  text(fit(sub, W - 2 * M, 26, 700), M, M + 80, 26, 700, '#36414d', 'left');
   let y = M + 130;
   const cx = k => M + NAME + k * CELL;  // left edge of hole column k (0 .. NINE-1); k = NINE is the sum column
   halves().forEach(({ name: label, from }) => {  // front / back nine, headed by the nine's name

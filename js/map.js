@@ -144,8 +144,8 @@ function fitCam(opt, pts, box) {
   } finally { map.jumpTo(save); }
   return o;
 }
-// how much the 3D ground is stretched up and down: S.prefs.exag (0.5–3, missing = 1 = true height); only the look, never the distances
-const exag = () => { const v = +S.prefs.exag; return v >= .5 && v <= 3 ? v : 1; };
+// how much the 3D ground is stretched up and down: S.prefs.exag (0.5–2, missing = 1 = true height; an older 2.1–3 counts as 2); only the look, never the distances
+const exag = () => { const v = +S.prefs.exag; return v >= .5 && v <= 3 ? Math.min(v, 2) : 1; };
 /* turn terrain on/off; the camera moves only after the elevation tiles are in, so its height is right */
 function set3D(on) {
   S.is3D = on; camTok++;
