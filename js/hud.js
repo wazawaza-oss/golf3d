@@ -13,6 +13,7 @@ function refresh() {
   place(M.me, S.me && S.me.ll);
   M.me.getElement().classList.toggle('sim', !!(S.me && S.me.src === 'sim'));
   tapDraw();
+  if (typeof sceneSync === 'function') sceneSync();  // colour round the round's holes, trees (js/scene.js)
   if (typeof artSync === 'function') artSync();  // the course's map design (js/art.js), when the course changes
   numMarkers.forEach(m => m.remove()); numMarkers = [];
   // while registering, the other holes of the same nine show their numbers (at the green) and tee–green lines

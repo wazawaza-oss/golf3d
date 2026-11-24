@@ -34,13 +34,13 @@ function artCourse() {
     return pts.length && inside >= pts.length / 2;
   }) || null;
 }
-const artTiles = (c, id) => `golfart://${c.id}/${id}/{z}/{x}/{y}`;
+const artTiles = (c, id) => `golfart://${c.id}/${id}/{z}/{x}/{y}${fadeQ()}`;  // ?f=…: faded outside the round's holes (js/scene.js)
 const artFile = (c, id, z, x, y) => new URL(`${c.dir}${id}/${z}/${x}/${y}.webp${c.ver && c.ver[id] ? '?v=' + c.ver[id] : ''}`, location.href).href;
 maplibregl.addProtocol('golfart', async (params, ac) => {
-  const [cid, id, z, x, y] = params.url.replace('golfart://', '').split('/'), c = ART_COURSES.find(k => k.id === cid);
+  const [cid, id, z, x, y] = params.url.replace('golfart://', '').replace(/\?.*$/, '').split('/'), c = ART_COURSES.find(k => k.id === cid);
   const b = c && await tileBlob(artFile(c, id, z, x, y), ac && ac.signal);
   if (!b) throw new Error('art tile unavailable');
-  return { data: await b.arrayBuffer() };
+  return tileOut(b, +z, +x, +y);
 });
 
 let artShown = '';  // tiles on the map now ('' = none)

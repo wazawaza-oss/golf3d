@@ -103,12 +103,12 @@ async function elevAt(ll) {
   const a = h[y0 * 256 + x0], b = h[y0 * 256 + x0 + 1], c = h[(y0 + 1) * 256 + x0], d = h[(y0 + 1) * 256 + x0 + 1];
   return (a * (1 - tx) + b * tx) * (1 - ty) + (c * (1 - tx) + d * tx) * ty;
 }
-const parseZXY = url => url.replace(/^[a-z]+:\/\//, '').split('/').map(Number);
+const parseZXY = url => url.replace(/^[a-z]+:\/\//, '').replace(/\?.*$/, '').split('/').map(Number);
 maplibregl.addProtocol('gsiphoto', async (params, ac) => {
   const [z, x, y] = parseZXY(params.url);
   const b = await tileBlob(`${GSI}seamlessphoto/${z}/${x}/${y}.jpg`, ac && ac.signal);
   if (!b) throw new Error('photo tile unavailable');
-  return { data: await b.arrayBuffer() };
+  return tileOut(b, z, x, y);  // faded outside the course being played (js/scene.js)
 });
 maplibregl.addProtocol('gsidem', async (params) => {
   const [z, x, y] = parseZXY(params.url);

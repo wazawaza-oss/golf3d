@@ -151,6 +151,7 @@ function set3D(on) {
   S.is3D = on; camTok++;
   map.setTerrain(on ? { source: 'dem', exaggeration: exag() } : null);
   lookPaint();  // line widths differ in 3D
+  if (typeof treesShow === 'function') treesShow();  // trees stand only in 3D (js/scene.js)
   const aim = () => {
     if (S.is3D !== on) return;
     if (registered(hole()) && !(S.mode && S.mode.startsWith('setup'))) camera(S.view, 900);  // and aim once more when the ground is in

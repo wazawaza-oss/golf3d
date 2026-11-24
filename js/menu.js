@@ -78,6 +78,7 @@ function renderMenu() {
   $('mvPins').textContent = [pins && `ピン${pins}`, tees && `ティー${tees}`].filter(Boolean).join('・') || 'リセット対象なし'; $('pinReset').disabled = !pins && !tees;
   $('bElev').setAttribute('aria-checked', !!S.prefs.elev);
   $('bRings').setAttribute('aria-checked', !!S.prefs.rings);
+  $('bTrees').setAttribute('aria-checked', treesOn()); $('bFade').setAttribute('aria-checked', fadeOn());
   $('mvDevice').textContent = devName();
   if (typeof artLabel === 'function') $('mvArt').textContent = artCourse() ? artLabel() : 'なし';
   $('ringsRow').hidden = !S.prefs.rings;  // the strength slider only while the rings are shown
@@ -162,6 +163,10 @@ function renderDevice() {
 $('devAdj').oninput = () => { S.prefs.devAdj = +$('devAdj').value; fitScreen(); renderDevice(); };
 $('devAdj').onchange = () => savePrefs();
 $('goDevice').onclick = () => { renderDevice(); mShow('mDevice'); };
+// trees in 3D and the faded other courses (js/scene.js): on unless turned off (false is stored, on = no key)
+const flip = k => { if (S.prefs[k] === false) delete S.prefs[k]; else S.prefs[k] = false; savePrefs(); refresh(); renderMenu(); };
+$('bTrees').onclick = () => flip('trees');
+$('bFade').onclick = () => flip('fade');
 $('bRings').onclick =() => { S.prefs.rings = !S.prefs.rings; savePrefs(); refresh(); renderMenu(); };
 // the map behind the sheet follows the slider as it moves; saved when the finger lifts
 $('exag').oninput = () => {
