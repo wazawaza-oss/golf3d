@@ -1,5 +1,5 @@
 /* golf3d — look: colours and shapes of the pin, the measuring marks and the lines on the map
-   (settings › 表示 › ピン・マーク・線のデザイン). Kept in S.prefs.look; a missing key is the default, which is the original look.
+   (settings › 表示の設定, lower part). Kept in S.prefs.look; a missing key is the default, which is the original look.
    Plain scripts loaded in order from index.html (no build step); they share top-level names. */
 "use strict";
 
@@ -48,32 +48,14 @@ function lookPaint() {
 }
 applyLook();
 
-/* ---------- the settings screen ---------- */
-Object.assign(M_TITLE, { mLook: 'ピン・マーク・線のデザイン' });
-Object.assign(M_RENDER, { mLook: () => renderLook() });
-$('goLook').onclick = () => { renderLook(); mShow('mLook'); };
+/* ---------- in 表示の設定 (js/view.js) ---------- */
 function setLook(k, v) {
   const L = Object.assign({}, S.prefs.look || {}, { [k]: v });
   if (L[k] === LOOK_DEF[k]) delete L[k];
   S.prefs.look = L; savePrefs(); applyLook(); refresh(); renderLook();
 }
-// a small picture of the hole with the chosen look: tee → pin line, a mark and its line to the pin
-function lookPreview(L) {
-  const T = [34, 96], P = [262, 40], K = [170, 100], wt = LOOK_W[L.tapWidth], wh = LOOK_W[L.holeWidth];
-  const da = (d, def, w) => { const p = lookDash(d, def); return p ? ` stroke-dasharray="${p.map(v => +(v * w).toFixed(1)).join(' ')}"` : ''; };
-  const mark = L.markShape === 'circle' ? `<circle cx="${K[0]}" cy="${K[1]}" r="7"` : `<rect x="${K[0] - 6.5}" y="${K[1] - 6.5}" width="13" height="13" rx="2"${L.markShape === 'diamond' ? ` transform="rotate(45 ${K[0]} ${K[1]})"` : ''}`;
-  const pin = `<g transform="translate(${P[0] - 27} ${P[1] - (L.pinShape === 'dot' ? 25 : 48)}) scale(1)">${pinSvg(L.pinColor, L.pinShape).replace(/^<svg[^>]*>|<\/svg>$/g, '')}</g>`;
-  return `<svg viewBox="0 0 300 130" role="img" aria-label="見本">
-    <rect width="300" height="130" rx="10" fill="#4f7f3f"/><path d="M0 70Q120 30 300 10V130H0Z" fill="#6c9a4f"/><ellipse cx="262" cy="40" rx="34" ry="20" fill="#86b862"/>
-    <line x1="${T[0]}" y1="${T[1]}" x2="${P[0]}" y2="${P[1]}" stroke="${L.holeColor}" stroke-width="${2 * wh}" stroke-opacity=".85" stroke-linecap="round"${da(L.holeDash, [2, 2], 2 * wh)}/>
-    <line x1="${K[0]}" y1="${K[1]}" x2="${P[0]}" y2="${P[1]}" stroke="#fff" stroke-opacity=".5" stroke-width="${5.5 * wt}" stroke-linecap="round"/>
-    <line x1="${K[0]}" y1="${K[1]}" x2="${P[0]}" y2="${P[1]}" stroke="${L.tapColor}" stroke-width="${3 * wt}"${da(L.tapDash, [2, 1.6], 3 * wt)}/>
-    <circle cx="${T[0]}" cy="${T[1]}" r="11" fill="#2f6fd1" stroke="#fff" stroke-width="2"/><text x="${T[0]}" y="${T[1] + 4}" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">T</text>
-    ${mark} fill="${L.markColor}" stroke="#fff" stroke-width="2.5"/>${pin}</svg>`;
-}
 function renderLook() {
   const L = look(), box = $('lookBody'); box.textContent = '';
-  const pv = el('div', 'lookpv'); pv.innerHTML = lookPreview(L); box.append(pv);
   const colors = (k) => {
     const row = el('div', 'mrow lookrow'), list = el('div', 'sws');
     row.append(el('span', 'mtx', '色'), list);
@@ -98,5 +80,5 @@ function renderLook() {
   reset.disabled = !Object.keys(S.prefs.look || {}).length;
   reset.onclick = () => { S.prefs.look = {}; savePrefs(); applyLook(); refresh(); renderLook(); toast('元のデザインに戻しました'); };
   const g = el('div', 'grp mgap'); g.append(reset); box.append(g);
-  box.append(el('p', 'grp-f', '変えた内容はこのスマホだけに残ります。ほかの人の画面は変わりません。'));
+  box.append(el('p', 'grp-f', 'この画面で変えた内容はこのスマホだけに残ります。ほかの人の画面は変わりません。'));
 }

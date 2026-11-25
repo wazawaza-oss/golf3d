@@ -9,6 +9,7 @@
    than turf), over the area of all the round's holes, and drawn as low-poly 3D trees (fill-extrusion, two stacked
    six-sided blocks) only in 3D. Each tree knows which holes it stands by; the ones by the hole on screen are green,
    the rest grey like the ground under them.
+   Their size can be changed (S.prefs.treeSize / treeHeight, 0.5–2) without looking at the photo again: the spots are kept.
    Plain scripts loaded in order from index.html (no build step); they share top-level names. */
 "use strict";
 
@@ -165,13 +166,35 @@ async function treesBuild() {
       const ll = [(wx / 256 / 2 ** z) * 360 - 180, deg(Math.atan(Math.sinh(Math.PI * (1 - 2 * wy / 256 / 2 ** z))))];
       const s = hash(gx, gy, 3), h = 9 + s * 7, r = 3.4 + hash(gx, gy, 4) * 1.8, rot = hash(gx, gy, 5) * Math.PI;
       const col = TREE_COLORS[Math.floor(hash(gx, gy, 6) * TREE_COLORS.length)];
-      out.push(hexAt(ll, r, rot, h * .22, h * .72, col, hs), hexAt(ll, r * .62, rot + .5, h * .72, h, col, hs));
+      out.push([ll, r, rot, h, col, hs]);
     }
-    if (out.length > 60000) break;  // a safety stop for a huge area
+    if (out.length > 30000) break;  // a safety stop for a huge area
   }
   if (tok !== treeTok) return;
-  treeBusy = false; treeKey = key;
-  if (mapReady && map.getSource('trees')) map.getSource('trees').setData(fc(out));
+  treeBusy = false; treeKey = key; treeSpots = out;
+  treesMake();
+}
+// the size sliders (表示の設定 › 木の大きさ / 木の高さ): S.prefs.treeSize, S.prefs.treeHeight, 0.5–2, missing = 1
+const treeK = k => { const v = +S.prefs[k]; return v >= .5 && v <= 2 ? v : 1; };
+// each tree = two stacked six-sided blocks; made again from the spots when the width changes (no new look at the photo).
+// Heights are scaled by the layer's paint (treesPaintH), which is instant, so the trees follow a slider while it moves;
+// the width (a new set of shapes, ~0.2 s on a computer) is made again when the finger lifts.
+let treeSpots = [];
+function treesMake() {
+  if (!mapReady || !map.getSource('trees')) return;
+  const w = treeK('treeSize'), out = [];
+  treeSpots.forEach(([ll, r0, rot, h, col, hs]) => {
+    const r = r0 * w;
+    out.push(hexAt(ll, r, rot, h * .22, h * .72, col, hs), hexAt(ll, r * .62, rot + .5, h * .72, h, col, hs));
+  });
+  map.getSource('trees').setData(fc(out));
+  treesPaintH();
+}
+function treesPaintH() {
+  if (!mapReady || !map.getLayer('trees')) return;
+  const k = treeK('treeSize') * treeK('treeHeight');
+  map.setPaintProperty('trees', 'fill-extrusion-base', ['*', ['get', 'b'], k]);
+  map.setPaintProperty('trees', 'fill-extrusion-height', ['*', ['get', 't'], k]);
 }
 // green by the hole on screen, grey elsewhere (all green when fading is off)
 const treeColor = () => focus ? ['case', ['in', `,${focus.n},`, ['get', 'hs']], ['get', 'c'], ['get', 'g']] : ['get', 'c'];
@@ -195,7 +218,7 @@ function sceneSync() {
   const f = focusCalc(), fk = f ? keyOf([f.n, f.caps.map(c => [c.a, c.b])]) : '';
   if (fk !== focusKey) { focus = f; focusKey = fk; }
   const r = roundCalc(), rk = r ? keyOf(r.caps.map(c => [c.a, c.b])) : '';
-  if (rk !== roundKey) { round = r; roundKey = rk; treeTok++; treeBusy = false; treeKey = ''; if (mapReady && map.getSource('trees')) map.getSource('trees').setData(fc([])); }
+  if (rk !== roundKey) { round = r; roundKey = rk; treeTok++; treeBusy = false; treeKey = ''; treeSpots = []; if (mapReady && map.getSource('trees')) map.getSource('trees').setData(fc([])); }
   if (!mapReady) return;
   if (focusKey !== tilesFor) { tilesFor = focusKey; reloadTiles('photo'); reloadTiles('art'); }
   treesShow();
@@ -205,5 +228,6 @@ map.on('load', () => {
   map.addLayer({ id: 'trees', type: 'fill-extrusion', source: 'trees', minzoom: 13, layout: { visibility: 'none' },
     paint: { 'fill-extrusion-color': ['get', 'c'], 'fill-extrusion-base': ['get', 'b'], 'fill-extrusion-height': ['get', 't'],
       'fill-extrusion-opacity': 1, 'fill-extrusion-vertical-gradient': true } });
+  treesPaintH();
   sceneSync();
 });

@@ -80,7 +80,8 @@ function renderMenu() {
   $('bRings').setAttribute('aria-checked', !!S.prefs.rings);
   $('bTrees').setAttribute('aria-checked', treesOn()); $('bFade').setAttribute('aria-checked', fadeOn());
   $('mvDevice').textContent = devName();
-  if (typeof artLabel === 'function') $('mvArt').textContent = artCourse() ? artLabel() : 'なし';
+  if (typeof viewSummary === 'function') $('mvView').textContent = viewSummary();
+  if (typeof renderViewRows === 'function') renderViewRows();
   $('ringsRow').hidden = !S.prefs.rings;  // the strength slider only while the rings are shown
   $('ringsAlpha').value = S.prefs.ringsAlpha; $('ringsVal').textContent = `${S.prefs.ringsAlpha}%`;
   $('exag').value = exag(); $('exagVal').textContent = `×${exag().toFixed(1)}`;

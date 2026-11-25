@@ -8,6 +8,7 @@
   /* bottom edge = home-indicator area + correction. --home: 34px on Face ID iPhones (0 on phones without one);
      --fixb: how far iOS's "bottom" is from the real screen bottom in the home-screen app (set in js/hud.js) */
   --home:env(safe-area-inset-bottom,0px); --fixb:0px; --sab:calc(var(--home) + var(--fixb));
+  --sat:env(safe-area-inset-top,0px);
 }
 html,body{height:100%;margin:0;touch-action:manipulation}  /* no double-tap page zoom on buttons (iPhone); pinch still works */
 /* home-screen app with black-translucent: the page starts under the status bar and iOS can leave a strip of
@@ -356,8 +357,6 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 @keyframes tapPop0{0%{transform:scale(0)}100%{transform:scale(1)}}
 @keyframes tapRing0{0%{transform:scale(1);opacity:.6}100%{transform:scale(2.6);opacity:0}}
 /* the design screen: a preview, colour swatches and choice buttons */
-.lookpv{margin:14px 0 0}
-.lookpv svg{display:block;width:100%;height:auto;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.1)}
 .mrow.lookrow{flex-wrap:wrap;gap:8px 12px;padding:10px 14px}
 .mrow.lookrow>.mtx{flex:none;width:36px;font-size:14.5px}
 .sws{flex:1;display:flex;flex-wrap:wrap;gap:6px 5px}
@@ -473,5 +472,23 @@ button:active:not(:disabled){transform:scale(.96)}
 #rcTables .ydt th{white-space:normal;line-height:1.25}
 #rcTables .ydt input{min-width:0;padding:9px 2px}
 #rcTables .ydt td{padding:3px 2px}
-/* マップのデザイン (js/art.js): a small picture of each design */
-.art1 .artpv{width:78px;height:45px;border-radius:6px;object-fit:cover;flex:none;margin-right:12px;background:#cfd8c8}
+/* マップのデザイン (js/art.js): five small pictures side by side */
+.artpick{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding:8px}
+.art1{display:grid;gap:4px;justify-items:stretch;padding:4px;border-radius:10px;border:2px solid transparent;background:none;font-size:11.5px;font-weight:800;color:#3a4350;white-space:nowrap;overflow:hidden}
+.art1 .artpv{display:block;aspect-ratio:16/10;border-radius:6px;background:#dfe3e8 center/cover no-repeat}
+.art1[aria-pressed="true"]{border-color:#1f9d48;color:#16592f;background:#eef8f1}
+
+/* 表示の設定 (js/view.js): the sheet only over the lower part, the map in sight above it; panels put away */
+#menu.peek{top:auto;height:56vh;height:56dvh;border-radius:18px 18px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.3);transition:height .25s}
+#menu.peek.low{height:34vh;height:34dvh}
+#menu.peek .mhead{border-radius:18px 18px 0 0}
+body.peek .hud,body.peek .side,body.peek .dock,body.peek .banner,body.peek .tapreset,body.peek .a2hs{visibility:hidden}
+body.peek .toast{top:calc(var(--sat) + 12px)}
+.vbar{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px}
+.vbar .lseg{flex:none}
+.vbar .lseg button{min-height:34px;padding:0 10px;font-size:13px}
+.vhole{display:flex;align-items:center;gap:2px;border-radius:10px;background:#eceef1;padding:3px}
+.vhole button{width:34px;height:34px;border-radius:8px;background:#fff;font-size:20px;font-weight:900;color:#0b5cad;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.vhole span{min-width:74px;text-align:center;font-size:14px;font-weight:900;color:var(--ink);white-space:nowrap}
+.vsize{margin-left:auto;width:38px;height:38px;border-radius:10px;background:#eceef1;font-size:16px;font-weight:900;color:#3a4350}
+#menu .grp-f.vhint{margin-top:12px}

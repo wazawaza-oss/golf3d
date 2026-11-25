@@ -73,6 +73,12 @@
     <button class="mback" id="mBack" hidden>‹ 設定</button>
     <h2 id="menuTitle">設定</h2>
     <button class="mdone" id="menuClose">完了</button>
+    <div class="vbar" id="vBar" hidden>
+      <div class="vhole"><button id="vPrev" aria-label="前のホール">‹</button><span id="vHole"></span><button id="vNext" aria-label="次のホール">›</button></div>
+      <div class="lseg" id="v3d"><button data-v="0">2D</button><button data-v="1">3D</button></div>
+      <div class="lseg" id="vView"><button data-v="tee">ティー</button><button data-v="top">上から</button><button data-v="green">グリーン</button></div>
+      <button class="vsize" id="vSize" aria-label="地図を広く見る"></button>
+    </div>
   </div>
   <div class="mbody" id="mMain">
     <div class="grp-t" data-show="solo org">準備の3ステップ</div>
@@ -113,14 +119,7 @@
 
     <div class="grp-t">表示</div>
     <div class="grp">
-      <button class="mrow" id="bElev" role="switch" aria-checked="true"><span class="mic" style="background:#e07a00"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M2 20l6.5-9 4 5 3-3.5L22 20z"/></svg></span><span class="mtx">高低差を表示<small>公式競技ではオフにします</small></span><span class="sw" aria-hidden="true"></span></button>
-      <button class="mrow" id="bRings" role="switch" aria-checked="true"><span class="mic" style="background:#0e8a8a"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="2 2.5" aria-hidden="true"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9"/></svg></span><span class="mtx">距離の輪を表示<small>ピンを中心に50ヤードごとの点線</small></span><span class="sw" aria-hidden="true"></span></button>
-      <div class="mrow slide" id="ringsRow"><span class="mtx">輪の濃さ</span><input type="range" id="ringsAlpha" min="10" max="100" step="5" aria-label="距離の輪の濃さ"><span class="mval" id="ringsVal"></span></div>
-      <div class="mrow slide exag" id="exagRow"><span class="mic" style="background:#8a6a2a"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 20l6.5-10 4 5.5 3-3.5L22 20z"/><path d="M19 3v6M17 5l2-2 2 2"/></svg></span><span class="mtx">3Dの高低差<small>×1.0＝実際の高さ</small></span><input type="range" id="exag" min="0.5" max="2" step="0.1" aria-label="3D表示の高低差の強さ"><span class="mval" id="exagVal"></span></div>
-      <button class="mrow" id="bTrees" role="switch" aria-checked="true"><span class="mic" style="background:#2f7d3a"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l5 7h-2.5l4 6H13v7h-2v-7H5.5l4-6H7z"/></svg></span><span class="mtx">3Dで木を表示<small>航空写真から林を見つけて、立体の木を立てます</small></span><span class="sw" aria-hidden="true"></span></button>
-      <button class="mrow" id="bFade" role="switch" aria-checked="true"><span class="mic" style="background:#6b7480"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="#fff"/></svg></span><span class="mtx">ほかのホールを薄く<small>いまのホールだけカラーで、ほかは白黒に</small></span><span class="sw" aria-hidden="true"></span></button>
-      <button class="mrow" id="goLook"><span class="mic" style="background:#d63c8e"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 22V3" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M8 3l11 4.5L8 12z" fill="#fff"/></svg></span><span class="mtx">ピン・マーク・線のデザイン<small>色や形を変えられます</small></span><span class="chev">›</span></button>
-      <button class="mrow" id="goArt"><span class="mic" style="background:#3f8f3a"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="16" cy="9" r="1.6" fill="#fff"/></svg></span><span class="mtx">マップのデザイン<small>コースの絵を地図に重ねる（対応コースのみ）</small></span><span class="mval" id="mvArt"></span><span class="chev">›</span></button>
+      <button class="mrow" id="goView"><span class="mic" style="background:#3f8f3a"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="16" cy="9" r="1.6" fill="#fff"/></svg></span><span class="mtx">表示の設定<small>地図を見ながら、3D・木・デザイン・線の色などを調整</small></span><span class="mval" id="mvView"></span><span class="chev">›</span></button>
     </div>
 
     <div class="grp-t" data-show="solo org">コース</div>
@@ -154,8 +153,27 @@
     </div>
   </div>
 
-  <div class="mbody" id="mLook" hidden><div id="lookBody"></div></div>
-  <div class="mbody" id="mArt" hidden><div id="artBody"></div></div>
+  <div class="mbody" id="mView" hidden>
+    <p class="grp-f vhint" id="vHint">上に見えている地図に、変えた内容がすぐ出ます。地図は指で動かせます。タップするとマークと線も確かめられます。</p>
+    <div class="grp-t">マップのデザイン</div>
+    <div id="artBody"></div>
+    <div class="grp-t">3D</div>
+    <div class="grp">
+      <div class="mrow slide exag" id="exagRow"><span class="mic" style="background:#8a6a2a"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 20l6.5-10 4 5.5 3-3.5L22 20z"/><path d="M19 3v6M17 5l2-2 2 2"/></svg></span><span class="mtx">3Dの高低差<small>×1.0＝実際の高さ</small></span><input type="range" id="exag" min="0.5" max="2" step="0.1" aria-label="3D表示の高低差の強さ"><span class="mval" id="exagVal"></span></div>
+      <button class="mrow" id="bTrees" role="switch" aria-checked="true"><span class="mic" style="background:#2f7d3a"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l5 7h-2.5l4 6H13v7h-2v-7H5.5l4-6H7z"/></svg></span><span class="mtx">3Dで木を表示<small>航空写真から林を見つけて、立体の木を立てます</small></span><span class="sw" aria-hidden="true"></span></button>
+      <div class="mrow slide" id="treeSizeRow"><span class="mtx">木の大きさ</span><input type="range" id="treeSize" min="0.5" max="2" step="0.1" aria-label="3Dの木の大きさ"><span class="mval" id="treeSizeVal"></span></div>
+      <div class="mrow slide" id="treeHRow"><span class="mtx">木の高さ</span><input type="range" id="treeHeight" min="0.5" max="2" step="0.1" aria-label="3Dの木の高さ"><span class="mval" id="treeHeightVal"></span></div>
+    </div>
+    <p class="grp-f" id="v3dNote" hidden>木と高低差は3Dのときだけ見えます。上の「3D」を押すと確かめられます。</p>
+    <div class="grp-t">地図の上の表示</div>
+    <div class="grp">
+      <button class="mrow" id="bFade" role="switch" aria-checked="true"><span class="mic" style="background:#6b7480"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="#fff"/></svg></span><span class="mtx">ほかのホールを薄く<small>いまのホールだけカラーで、ほかは白黒に</small></span><span class="sw" aria-hidden="true"></span></button>
+      <button class="mrow" id="bElev" role="switch" aria-checked="true"><span class="mic" style="background:#e07a00"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M2 20l6.5-9 4 5 3-3.5L22 20z"/></svg></span><span class="mtx">高低差を表示<small>公式競技ではオフにします</small></span><span class="sw" aria-hidden="true"></span></button>
+      <button class="mrow" id="bRings" role="switch" aria-checked="true"><span class="mic" style="background:#0e8a8a"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="2 2.5" aria-hidden="true"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9"/></svg></span><span class="mtx">距離の輪を表示<small>ピンを中心に50ヤードごとの点線</small></span><span class="sw" aria-hidden="true"></span></button>
+      <div class="mrow slide" id="ringsRow"><span class="mtx">輪の濃さ</span><input type="range" id="ringsAlpha" min="10" max="100" step="5" aria-label="距離の輪の濃さ"><span class="mval" id="ringsVal"></span></div>
+    </div>
+    <div id="lookBody"></div>
+  </div>
 
   <div class="mbody" id="mJump" hidden>
     <div class="grp-t">これまでのコース</div>
@@ -419,6 +437,7 @@
 <script src="js/look.js"></script>
 <script src="js/art.js"></script>
 <script src="js/scene.js"></script>
+<script src="js/view.js"></script>
 <script src="js/course.js"></script>
 <script src="js/cardjson.js"></script>
 <script src="js/search.js"></script>

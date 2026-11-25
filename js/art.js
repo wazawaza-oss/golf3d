@@ -1,5 +1,5 @@
 /* golf3d — art: illustrated map designs laid over the aerial photo, for the few courses that have them
-   (settings › 表示 › マップのデザイン). Each design is one picture of the whole course, made in the separate 3D project
+   (settings › 表示の設定 › マップのデザイン). Each design is one picture of the whole course, made in the separate 3D project
    (Documents/golf-3d/golf-3d-prototype, tools/export-app-art.mjs) and cut into map tiles (XYZ, 256 px, transparent
    WebP) inside the course's box: art/<course>/<design>/<z>/<x>/<y>.webp. Shown as a raster layer over the photo, so it
    drapes over the 3D terrain like the photo (one big image source did not: with terrain only part of it was drawn).
@@ -69,31 +69,27 @@ function artSaveList() {
 }
 const artSaveMB = () => { const c = artCourse(); return c ? Object.values(c.mb).reduce((a, b) => a + b, 0) : 0; };
 
-/* ---------- the settings screen ---------- */
-Object.assign(M_TITLE, { mArt: 'マップのデザイン' });
-Object.assign(M_RENDER, { mArt: () => renderArt() });
-$('goArt').onclick = () => { renderArt(); mShow('mArt'); };
+/* ---------- in 表示の設定 (js/view.js) ---------- */
 const artLabel = () => { const id = artChoice(); return id === 'off' ? '使わない' : ART_DESIGNS.find(d => d[0] === id)[1].replace('（標準）', ''); };
+const ART_SHORT = { aerial: '航空写真', flat: 'フラット', navi: 'ナビ', pixel: 'ドット絵', off: '使わない' };
 function setArt(id) {
   if (id === 'aerial') delete S.prefs.art; else S.prefs.art = id;
   savePrefs(); artSync(); renderArt();
 }
+// five small pictures side by side (the map above shows the real thing); the chosen one's description under them
 function renderArt() {
   const box = $('artBody'), c = artCourse(), cur = artChoice(); box.textContent = '';
-  box.append(el('p', 'grp-f', c ? `いまのコース（${c.name.replace('ゴルフクラブ ', ' ')}）で使えます。地図の上に、コース全体の絵を重ねて表示します。`
-    : `いまのコースにはデザインがありません。使えるのは ${ART_COURSES.map(x => x.name).join('・')} だけです。`));
-  const g = el('div', 'grp artlist');
-  ART_DESIGNS.forEach(([id, name, sub]) => {
-    const on = cur === id, b = el('button', 'mrow art1');
-    const img = el('img', 'artpv'); img.alt = ''; img.loading = 'lazy'; img.src = ART_COURSES[0].dir + id + '-s.jpg';
-    const tx = el('span', 'mtx', name); tx.appendChild(el('small', '', sub));
-    b.setAttribute('aria-pressed', on); b.append(img, tx, el('span', 'pick', on ? '✓' : ''));
+  if (!c) { box.append(el('p', 'grp-f', `いまのコースにはデザインがありません。使えるのは ${ART_COURSES.map(x => x.name).join('・')} だけです。`)); return; }
+  const g = el('div', 'grp artpick');
+  ART_DESIGNS.map(d => d[0]).concat('off').forEach(id => {
+    const b = el('button', 'art1'), on = cur === id;
+    const img = el('span', 'artpv');
+    if (id !== 'off') img.style.backgroundImage = `url("${c.dir}${id}-s.jpg")`;
+    b.setAttribute('aria-pressed', on); b.append(img, el('span', '', ART_SHORT[id]));
     b.onclick = () => setArt(id); g.append(b);
   });
-  const off = el('button', 'mrow'), offTx = el('span', 'mtx', '使わない'); offTx.appendChild(el('small', '', 'いつもの航空写真だけ'));
-  off.setAttribute('aria-pressed', cur === 'off'); off.append(offTx, el('span', 'pick', cur === 'off' ? '✓' : ''));
-  off.onclick = () => setArt('off'); g.append(off);
   box.append(g);
-  box.append(el('p', 'grp-f', '変えた内容はこのスマホだけに残ります。電波のない所でも使うときは、ラウンド前に「マップを端末に保存」をしてください（デザインも一緒に保存します）。'));
-  box.append(el('p', 'grp-f credit', ART_COURSES[0].credit));
+  const d = ART_DESIGNS.find(x => x[0] === cur);
+  box.append(el('p', 'grp-f', d ? `${d[1]}：${d[2]}。` : 'いつもの航空写真だけを表示します。'));
+  box.append(el('p', 'grp-f credit', c.credit));
 }
