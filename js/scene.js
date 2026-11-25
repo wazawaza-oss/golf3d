@@ -191,6 +191,7 @@ async function landBuild() {
     for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++)
       if (x >= 0 && y >= 0 && x < W && y < H && Math.hypot(x - cx, y - cy) <= r) { seeds.push(y * W + x); labels.push(lab); } };
   const inGrid = ll => { const x = Math.round(L.cx(ll[0])), y = Math.round(L.cy(ll[1])); return x >= 0 && y >= 0 && x < W && y < H ? y * W + x : -1; };
+  const lines = R.holes.map(o => ({ ax: L.cx(o.tee[0]), ay: L.cy(o.tee[1]), bx: L.cx(o.green[0]), by: L.cy(o.green[1]), r: 0 }));
   for (const o of R.holes) {
     if (tok !== landTok) return;
     const lab = o.n || 100, tc = inGrid(o.tee), gc = inGrid(o.green);
@@ -199,6 +200,15 @@ async function landBuild() {
       const area = capCells(L, wideCaps(o.tee, o.green)), w = walk(L, [tc], [1], j => area[j], Infinity, gc), path = [];
       for (let i = gc; i >= 0; i = w.from[i]) path.push(i);
       path.forEach(i => { seeds.push(i); labels.push(lab); pSeeds.push(i); pLabels.push(lab); });
+      // and the straight line tee → green where it is open ground and nearer this hole's line than any other's: a hole
+      // split by a row of trees keeps both its fairways, while a dogleg's straight line over trees or a neighbour does not
+      const sx = L.cx(o.tee[0]), sy = L.cy(o.tee[1]), ex = L.cx(o.green[0]), ey = L.cy(o.green[1]), steps = Math.ceil(Math.hypot(ex - sx, ey - sy));
+      for (let k = 0; k <= steps; k++) {
+        const x = Math.round(sx + (ex - sx) * k / steps), y = Math.round(sy + (ey - sy) * k / steps), i = y * W + x;
+        if (x < 0 || y < 0 || x >= W || y >= H || L.tree[i]) continue;
+        const own = segDist(x, y, lines[R.holes.indexOf(o)]);
+        if (lines.every((c, j) => j === R.holes.indexOf(o) || segDist(x, y, c) > own)) { seeds.push(i); labels.push(lab); pSeeds.push(i); pLabels.push(lab); }
+      }
       // the way the hole starts (tee → a point about 40 m on): behind the tee its area stays short
       const a = path[Math.max(0, path.length - 1 - Math.round(40 / L.cm))];
       const tx = tc % W, ty = (tc - tx) / W, ax = a % W, ay = (a - ax) / W, l = Math.hypot(ax - tx, ay - ty) || 1;
