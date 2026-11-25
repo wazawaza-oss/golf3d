@@ -1,4 +1,4 @@
-/* golf3d — roster: names, teams and leads, invite links, this phone's role notice, opening a link (needs js/share.js)
+/* golf3d — roster: names and teams, invite links, this phone's role notice, opening a link (needs js/share.js)
    Plain scripts loaded in order from index.html (no build step); they share top-level names. */
 "use strict";
 
@@ -26,18 +26,13 @@ function compRosterDel(pid) {
   delete comp.roster[pid]; if (comp.scores) delete comp.scores[pid]; saveComp();
   compUpdate(u);
 }
-// moving someone to another team: if they led their old team, that team has no lead until the organizer picks one
+// moving someone to another team (an old team lead mark from before 2026-11 is cleared with it; leads no longer mean anything)
 function compMoveTeam(pid, team) {
   const r = comp.roster[pid]; if (!r || +r.team === team) return;
   const u = { [`roster/${pid}`]: { name: r.name, team } };
   if (leadOf(r.team) === pid) { u[`leads/t${r.team}`] = null; delete comp.leads['t' + r.team]; }
   comp.roster = Object.assign({}, comp.roster, { [pid]: { name: r.name, team } }); saveComp();
   compUpdate(u);
-}
-// one lead per team: naming a new one replaces the old; pid null leaves the team without a lead
-function compSetLead(team, pid) {
-  comp.leads = Object.assign({}, comp.leads, { ['t' + team]: pid }); if (!pid) delete comp.leads['t' + team];
-  saveComp(); compUpdate({ [`leads/t${team}`]: pid });
 }
 // one key per link: everyone shares the players' one, and one hands the organizer role to another phone
 async function ensureInvite(role) {
@@ -51,8 +46,8 @@ async function ensureInvite(role) {
 const linkFor = (key, role) => `${location.origin}${location.pathname}?c=${comp.cid}&k=${key}&r=${role}`;
 
 /* ---------- this phone's role, and a short notice when it changes ---------- */
-const roleKind = () => !comp ? 'solo' : comp.role === 'org' ? 'org' : compLeadTeam() ? 'lead' : 'player';
-const roleLabel = () => { const k = roleKind(); return k === 'lead' ? `${compLeadTeam()}組の代表` : ROLE_NAME[k] || ''; };
+const roleKind = () => !comp ? 'solo' : comp.role === 'org' ? 'org' : 'player';
+const roleLabel = () => ROLE_NAME[roleKind()] || '';
 function roleNotice() {
   if (!comp || !comp.meta || !comp.roster) return;
   const k = roleKind(), t = myTeam(), now = `${k}:${t || ''}`, was = comp.seen;
@@ -60,10 +55,8 @@ function roleNotice() {
   comp.seen = now; saveComp();
   if (!was) return;  // the first look after joining: nothing has changed yet
   const [wk, wt] = was.split(':');
-  const msg = k === 'org' ? '主催者になりました'
-    : k === 'lead' ? `${t}組のカート代表になりました`
-    : wk === 'lead' ? `カート代表から外れました${t && String(t) !== wt ? `（${t}組に移りました）` : ''}`
-    : t && wt && String(t) !== wt ? `${t}組に移りました` : '';
+  const msg = k === 'org' ? (wk === 'org' ? '' : '主催者になりました')
+    : t && wt && String(t) !== wt ? `${t}組に移りました（${t}組の人のスコアを入力できます）` : '';
   if (msg) toast(msg);
 }
 

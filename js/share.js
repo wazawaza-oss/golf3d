@@ -1,20 +1,20 @@
-/* golf3d — share: competitions on Firebase Realtime Database, with three roles (organizer / team lead / player)
+/* golf3d — share: competitions on Firebase Realtime Database, with two roles (organizer / player; a player enters for their team)
    Plain scripts loaded in order from index.html (no build step); they share top-level names.
 
    comps/{cid}
      meta            { name, date, owner, created, expires }          members read · organizer writes
      course          { club, nines: [{ name, holes: [{ par, tee, green }] } × 2] }   (the organizer's two nines)
      roster/{pid}    { name, team }                                    members read · organizer writes
-     leads/t{team}   pid of that team's lead (one per team)              members read · organizer writes
+     leads/t{team}   old (before 2026-11): a team's lead; no longer written or used    members read · organizer writes
      pins/{hNN}      [lng, lat]  pins handed out by the organizer
      invites/{key}   { role: player | org }                            organizer only (others never see keys)
      members/{uid}   { role: player | org, key, player?, t }           the phone itself and the organizer
      taken/{pid}     uid of the phone that chose that name
-     scores/{pid}/{hNN}  { v, by, bp, t, fix? }   newest write wins; who (phone, name) and when are kept;
+     scores/{pid}/{hNN}  { v, by, bp, t, fix? }   written by the organizer, or by anyone whose chosen name is in the same team; newest write wins; who (phone, name) and when are kept;
                      fix: someone else changed a value already there (shown as a small mark)
    expiry/{cid}      expires; any app may delete competitions past it
    Links carry ?c=<cid>&k=<invite key>&r=player|org; everyone joins as a player and picks their name; the organizer's
-   roster decides teams and leads. The database rules check the key and the roster, so editing a link gains nothing.
+   roster decides teams. The database rules check the key and the roster, so editing a link gains nothing.
    Nothing here loads until a competition is created or joined: solo and offline use never need Firebase. */
 "use strict";
 
@@ -36,7 +36,7 @@ function compExpires(date, created) {
 }
 // the latest date that still fits in those 100 days (for the date pickers)
 const compLastDate = created => { const t = new Date(created + (COMP_MAX - COMP_AFTER - 1) * 864e5); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
-const ROLE_NAME = { org: '主催者', player: '参加者' };  // what a link makes you; a team lead is a player the organizer marked
+const ROLE_NAME = { org: '主催者', player: '参加者' };  // what a link makes you
 const B62 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 const rid = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => B62[b % 62]).join('');
 const hk = i => 'h' + String(i + 1).padStart(2, '0');  // hole index 0..17 → 'h01'..'h18' (plain 1..18 keys would become an array)
@@ -92,12 +92,8 @@ function compFix(pid, i) {
 }
 // teams and leads, as the organizer set them in the roster
 const leadOf = t => ((comp && comp.leads) || {})['t' + t] || null;
-const myTeam = () => { const r = comp && comp.player && (comp.roster || {})[comp.player]; return r ? +r.team || 1 : null; };
-// the team this phone leads: its chosen name is that team's lead (and the name really is this phone's)
-function compLeadTeam() {
-  const t = myTeam();
-  return t && leadOf(t) === comp.player && (comp.taken || {})[comp.player] === comp.uid ? t : null;
-}
+// the team (cart) of this phone's chosen name, only while that name really is this phone's: its scores may be entered here
+const myTeam = () => { const r = comp && comp.player && (comp.roster || {})[comp.player]; return r && (comp.taken || {})[comp.player] === comp.uid ? +r.team || 1 : null; };
 // everyone in the round: the competition's roster, or this phone's own players when solo
 function allPlayers() {
   if (!comp) return S.score.players;
@@ -134,7 +130,7 @@ async function compSend() {
   let f; try { f = await fb(); } catch (e) { return; }
   if (!compLive) return;  // the SDK would only hold it in memory; it stays in the outbox until connected
   sending = true;
-  let stuck = false;
+  let stuck = false, refused = 0;
   try {
     for (const [path, e] of Object.entries(comp.outbox)) {
       const r = f.D.ref(f.db, cp('scores/' + path));
@@ -144,10 +140,20 @@ async function compSend() {
         const cur = (await withTimeout(f.D.get(r), 10000)).val();
         if (!cur || !cur.t || cur.t <= e.t) await withTimeout(f.D.set(r, e.v == null ? null : scoreRec(e)), 10000);
         done();
-      } catch (err) { if (denied(err)) done(); else { stuck = true; break; } }
+      } catch (err) { if (denied(err)) { done(); refused++; } else { stuck = true; break; } }
     }
   } finally { sending = false; if (comp) { saveComp(); renderBadge(); } }
-  // entries made while this pass was sending (a lead entering the whole cart) go out now; a failed pass waits for the connection
+  // the server refused it (e.g. the organizer moved someone to another team meanwhile): say so instead of it just vanishing
+  // the refused value is taken off the screen again: the server's scores are read once more (the listener does not
+  // fire for it, since nothing changed there)
+  if (refused && comp) {
+    toast('入力できなかったスコアがあります。同じ組の人のスコアだけ入力できます');
+    try {
+      const cid = comp.cid, v = (await withTimeout(f.D.get(f.D.ref(f.db, cp('scores'))), 10000)).val();
+      if (comp && comp.cid === cid) { comp.scores = v || {}; overlayOutbox(); saveComp(); compRefresh(); }
+    } catch (e) {}
+  }
+  // entries made while this pass was sending (someone entering for the whole cart) go out now; a failed pass waits for the connection
   if (!stuck && comp && Object.keys(comp.outbox || {}).length) compSend();
 }
 // pins placed by the organizer are handed out to everyone

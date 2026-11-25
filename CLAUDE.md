@@ -43,8 +43,8 @@ The user is a Japanese speaker new to Git: answer in plain Japanese, say what wa
 | `js/rank.js` | ranking page, everyone's scoreboard (editable cells), JPEG scorecard | ranking, scoreboard, image |
 | `js/pages.js` | swipe ranking ← map → score, `goPage` | page swipe |
 | `js/share.js` | Firebase: config, `fb()`, competition copy `comp`, score outbox/sync, create/join/connect | sync, offline sending |
-| `js/roster.js` | roster/teams/leads, invites + links, `roleKind`/`roleLabel`, role notice, opening a link | teams, leads, links, roles |
-| `js/roles.js` | `canEdit`, `me()`, dock switching, `applyRoles` (`data-show`), role badge | who may edit what (screen side) |
+| `js/roster.js` | roster/teams, invites + links, `roleKind`/`roleLabel` (org / player; the team lead role was dropped 2026-11), role notice, opening a link | teams, links, roles |
+| `js/roles.js` | `canEdit` (organizer: all; a player with a chosen name: everyone in the same team = cart), `me()`, dock switching (`dockMany`), `applyRoles` (`data-show`), role badge | who may edit what (screen side) |
 | `js/compui.js` | competition screens: create, overview, roster editor, links (LINE/copy/QR), name pick | competition screens |
 | `js/offline.js` | save map tiles to the phone, service-worker registration, Safari add-to-home hint | offline save |
 | `js/main.js` | start-up (GPS resume, first refresh) | start-up |
@@ -78,11 +78,11 @@ expiry/{cid}            expires (cleanup index; any app deletes past ones)
 comps/{cid}/meta        {name, date, owner, created, expires}         org writes
            /course      {club, nines:[{name, holes:[{par, tee, green}]}×2]}   org writes
            /roster/{pid} {name, team}                                   org writes
-           /leads/t{n}  pid of team n's lead (one per team)             org writes
+           /leads/t{n}  old team leads (before 2026-11), no longer written or read for permissions   org writes
            /pins/hNN    [lng, lat]                                      org writes
            /invites/{key} {role: player|org, t}                         org only
            /members/{uid} {role: player|org, key, player?, t}
            /taken/{pid} uid that picked the name
-           /scores/{pid}/hNN {v, by, bp, t, fix?}   org: all · lead: own team · player: self
+           /scores/{pid}/hNN {v, by, bp, t, fix?}   org: all · player (name chosen): everyone in the same team
 ```
 Hole keys are `h01`..`h18` (numeric keys would turn into arrays).

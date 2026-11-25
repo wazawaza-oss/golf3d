@@ -95,7 +95,7 @@ $('cpDateE').onchange = () => { if ($('cpDateE').value) setMeta({ date: $('cpDat
 $('cpAgain').onclick = () => {
   const old = comp, m = old.meta || {}, n = Object.keys(old.roster || {}).length;
   const date = m.date && m.date >= today() ? m.date : today();
-  ask('同じ名簿でコンペを作り直しますか？', `コンペ名：${m.name || 'コンペ'}\n日付：${date.replace(/-/g, '/')}\nコース・参加者${n}人・組分け・カート代表をそのまま使います。スコアは引き継ぎません。参加者には新しいリンクを送り直してください`, '作り直す', async () => {
+  ask('同じ名簿でコンペを作り直しますか？', `コンペ名：${m.name || 'コンペ'}\n日付：${date.replace(/-/g, '/')}\nコース・参加者${n}人・組分けをそのまま使います。スコアは引き継ぎません。参加者には新しいリンクを送り直してください`, '作り直す', async () => {
     toast('作成中…');
     try {
       await compCreate((m.name || 'コンペ').slice(0, 40), date, { roster: old.roster, leads: old.leads, course: old.course });
@@ -111,7 +111,7 @@ $('cpLeave').onclick = () => ask(`「${(comp.meta && comp.meta.name) || 'コン�
   comp.role === 'org' ? '主催者が抜けると、このスマホではコンペを管理できなくなります（主催者用リンクを開けば戻れます）' : 'もう一度リンクを開けば、また参加できます',
   '抜ける', () => { compLeave(); mShow('mMain'); renderMenu(); toast('コンペから抜けました'); });
 
-/* organizer: names, teams and each team's lead (changes reach everyone at once, also mid-round) */
+/* organizer: names and teams (changes reach everyone at once, also mid-round); everyone in a team may enter that team's scores */
 const rosterExtra = new Set();  // teams added (or emptied) on this screen that nobody is in yet
 function rosterTeams() {
   const ts = [...new Set(teams().concat([...rosterExtra]))].sort((a, b) => a - b);
@@ -122,12 +122,11 @@ function renderRoster() {
   box.textContent = '';
   const list = rosterList(), shown = rosterTeams(), taken = comp.taken || {};
   shown.forEach(t => {
-    const lead = list.find(r => r.id === leadOf(t));
-    box.appendChild(el('div', 'grp-t', `${t}組${lead ? ` ・ 代表 ${lead.name}` : ''}`));
+    box.appendChild(el('div', 'grp-t', `${t}組`));
     const g = el('div', 'grp'), people = list.filter(r => r.team === t);
     people.forEach(r => {
       const row = el('div', 'mrow rrow'), l1 = el('div', 'r1'), l2 = el('div', 'r2');
-      const inp = el('input'), sel = el('select'), on = leadOf(t) === r.id;
+      const inp = el('input'), sel = el('select');
       inp.type = 'text'; inp.value = r.name; inp.maxLength = 12; inp.setAttribute('aria-label', '名前');
       nameLimit(inp);
       inp.onchange = () => {  // an empty box goes back to the name it had; a second "山田" becomes 山田（2）
@@ -144,10 +143,7 @@ function renderRoster() {
         if (people.length === 1) rosterExtra.add(t);  // the team being emptied stays on screen until it is deleted
         rosterExtra.delete(+sel.value); compMoveTeam(r.id, +sel.value); renderRoster();
       };
-      const lb = el('button', 'lead' + (on ? ' on' : ''), on ? '★ 代表' : '代表にする');
-      lb.setAttribute('aria-pressed', on);
-      lb.onclick = () => { compSetLead(t, on ? null : r.id); renderRoster(); toast(on ? `${t}組の代表を外しました` : `${r.name}さんを${t}組の代表にしました`); };
-      l2.append(sel, lb);
+      l2.append(sel);
       if (taken[r.id]) {
         const rel = el('button', 'tag', '参加中・解除'); rel.setAttribute('aria-label', `${r.name}は名前を選び済み。選択を解除する`);
         rel.onclick = () => ask(`「${r.name}」の選択を解除しますか？`, '選んだ人のスマホに、名前の選び直しを出します', '解除する', () => compRelease(r.id).catch(() => toast(offlineMsg)));
@@ -224,7 +220,7 @@ function renderPick() {
       b.onclick = async () => {
         try {
           await compPick(r.id); refresh();
-          const lt = compLeadTeam(); toast(`「${r.name}」で参加しました${lt ? `（${lt}組のカート代表）` : ''}`);
+          toast(`「${r.name}」で参加しました（同じ${+r.team || 1}組の人のスコアも入力できます）`);
           if (comp.role === 'org') $('mBack').click(); else $('menu').hidden = true;  // the organizer came from the competition screen
         }
         catch (e) { toast(denied(e) ? 'その名前は選べません（ほかの人が選んだか、期限切れです）' : offlineMsg); }

@@ -96,10 +96,10 @@ function scoreStepper(p, i, after, title) {
 }
 
 /* bottom dock: the score for the hole on screen, entered with − / ＋ (same rules as the score page).
-   In a competition it is the player's own name, or — for a team lead / the organizer — the person
-   shown in the dock; tapping that name moves to the next person they may enter for. */
+   In a competition it is the person shown in the dock: your own name at first; tapping it moves on to the others in
+   your cart (the organizer: everyone). */
 function renderDock() {
-  const p = me(), i = N - 1, hp = playHoles()[i].par, v = p ? strokesOf(p)[i] : null, many = comp && roleKind() !== 'player';
+  const p = me(), i = N - 1, hp = playHoles()[i].par, v = p ? strokesOf(p)[i] : null, many = dockMany();
   $('dkMinus').disabled = $('dkPlus').disabled = !p;
   $('dkVal').className = 'dv ' + scoreCls(v, hp) + (many ? ' who' : '');
   // in a competition: whose score it is (the hole and par are in the panel at the top; with both, a long name pushed them off)
