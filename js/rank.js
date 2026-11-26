@@ -13,9 +13,9 @@ function rankedRows() {
 }
 function renderRank() {
   const all = allPlayers(), rows = rankedRows();
-  const maxN = Math.max(0, ...rows.map(r => r.n));
-  $('rkInfo').textContent = (maxN ? `${maxN}ホールまでの成績です。` : 'スコアを入力すると順位が付きます。') + '順位は、入力したホールの「パーとの差」が少ない順です（同じ差なら同じ順位。この決め方は変えられません）。';
-  if (comp) $('rkInfo').textContent += `　${(comp.meta && comp.meta.name) || 'コンペ'}${compLive ? '' : '（オフライン）'}`;
+  // only the competition's name above the table (no explanation)
+  $('rkInfo').textContent = comp ? `${(comp.meta && comp.meta.name) || 'コンペ'}${compLive ? '' : '（オフライン）'}` : '';
+  $('rkInfo').hidden = !comp;
   // ranking table (scrolls inside its box when there are many players)
   const tb = el('table', 'rkt'), hd = el('tr');
   ['順位', '名前', 'パーとの差', '合計打数', 'ホール数'].forEach(x => hd.append(el('th', '', x)));
