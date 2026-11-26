@@ -176,6 +176,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .mcbtn button.go{background:var(--accent);color:#fff}
 .mcbtn #askAlt{grid-column:1/-1}
 .snack{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--sab) + 24px);z-index:21;width:min(420px,calc(100% - 24px));display:flex;align-items:center;gap:10px;padding:10px 10px 10px 16px;border-radius:14px;background:#14223a;color:#fff;font-size:14.5px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.snack{touch-action:none;user-select:none;-webkit-user-select:none}
 .snack span{flex:1}
 .snack button{padding:10px 14px;border-radius:10px;background:#fff;color:var(--ink);font-weight:900;font-size:14.5px}
 

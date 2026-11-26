@@ -182,10 +182,37 @@ $('ringsAlpha').onchange = () => savePrefs();
 // undo bar: a few seconds to take back the last action
 let snackT = null;
 function snack(text, undo, label = '元に戻す') {  // label: the button, when it does something else than undo
-  $('snackText').textContent = text; $('snackUndo').textContent = label; $('snack').hidden = false;
-  $('snackUndo').onclick = () => { clearTimeout(snackT); $('snack').hidden = true; undo(); };
-  clearTimeout(snackT); snackT = setTimeout(() => $('snack').hidden = true, 5000);
+  $('snackText').textContent = text; $('snackUndo').textContent = label;
+  const el = $('snack'); el.style.transition = 'none'; el.style.transform = ''; el.style.opacity = ''; el.hidden = false;
+  $('snackUndo').onclick = () => { snackHide(); undo(); };
+  clearTimeout(snackT); snackT = setTimeout(snackHide, 5000);
 }
+const snackHide = () => { clearTimeout(snackT); $('snack').hidden = true; };
+// swipe the bar down (or sideways) to put it away at once, instead of waiting for it to go
+(() => {
+  const el = $('snack'); let p0 = null, dx = 0, dy = 0;
+  const move = (x, y) => { el.style.transform = `translate(calc(-50% + ${x}px), ${y}px)`; el.style.opacity = String(Math.max(0, 1 - Math.max(y, Math.abs(x)) / 140)); };
+  el.addEventListener('pointerdown', e => {
+    if (e.target.closest('button')) return;
+    p0 = [e.clientX, e.clientY]; dx = dy = 0; el.style.transition = 'none'; clearTimeout(snackT);
+    try { el.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  el.addEventListener('pointermove', e => {
+    if (!p0) return;
+    dx = e.clientX - p0[0]; dy = Math.max(0, e.clientY - p0[1]);
+    if (Math.abs(dx) < dy) dx = 0; else dy = 0;  // one direction at a time: down, or sideways
+    move(dx, dy);
+  });
+  const end = () => {
+    if (!p0) return; p0 = null;
+    el.style.transition = 'transform .18s ease-out, opacity .18s ease-out';
+    if (dy > 36 || Math.abs(dx) > 70) {
+      move(dx ? Math.sign(dx) * 260 : 0, dy ? 140 : 0);
+      setTimeout(() => { if (el.style.opacity === '0') snackHide(); }, 180);
+    } else { el.style.transform = ''; el.style.opacity = ''; snackT = setTimeout(snackHide, 3000); }
+  };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+})();
 $('pinReset').onclick = () => {
   const prev = S.round.pins, prevTees = S.round.tees;
   // the organizer's reset also takes back the pins handed out in the competition (undo puts them back)
