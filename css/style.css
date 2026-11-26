@@ -386,7 +386,7 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 .nines button.add{background:#fff;border:1.5px dashed #9aa494;color:#36414d}
 #menu .mrow .pick{width:22px;text-align:center;font-size:18px;font-weight:900;color:#1f9d48}  /* ✓ on the chosen nine */
 /* competition: role label under the distance panel */
-.rolebadge{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px - 8px);left:50%;transform:translateX(-50%);z-index:6;max-width:min(320px,calc(100% - 140px));box-sizing:border-box;padding:0 9px;border-radius:999px;border:1px solid #fff;background:#16592f;color:#fff;font-size:11px;line-height:15px;-webkit-font-smoothing:antialiased;letter-spacing:.02em;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.rolebadge{position:fixed;top:calc(env(safe-area-inset-top,0px) + 120px);left:0;right:0;margin:0 auto;width:fit-content;z-index:6;max-width:min(320px,calc(100% - 140px));box-sizing:border-box;padding:0 9px;border-radius:999px;border:1px solid #fff;background:#16592f;color:#fff;font-size:11.5px;line-height:18px;-webkit-font-smoothing:antialiased;letter-spacing:.02em;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.2)}
 .rolebadge.off{background:#c45400}  /* offline: orange, so it is noticed */
 /* competition screens in settings */
 #menu .mrow.field .mtx{flex:none;width:84px}
