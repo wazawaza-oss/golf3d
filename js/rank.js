@@ -11,6 +11,15 @@ function rankedRows() {
   rows.forEach((r, i) => { if (r.n && (i === 0 || r.diff !== rows[i - 1].diff || !rows[i - 1].n)) pos = i + 1; r.pos = r.n ? pos : 0; });
   return rows;
 }
+// the ranking box shows the top five; the rest scroll inside it (a sliver of the sixth shows there is more)
+function rkFit() {
+  const list = $('rkList'), tr = list.querySelectorAll('tr');
+  if (!tr.length || !tr[0].offsetHeight) return;  // page not shown yet: the observer below fits it when it is
+  // tr[0] is the header; tr[6] is the sixth player
+  const h = tr.length > 6 ? `${Math.round(tr[6].offsetTop - tr[0].offsetTop + 14)}px` : 'none';
+  if (list.style.maxHeight !== h) list.style.maxHeight = h;
+}
+new ResizeObserver(rkFit).observe($('rkList'));
 function renderRank() {
   const all = allPlayers(), rows = rankedRows();
   // only the competition's name above the table (no explanation)
@@ -25,7 +34,7 @@ function renderRank() {
     tr.append(el('td', r.pos ? 'pos' : 'pos none', r.pos || '未入力'), el('td', 'nm', pName(r.p)), el('td', 'dv', r.n ? fmtDiff(r.diff) : '—'), el('td', '', r.n ? r.tot : '—'), el('td', '', r.n));
     tb.append(tr);
   });
-  const list = $('rkList'); list.textContent = ''; list.appendChild(tb);
+  const list = $('rkList'); list.textContent = ''; list.appendChild(tb); rkFit();
   // scorecard: front nine (1-9) and back nine (10-18); in a competition, cells you may enter open -/+ below that half
   const card = $('rkCard'); card.textContent = '';
   const ph = playHoles();
