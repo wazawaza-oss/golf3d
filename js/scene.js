@@ -6,8 +6,8 @@
    soft edge. When the hole changes the tiles on screen are loaded again in place (the old ones stay until the new ones
    are in), so there is no blank flash.
    Trees are found once per round in the aerial photo (z17, about 1 m a pixel: tree cover is darker, greener and rougher
-   than turf), over the area of all the round's holes, and drawn as low-poly 3D trees (fill-extrusion, two stacked
-   six-sided blocks) only in 3D. Each tree knows which holes it stands by; the ones by the hole on screen are green,
+   than turf), over the area of all the round's holes, and drawn as low-poly 3D fir trees (fill-extrusion, four
+   stacked tiers narrowing to a point: FIR) only in 3D. Each tree knows which holes it stands by; the ones by the hole on screen are green,
    the rest grey like the ground under them.
    Their size can be changed (S.prefs.treeSize / treeHeight, 0.5–2) without looking at the photo again: the spots are kept.
    Plain scripts loaded in order from index.html (no build step); they share top-level names. */
@@ -128,11 +128,25 @@ function canopy(px, W, H) {
 const hash = (a, b, k) => { let h = Math.imul(a, 374761393) ^ Math.imul(b, 668265263) ^ Math.imul(k, 2246822519); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
 // green for trees by the hole on screen, and a grey of about the same lightness for the rest
 const TREE_COLORS = [['#2f6b35', '#7d817c'], ['#3c7d3c', '#8a8e88'], ['#4f9142', '#979b95'], ['#5d9a48', '#a1a59f']];
-// a six-sided block round a point: r metres, from base to top; hs = ",3,4," the holes (1–18) it stands by
-function hexAt(ll, r, rot, base, top, col, hs) {
-  const c = Math.cos(rad(ll[1])), ring = [];
-  for (let i = 0; i <= 6; i++) { const a = rot + i % 6 * Math.PI / 3; ring.push([ll[0] + deg(r * Math.sin(a) / (6371008.8 * c)), ll[1] + deg(r * Math.cos(a) / 6371008.8)]); }
-  return { type: 'Feature', properties: { b: base, t: top, c: col[0], g: col[1], hs }, geometry: { type: 'Polygon', coordinates: [ring] } };
+/* a fir tree 🌲: four low tiers, each narrower than the one below, so the outline is a triangle in steps. The map can
+   only raise straight-sided blocks (it has no cones), so the tiers do it. They are four-sided, each turned 45° from
+   the one below (seen from above, an eight-pointed star like branches), which keeps a tree at 40 triangles, near the
+   old two six-sided blocks (32). Higher tiers take a lighter green (the next colour in TREE_COLORS), like sunlit tips. */
+const FIR = [[1, .1, .34], [.68, .3, .56], [.42, .52, .78], [.18, .74, 1]];  // width, from, to (× height); tier i is turned i × 45°
+const SQ = Math.SQRT1_2;
+// the tiers of one tree, r metres wide at the bottom, h high, turned rot; hs = ",3,4," the holes (1–18) it stands by.
+// Made for some 10 000 trees at once, so the eight directions come from one sine and cosine.
+function firAt(out, ll, r, rot, h, ci, hs) {
+  const ky = 57.29577951 / 6371008.8, kx = ky / Math.cos(ll[1] * Math.PI / 180), s = Math.sin(rot), c = Math.cos(rot);
+  const dir = [[s, c], [(s + c) * SQ, (c - s) * SQ], [c, -s], [(c - s) * SQ, -(s + c) * SQ]];  // 0°, 45°, 90°, 135° (the rest are these reversed)
+  FIR.forEach(([k, b, t], i) => {
+    const [dx, dy] = dir[i & 3], [ex, ey] = dir[(i + 2) & 3], q = r * k;
+    const p0 = [ll[0] + dx * q * kx, ll[1] + dy * q * ky], p1 = [ll[0] + ex * q * kx, ll[1] + ey * q * ky];
+    const p2 = [ll[0] - dx * q * kx, ll[1] - dy * q * ky], p3 = [ll[0] - ex * q * kx, ll[1] - ey * q * ky];
+    // properties kept small (a colour number, heights to 10 cm): handing ~40 000 shapes to the map is the slow part
+    out.push({ type: 'Feature', properties: { b: Math.round(h * b * 10) / 10, t: Math.round(h * t * 10) / 10, k: Math.min(ci + (i >> 1), TREE_COLORS.length - 1), hs },
+      geometry: { type: 'Polygon', coordinates: [[p0, p1, p2, p3, p0]] } });
+  });
 }
 // the trees of the round's area, read from the photo tiles (through the tile cache, so saved maps work with no signal)
 async function treesBuild() {
@@ -165,8 +179,8 @@ async function treesBuild() {
       const hs = ',' + hcs.filter(o => nearest(ix, iy, o.cs) < soft * .5).map(o => o.n).join(',') + ',';
       const ll = [(wx / 256 / 2 ** z) * 360 - 180, deg(Math.atan(Math.sinh(Math.PI * (1 - 2 * wy / 256 / 2 ** z))))];
       const s = hash(gx, gy, 3), h = 9 + s * 7, r = 3.4 + hash(gx, gy, 4) * 1.8, rot = hash(gx, gy, 5) * Math.PI;
-      const col = TREE_COLORS[Math.floor(hash(gx, gy, 6) * TREE_COLORS.length)];
-      out.push([ll, r, rot, h, col, hs]);
+      const ci = Math.floor(hash(gx, gy, 6) * TREE_COLORS.length);  // its colour (TREE_COLORS index)
+      out.push([ll, r, rot, h, ci, hs]);
     }
     if (out.length > 30000) break;  // a safety stop for a huge area
   }
@@ -176,17 +190,14 @@ async function treesBuild() {
 }
 // the size sliders (表示の設定 › 木の大きさ / 木の高さ): S.prefs.treeSize, S.prefs.treeHeight, 0.5–2, missing = 1
 const treeK = k => { const v = +S.prefs[k]; return v >= .5 && v <= 2 ? v : 1; };
-// each tree = two stacked six-sided blocks; made again from the spots when the width changes (no new look at the photo).
+// each tree = a fir of four tiers (FIR); made again from the spots when the width changes (no new look at the photo).
 // Heights are scaled by the layer's paint (treesPaintH), which is instant, so the trees follow a slider while it moves;
 // the width (a new set of shapes, ~0.2 s on a computer) is made again when the finger lifts.
 let treeSpots = [];
 function treesMake() {
   if (!mapReady || !map.getSource('trees')) return;
   const w = treeK('treeSize'), out = [];
-  treeSpots.forEach(([ll, r0, rot, h, col, hs]) => {
-    const r = r0 * w;
-    out.push(hexAt(ll, r, rot, h * .22, h * .72, col, hs), hexAt(ll, r * .62, rot + .5, h * .72, h, col, hs));
-  });
+  treeSpots.forEach(([ll, r, rot, h, ci, hs]) => firAt(out, ll, r * w, rot, h, ci, hs));
   map.getSource('trees').setData(fc(out));
   treesPaintH();
 }
@@ -197,7 +208,9 @@ function treesPaintH() {
   map.setPaintProperty('trees', 'fill-extrusion-height', ['*', ['get', 't'], k]);
 }
 // green by the hole on screen, grey elsewhere (all green when fading is off)
-const treeColor = () => focus ? ['case', ['in', `,${focus.n},`, ['get', 'hs']], ['get', 'c'], ['get', 'g']] : ['get', 'c'];
+// a tree's colour number → its green (j = 0) or grey (j = 1)
+const treeCol = j => ['match', ['get', 'k'], ...TREE_COLORS.slice(0, -1).flatMap((x, i) => [i, x[j]]), TREE_COLORS[TREE_COLORS.length - 1][j]];
+const treeColor = () => focus ? ['case', ['in', `,${focus.n},`, ['get', 'hs']], treeCol(0), treeCol(1)] : treeCol(0);
 let treeColorNow = '';
 function treesShow() {
   if (!mapReady || !map.getLayer('trees')) return;
@@ -226,7 +239,7 @@ function sceneSync() {
 map.on('load', () => {
   map.addSource('trees', { type: 'geojson', data: fc([]), maxzoom: 16, buffer: 8 });
   map.addLayer({ id: 'trees', type: 'fill-extrusion', source: 'trees', minzoom: 13, layout: { visibility: 'none' },
-    paint: { 'fill-extrusion-color': ['get', 'c'], 'fill-extrusion-base': ['get', 'b'], 'fill-extrusion-height': ['get', 't'],
+    paint: { 'fill-extrusion-color': treeCol(0), 'fill-extrusion-base': ['get', 'b'], 'fill-extrusion-height': ['get', 't'],
       'fill-extrusion-opacity': 1, 'fill-extrusion-vertical-gradient': true } });
   treesPaintH();
   sceneSync();

@@ -117,7 +117,12 @@ function needHole() {
   else snack('このホールのグリーンとティーを先に登録します', () => openSetup(), '登録する');
   return true;
 }
-$('b3d').onclick = () => { if (!mapReady || (!S.is3D && needHole())) return; set3D(!S.is3D); savePrefs(); refresh(); };  // turning 3D off always works
+// turning 3D off always works; turned on from 真上 (straight down, which would look flat) it looks from the tee
+$('b3d').onclick = () => {
+  if (!mapReady || (!S.is3D && needHole())) return;
+  if (!S.is3D && S.view === 'top') S.view = 'tee';
+  set3D(!S.is3D); savePrefs(); refresh();
+};
 $('bView').onclick = () => {
   if (needHole()) return;
   S.view = { tee: 'top', top: 'green', green: 'tee' }[S.view];

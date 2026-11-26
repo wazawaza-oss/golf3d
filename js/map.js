@@ -117,11 +117,12 @@ function camera(view, duration = 900, settle = true) {
   let opt;
   if (view === 'top') opt = { center: lerpLL(t, h.green, .5), bearing: brg, pitch: 0, zoom: flat, offset: mid };
   else if (!pitch3) opt = { center: lerpLL(t, h.green, .5), bearing: view === 'green' ? (brg + 180) % 360 : brg, pitch: 0, zoom: flat, offset: mid };
-  // 3D: the whole hole, tee to pin (and the flag above it), in the same band as the flat views
+  // 3D: a view over the whole hole and the ground round it (the trees beside it, what lies past the green), not
+  // just tee to pin: those points and some around them fit in the same band as the flat views, a little tilted
   // (with 表示の設定 open the map's own centre moves up into the part above the sheet, so the tilt looks right there)
-  else opt = fitCam({ center: lerpLL(t, h.green, .5), bearing: view === 'green' ? (brg + 180) % 360 : brg, pitch: 60, zoom: base,
+  else opt = fitCam({ center: lerpLL(t, h.green, .5), bearing: view === 'green' ? (brg + 180) % 360 : brg, pitch: CAM_PITCH, zoom: base,
     padding: { top: 0, bottom: pk ? Math.max(0, H - pk.low) : 0, left: 0, right: 0 } },
-    [t, h.green, pinLL()], { top: top + 8, bottom: low - 14, left: 24, right: (el.clientWidth || innerWidth) - 24 });
+    [t, h.green, pinLL(), ...holeAround(t, h.green, view === 'green')], { top: top + 8, bottom: low - 14, left: 24, right: (el.clientWidth || innerWidth) - 24 });
   // freezeElevation: MapLibre then reads the ground height again when the move ends; without it the height stays
   // frozen at whatever it was (0 m on a hill course), the camera sits inside the hillside and the view looks hugely zoomed in
   if (!opt.padding) opt.padding = { top: 0, bottom: 0, left: 0, right: 0 };  // a padding stays on the map until set again
@@ -129,6 +130,17 @@ function camera(view, duration = 900, settle = true) {
   // in 3D the ground height under the new view is known only after its elevation tiles load;
   // aim again once they have, otherwise the camera can end up inside the hillside (looks hugely zoomed in)
   if (S.is3D && settle) { const tok = ++camTok; map.once('idle', () => { if (S.is3D && tok === camTok) camera(view, 400, false); }); }
+}
+const CAM_PITCH = 50;  // the 3D tilt for a hole (60 showed little past the green; less looks flat)
+// points round a hole for the 3D view: beyond its far end, a little behind the near end, and out to both sides
+// (back = looking from the green, so the far end is the tee)
+function holeAround(t, g, back) {
+  const len = Math.max(60, distM(t, g)), c = Math.cos(rad((t[1] + g[1]) / 2)), M = 111320;
+  const ex = (g[0] - t[0]) * c, ny = g[1] - t[1], L = Math.hypot(ex, ny) || 1, ux = ex / L, uy = ny / L;
+  const at = (f, s) => [t[0] + (ux * f + uy * s) / M / c, t[1] + (uy * f - ux * s) / M];  // f metres towards the green, s to its right
+  const far = Math.max(55, len * .35), near = 25, side = Math.max(50, len * .3);  // metres; a short hole still fills the screen
+  return [at(back ? -far : len + far, 0), at(back ? len + near : -near, 0),
+    at(len * .5, side), at(len * .5, -side), at(back ? 0 : len, side * .8), at(back ? 0 : len, -side * .8)];
 }
 /* a tilted view where every point lands inside box (screen pixels): with perspective there is no formula, so try the
    camera, see where the points fall, move and zoom by what is off, a few times; the map is put back before it animates */
@@ -161,7 +173,7 @@ function set3D(on) {
   const aim = () => {
     if (S.is3D !== on) return;
     if (registered(hole()) && !(S.mode && S.mode.startsWith('setup'))) camera(S.view, 900);  // and aim once more when the ground is in
-    else map.easeTo({ pitch: on ? 60 : 0, duration: 700, freezeElevation: true });
+    else map.easeTo({ pitch: on ? CAM_PITCH : 0, duration: 700, freezeElevation: true });
   };
   if (on) map.once('idle', aim); else aim();
 }
