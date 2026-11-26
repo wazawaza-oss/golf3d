@@ -59,7 +59,7 @@ function refresh() {
   guideMarkers();
   placeCross();
   readout();
-  renderBadge(); applyRoles();
+  netNotice(); applyRoles();
 }
 
 /* crosshair: sits in the middle of the map area left visible between the HUD and the bottom panel */

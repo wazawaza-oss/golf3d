@@ -142,7 +142,7 @@ async function compSend() {
         done();
       } catch (err) { if (denied(err)) { done(); refused++; } else { stuck = true; break; } }
     }
-  } finally { sending = false; if (comp) { saveComp(); renderBadge(); } }
+  } finally { sending = false; if (comp) saveComp(); }
   // the server refused it (e.g. the organizer moved someone to another team meanwhile): say so instead of it just vanishing
   // the refused value is taken off the screen again: the server's scores are read once more (the listener does not
   // fire for it, since nothing changed there)

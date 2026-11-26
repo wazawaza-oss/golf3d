@@ -104,7 +104,6 @@ function renderDock() {
   $('dkVal').className = 'dv ' + scoreCls(v, hp) + (many ? ' who' : '');
   // in a competition: whose score it is (the hole and par are in the panel at the top; with both, a long name pushed them off)
   $('dkHole').textContent = !p ? '名前を選んでください' : comp ? `${p.name}${many ? ' ▸' : ''}` : `${N}番 Par ${hp}`;
-  if (comp) renderBadge();  // the count of scores not sent yet
   $('dkNum').textContent = v == null ? '—' : v;
   $('dkTerm').textContent = v == null ? '未入力' : termOf(v, hp);
 }

@@ -41,15 +41,17 @@ function setStroke(p, i, v) {
 function applyRoles() {
   document.querySelectorAll('[data-show]').forEach(e => { e.hidden = !e.dataset.show.split(' ').includes(roleKind()); });
 }
-// a small label under the distance panel: as whom, and which competition
-const BADGE_GRACE = 6000;  // ms after opening
-setTimeout(() => { if (typeof comp !== 'undefined' && comp) renderBadge(); }, BADGE_GRACE + 100);
-function renderBadge() {
-  const b = $('roleBadge'); b.hidden = !comp; if (!comp) return;
-  const r = comp.player && (comp.roster || {})[comp.player];
-  // offline goes first (the badge is cut with … when long), with how many scores wait to be sent
-  // (not in the first seconds after opening, while it is still connecting: that would flash 「オフライン」 every time)
-  const wait = Object.keys(comp.outbox || {}).length, off = !compLive && performance.now() > BADGE_GRACE;
-  b.textContent = `${off ? `オフライン${wait ? `・未送信${wait}件` : ''} ｜ ` : ''}${roleLabel()}${r ? ' ' + r.name : ''}${comp.meta && comp.meta.name ? ' ・ ' + comp.meta.name : ''}`;
-  b.classList.toggle('off', off);
+// in a competition: a short notice when the connection comes or goes (no label on the map: it hid the distance).
+// Not in the first seconds after opening, while it is still connecting; still offline after them is said once.
+const NET_GRACE = 6000;  // ms after opening
+let netWas = null;
+setTimeout(() => { if (typeof comp !== 'undefined' && comp) netNotice(); }, NET_GRACE + 100);
+function netNotice() {
+  if (!comp) { netWas = null; return; }
+  if (performance.now() <= NET_GRACE) return;
+  const on = !!compLive;
+  if (netWas === null ? on : on === netWas) { netWas = on; return; }
+  netWas = on;
+  const wait = Object.keys(comp.outbox || {}).length;
+  toast(on ? 'オンラインになりました' : `オフラインになりました${wait ? `（未送信${wait}件）` : ''}`, 2000);
 }

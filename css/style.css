@@ -9,18 +9,11 @@
      --fixb: how far iOS's "bottom" is from the real screen bottom in the home-screen app (set in js/hud.js) */
   --home:env(safe-area-inset-bottom,0px); --fixb:0px; --sab:calc(var(--home) + var(--fixb));
   --sat:env(safe-area-inset-top,0px);
-  --band:0px;  /* home-screen app: the strip below the status bar that iPhone blurs (see .topband) */
 }
 html,body{height:100%;margin:0;touch-action:manipulation}  /* no double-tap page zoom on buttons (iPhone); pinch still works */
 /* home-screen app with black-translucent: the page starts under the status bar and iOS can leave a strip of
    that height empty at the bottom; letting the root reach past it is the usual fix */
 @media (display-mode: standalone){html{min-height:calc(100% + env(safe-area-inset-top,0px))}}
-/* home-screen app on recent iOS: the system draws a blurred bar over the top of the page, a little taller than the
-   status bar (WebKit bug 301994), and a page cannot turn it off. A solid strip under it keeps the blur clean (no
-   smeared map), and the panel and its badge start below it */
-@media (display-mode: standalone){:root{--band:18px}}
-.topband{display:none;position:fixed;top:0;left:0;right:0;height:calc(var(--sat) + var(--band));z-index:4;background:#dfe6da;pointer-events:none}
-@media (display-mode: standalone){.topband{display:block}}
 [hidden]{display:none!important}
 #vprobe{position:fixed;top:0;bottom:0;left:0;width:0;visibility:hidden;pointer-events:none}
 body{font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;color:var(--ink);background:#dfe6da;overflow:hidden;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
@@ -31,7 +24,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 
 /* top: distance panel — light frosted glass with dark text (readable in sun); nothing sits at the bottom edge (Safari's bar).
    [‹] [ 1H · PAR 4 / big distance ] [›], then a hairline and the elevation line */
-.hud{position:fixed;top:calc(var(--sat) + var(--band) + 10px);left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));max-width:440px;margin:0 auto;z-index:5;
+.hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));max-width:440px;margin:0 auto;z-index:5;
   display:grid;grid-template-columns:46px 1fr 46px;grid-template-areas:"prev mid next" "sub sub sub";align-items:center;
   padding:4px 4px 6px;border-radius:18px;background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
   border:1px solid rgba(10,19,34,.16);box-shadow:0 6px 20px rgba(0,0,0,.22);color:var(--ink);font-weight:800}
@@ -393,8 +386,6 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 .nines button.add{background:#fff;border:1.5px dashed #9aa494;color:#36414d}
 #menu .mrow .pick{width:22px;text-align:center;font-size:18px;font-weight:900;color:#1f9d48}  /* ✓ on the chosen nine */
 /* competition: role label under the distance panel */
-.rolebadge{position:fixed;top:calc(var(--sat) + var(--band) + 10px - 8px);left:0;right:0;margin:0 auto;width:fit-content;z-index:6;max-width:min(320px,calc(100% - 140px));box-sizing:border-box;padding:0 9px;border-radius:999px;border:1px solid #fff;background:#16592f;color:#fff;font-size:11.5px;line-height:18px;-webkit-font-smoothing:antialiased;letter-spacing:.02em;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.2)}
-.rolebadge.off{background:#c45400}  /* offline: orange, so it is noticed */
 /* competition screens in settings */
 #menu .mrow.field .mtx{flex:none;width:84px}
 #menu .mrow.field input{flex:1 1 0;min-width:0;font:inherit;font-size:15px;font-weight:700;padding:8px 10px;border:1px solid #d9dce1;border-radius:9px;background:#fff;color:var(--ink)}  /* name and date boxes look alike */
@@ -490,7 +481,7 @@ button:active:not(:disabled){transform:scale(.96)}
 #menu.peek{top:auto;height:56vh;height:56dvh;border-radius:18px 18px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.3);transition:height .25s}
 #menu.peek.low{height:34vh;height:34dvh}
 #menu.peek .mhead{border-radius:18px 18px 0 0}
-body.peek .hud,body.peek .rolebadge,body.peek .side,body.peek .dock,body.peek .banner,body.peek .tapreset,body.peek .a2hs{visibility:hidden}
+body.peek .hud,body.peek .side,body.peek .dock,body.peek .banner,body.peek .tapreset,body.peek .a2hs{visibility:hidden}
 body.peek .toast{top:calc(var(--sat) + 12px)}
 .vbar{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px}
 .vbar .lseg{flex:none}

@@ -157,5 +157,5 @@ if (!loadJSON(LIB_KEY)) keepCourse(S.course);  // phones from before the list: s
 
 /* small shared helpers: a short message at the top of the screen; making an element */
 let toastT = null;
-function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
+function toast(msg, ms = 2600) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, ms); }
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
