@@ -22,6 +22,7 @@
 <div class="maploading" id="mapLoading" role="status"><span class="spin" aria-hidden="true"></span>地図を読み込み中…</div>
 <div id="vprobe" aria-hidden="true"></div><!-- measures where iOS puts the bottom of the screen (js/hud.js) -->
 
+<div class="topband" aria-hidden="true"></div>
 <div class="hud">
   <div class="hole">
     <button class="ic" id="prevHole" aria-label="前のホール"><svg width="14" height="24" viewBox="0 0 14 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 3L3 12l8 9"/></svg></button>
@@ -33,7 +34,7 @@
   </div>
   <div class="sub" id="dSub"></div>
 </div>
-<!-- just under the panel, over the map (js/roles.js badgeAt): the top of an iPhone screen is blurred -->
+<!-- on the panel's top edge; outside the panel because inside its frosted glass it would be blurred too -->
 <div class="rolebadge" id="roleBadge" hidden></div>
 <!-- opened in a browser (not the home-screen app): ask to add it to the home screen (js/offline.js) -->
 <div class="a2hs" id="a2hs" role="dialog" aria-labelledby="a2hsT" hidden>
