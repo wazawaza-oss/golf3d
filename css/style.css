@@ -386,8 +386,8 @@ table.sc{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;
 .nines button.add{background:#fff;border:1.5px dashed #9aa494;color:#36414d}
 #menu .mrow .pick{width:22px;text-align:center;font-size:18px;font-weight:900;color:#1f9d48}  /* ✓ on the chosen nine */
 /* competition: role label under the distance panel */
-.rolebadge{position:absolute;top:0;margin-top:-7px;left:50%;transform:translateX(-50%);z-index:1;max-width:calc(100% - 120px);box-sizing:border-box;padding:0 8px;border-radius:999px;border:1px solid #fff;background:rgba(22,89,47,.9);color:#fff;font-size:9.5px;line-height:13px;letter-spacing:.02em;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.2)}
-.rolebadge.off{background:rgba(196,84,0,.95)}  /* offline: orange, so it is noticed */
+.rolebadge{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px - 8px);left:50%;transform:translateX(-50%);z-index:6;max-width:min(320px,calc(100% - 140px));box-sizing:border-box;padding:0 9px;border-radius:999px;border:1px solid #fff;background:#16592f;color:#fff;font-size:11px;line-height:15px;-webkit-font-smoothing:antialiased;letter-spacing:.02em;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.rolebadge.off{background:#c45400}  /* offline: orange, so it is noticed */
 /* competition screens in settings */
 #menu .mrow.field .mtx{flex:none;width:84px}
 #menu .mrow.field input{flex:1 1 0;min-width:0;font:inherit;font-size:15px;font-weight:700;padding:8px 10px;border:1px solid #d9dce1;border-radius:9px;background:#fff;color:var(--ink)}  /* name and date boxes look alike */
@@ -483,7 +483,7 @@ button:active:not(:disabled){transform:scale(.96)}
 #menu.peek{top:auto;height:56vh;height:56dvh;border-radius:18px 18px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.3);transition:height .25s}
 #menu.peek.low{height:34vh;height:34dvh}
 #menu.peek .mhead{border-radius:18px 18px 0 0}
-body.peek .hud,body.peek .side,body.peek .dock,body.peek .banner,body.peek .tapreset,body.peek .a2hs{visibility:hidden}
+body.peek .hud,body.peek .rolebadge,body.peek .side,body.peek .dock,body.peek .banner,body.peek .tapreset,body.peek .a2hs{visibility:hidden}
 body.peek .toast{top:calc(var(--sat) + 12px)}
 .vbar{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px}
 .vbar .lseg{flex:none}
