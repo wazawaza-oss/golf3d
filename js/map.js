@@ -29,6 +29,33 @@ const mapLoaded = () => $('mapLoading').hidden = true;
 map.once('idle', mapLoaded); setTimeout(mapLoaded, 20000);
 // no attribution badge on the map; the GSI credit is shown in the menu sheet instead
 map.touchZoomRotate.enableRotation();
+/* leaving the app (swipe up from the bottom edge, iPhone): the first part of that swipe reached the map and dragged it
+   before iOS took over. A finger that starts at the bottom edge is kept from the map; and if iOS takes a finger away
+   (touchcancel) or the app is left mid-touch, the view goes back to where it was when the finger came down. */
+(() => {
+  const box = map.getContainer();
+  let edge = false, cam0 = null, down = 0;
+  const edgeH = () => Math.max(34, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sab')) || 0) + 16;
+  const keep = () => ({ center: map.getCenter(), zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() });
+  const restore = () => { if (!cam0) return; map.stop(); map.jumpTo(cam0); cam0 = null; };
+  box.addEventListener('touchstart', e => {
+    if (e.touches.length === e.changedTouches.length) {  // the first finger(s) down
+      cam0 = keep(); down = e.touches.length;
+      edge = [...e.changedTouches].some(t => t.clientY >= innerHeight - edgeH());
+    } else down = e.touches.length;
+    if (edge) e.stopPropagation();
+  }, { capture: true, passive: true });
+  box.addEventListener('touchmove', e => { if (edge) e.stopPropagation(); }, { capture: true, passive: true });
+  box.addEventListener('touchend', e => {
+    if (edge) e.stopPropagation();
+    if (!e.touches.length) { edge = false; cam0 = null; down = 0; }
+  }, { capture: true, passive: true });
+  box.addEventListener('touchcancel', e => {
+    if (edge) e.stopPropagation();
+    if (!e.touches.length) { restore(); edge = false; down = 0; }
+  }, { capture: true, passive: true });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && down) { restore(); edge = false; down = 0; } });
+})();
 // markers always at full strength. In 3D MapLibre (4.7) fades a marker to 0.2 when it thinks the ground hides it, and on a
 // hill course the pin, T, marks and yardages sat "under" the ground and went pale; that check also reads the GPU depth
 // buffer for every marker as the map moves, which stalls a phone mid-gesture. A private method, so tied to the pinned 4.7.1.

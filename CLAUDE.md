@@ -25,7 +25,7 @@ The user is a Japanese speaker new to Git: answer in plain Japanese, say what wa
 | `js/state.js` | `$`, `el`, `toast`, load/save JSON, course model (nines/holes), state `S`, `N`, `hole()`, `pinLL()`, saved course list `keepCourse` / `loadLib` | data model, migration, shared state |
 | `js/geo.js` | distance, yards, bearing, tile x/y | distance math |
 | `js/tiles.js` | GSI photo/DEM tiles, tile cache, `heights`, `elevAt`, map protocols | tiles, elevation |
-| `js/map.js` | the map, markers (`M`, `TM`, `LM`), pin rings, `camera()`, `set3D()` | camera, 3D, markers |
+| `js/map.js` | the map, markers (`M`, `TM`, `LM`), pin rings, `camera()`, `set3D()`; a finger starting at the bottom edge (iPhone home swipe) is kept from the map, and touchcancel / leaving mid-touch puts the view back | camera, 3D, markers |
 | `js/hud.js` | `refresh()` (redraws everything), crosshair, `centerOn`, distance panel `readout()` | top distance panel, what refresh shows |
 | `js/interactions.js` | `placeAt`, the hole being played (`playNo`, `onPlay`, `followPlay`, `setPlay`: GPS distance only there), measuring marks, hole arrows `goHole`, map buttons (3D/view/me/pin), GPS | taps, pins, GPS, side buttons |
 | `js/menu.js` | settings sheet: screen stack `mShow`/`openMenu`, `ask`, nines picker, pin reset, undo bar | settings screens, back button |
