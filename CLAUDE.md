@@ -21,7 +21,7 @@ The user is a Japanese speaker new to Git: answer in plain Japanese, say what wa
 | File | Contents | Open it when changing… |
 |---|---|---|
 | `index.html` | All HTML (sheets, sub-screens, buttons), script order | layout, labels, new buttons |
-| `css/style.css` | All styles | looks |
+| `css/style.css` | All styles (the score & ranking pages have their own paper-scorecard block at the end, scoped to #pScore / #pRank) | looks |
 | `js/state.js` | `$`, `el`, `toast`, load/save JSON, course model (nines/holes), state `S`, `N`, `hole()`, `pinLL()`, saved course list `keepCourse` / `loadLib` | data model, migration, shared state |
 | `js/geo.js` | distance, yards, bearing, tile x/y | distance math |
 | `js/tiles.js` | GSI photo/DEM tiles, tile cache, `heights`, `elevAt`, map protocols | tiles, elevation |
@@ -39,7 +39,7 @@ The user is a Japanese speaker new to Git: answer in plain Japanese, say what wa
 | `js/setup.js` | course registration screens in settings (`mReg`, `mRegNines`, `mRegYard`): draft, nines, tee colours, par/yardage, hole list, 確定 | course registration, tee colours |
 | `js/import.js` | スコアカードから取り込む screen (`mRegCard`): 4 steps + `cardPrompt()` (the request copied for the user's own AI, matching readCard), paste / file, preview with editable cells, tee colour choice → into the draft | card import screen |
 | `js/guide.js` | guide panel `#setup`: green → tee per hole, tap / drag, back/skip/next, camera | the guide |
-| `js/score.js` | score page, −/＋ stepper, bottom dock, solo participants sheet | score entry, dock |
+| `js/score.js` | score page, −/＋ stepper, bottom dock, solo participants sheet; `scoreMark` = ◯ birdie / □ bogey marks on score cells | score entry, dock |
 | `js/rank.js` | ranking page, everyone's scoreboard (editable cells), JPEG scorecard | ranking, scoreboard, image |
 | `js/pages.js` | swipe ranking ← map → score, `goPage` | page swipe |
 | `js/share.js` | Firebase: config, `fb()`, competition copy `comp`, score outbox/sync, create/join/connect | sync, offline sending |

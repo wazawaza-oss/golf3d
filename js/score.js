@@ -30,6 +30,8 @@ function nameLimit(inp) { inp.addEventListener('input', () => { if (inp.value.le
 // one colour rule for a score everywhere (map bar, score table, scoreboard, JPEG): under par red, double bogey or worse blue
 const scoreCls = (v, par) => v == null ? '' : v < par ? 'under' : v >= par + 2 ? 'over2' : '';
 const SC_COLOR = { under: '#b3261e', over2: '#0b5cad' };  // = --sc-under / --sc-over in css/style.css
+// scorecard marks on the score sheet and the scoreboard: ◯ birdie, ◎ eagle or better, □ bogey, double □ double bogey or worse
+const scoreMark = (v, par) => v == null || v === par ? '' : v <= par - 2 ? 'm-eagle' : v < par ? 'm-bird' : v === par + 1 ? 'm-bogey' : 'm-dbl';
 const fmtDiff = d => d === 0 ? '±0' : (d > 0 ? '+' : '') + d;
 const TERM = { '-3': 'アルバトロス', '-2': 'イーグル', '-1': 'バーディー', '0': 'パー', '1': 'ボギー', '2': 'ダブルボギー', '3': 'トリプル' };
 const termOf = (v, par) => v === 1 ? 'ホールインワン' : TERM[v - par] || fmtDiff(v - par);
@@ -68,7 +70,8 @@ function renderScore() {
 // one score cell: colored against par; a small mark when someone else changed it (tap for who and when)
 function scoreCell(p, i, sel) {
   const v = strokesOf(p)[i], hp = playHoles()[i].par, fx = comp && compFix(p.id, i);
-  const c = el('td', scoreCls(v, hp) + (fx ? ' fx' : '') + (sel ? ' sel' : ''), v == null ? '' : v);
+  const c = el('td', [scoreCls(v, hp), scoreMark(v, hp), fx && 'fx', sel && 'sel'].filter(Boolean).join(' '));
+  if (v != null) c.append(el('span', 'mk', v));  // the number sits in a span so the mark can be drawn round it
   c.setAttribute('aria-label', `${i + 1}番 ${v == null ? '未入力' : v + '打'}${fx ? `（${fx.who}が修正）` : ''}`);
   return c;
 }

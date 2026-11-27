@@ -31,7 +31,7 @@ function renderRank() {
   tb.append(hd);
   rows.forEach(r => {
     const tr = el('tr', (r.pos === 1 ? 'top' : '') + (r.p.id === myId() ? ' me' : ''));
-    tr.append(el('td', r.pos ? 'pos' : 'pos none', r.pos || '未入力'), el('td', 'nm', pName(r.p)), el('td', 'dv', r.n ? fmtDiff(r.diff) : '—'), el('td', '', r.n ? r.tot : '—'), el('td', '', r.n));
+    tr.append(el('td', r.pos ? 'pos' : 'pos none', r.pos || '未入力'), el('td', 'nm', pName(r.p)), el('td', r.n && r.diff < 0 ? 'dv under' : 'dv', r.n ? fmtDiff(r.diff) : '—'), el('td', '', r.n ? r.tot : '—'), el('td', '', r.n));
     tb.append(tr);
   });
   const list = $('rkList'); list.textContent = ''; list.appendChild(tb); rkFit();
