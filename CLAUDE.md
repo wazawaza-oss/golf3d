@@ -43,7 +43,7 @@ The user is a Japanese speaker new to Git: answer in plain Japanese, say what wa
 | `js/rank.js` | ranking page, everyone's scoreboard (editable cells), JPEG scorecard | ranking, scoreboard, image |
 | `js/pages.js` | swipe ranking ← map → score, `goPage` | page swipe |
 | `js/share.js` | Firebase: config, `fb()`, competition copy `comp`, score outbox/sync, create/join/connect | sync, offline sending |
-| `js/roster.js` | roster/teams, invites + links, `roleKind`/`roleLabel` (org / player; the team lead role was dropped 2026-11), role notice, opening a link | teams, links, roles |
+| `js/roster.js` | roster/teams, invites + links (player/org links carry `openExternalBrowser=1` so LINE opens Safari/Chrome; inside an in-app browser the link stays in the address and a notice asks to open the browser), `roleKind`/`roleLabel` (org / player; the team lead role was dropped 2026-11), role notice, opening a link | teams, links, roles |
 | `js/roles.js` | `canEdit` (organizer: all; a player with a chosen name: everyone in the same team = cart), `me()`, dock switching (`dockMany`), `applyRoles` (`data-show`), online/offline notice `netNotice` (competitions; the role badge was dropped 2026-11-27) | who may edit what (screen side) |
 | `js/compui.js` | competition screens: create, overview, roster editor, links (LINE/copy/QR), name pick | competition screens |
 | `js/offline.js` | save map tiles to the phone, service-worker registration, Safari add-to-home hint | offline save |

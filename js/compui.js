@@ -230,6 +230,8 @@ function renderPick() {
     box.appendChild(g);
   });
   if (!rosterList().length) box.appendChild(el('p', 'grp-f', '主催者がまだ名簿を作っていません。少し待ってから開き直してください。'));
+  // e.g. chosen earlier inside LINE, whose storage the browser does not share: only the organizer can free it
+  else if (!comp.player && comp.role !== 'org') box.appendChild(el('p', 'grp-f', '自分の名前が「選択済み」で選べないとき（LINEの中など、別の画面で選んだときなど）は、主催者に「参加中・解除」を押してもらってから選び直してください。'));
 }
 function openPick() { openSheet('menu'); renderMenu(); renderPick(); mShow('mMain'); mShow('mPick'); }
 

@@ -43,7 +43,9 @@ async function ensureInvite(role) {
   (comp.invites = comp.invites || {})[key] = v; saveComp();
   return key;
 }
-const linkFor = (key, role) => `${location.origin}${location.pathname}?c=${comp.cid}&k=${key}&r=${role}`;
+// openExternalBrowser=1: LINE opens the link straight in Safari / Chrome instead of its own browser, whose storage is
+// separate (a name chosen inside LINE was not there when the same person later opened the app in the browser)
+const linkFor = (key, role) => `${location.origin}${location.pathname}?c=${comp.cid}&k=${key}&r=${role}&openExternalBrowser=1`;
 
 /* ---------- this phone's role, and a short notice when it changes ---------- */
 const roleKind = () => !comp ? 'solo' : comp.role === 'org' ? 'org' : 'player';
@@ -64,14 +66,21 @@ function roleNotice() {
 (() => {
   const q = new URLSearchParams(location.search), c = q.get('c');
   if (!c) return;
-  const k = q.get('k') || '', r = q.get('r');
-  history.replaceState(null, '', location.pathname + location.hash);
+  const k = q.get('k') || '', r = q.get('r'), ua = navigator.userAgent;
+  // a link sent before 2026-11-28 (no openExternalBrowser) opened inside LINE: ask LINE once to hand it to the browser
+  if (/ Line\//.test(ua) && !q.has('openExternalBrowser')) { q.set('openExternalBrowser', '1'); location.replace(`${location.pathname}?${q}${location.hash}`); return; }
+  // inside an in-app browser the link stays in the address, so its "open in browser" carries it to Safari / Chrome
+  const inApp = / Line\/|FBAN|FBAV|Instagram/.test(ua);
+  if (!inApp) history.replaceState(null, '', location.pathname + location.hash);
   if (!/^[A-Za-z0-9]{10}$/.test(c) || !/^[A-Za-z0-9]{22}$/.test(k) || !ROLE_NAME[r]) { toast('このリンクは正しくありません'); return; }
   if (comp && comp.cid === c && comp.key === k) return;  // already in with this link
   const go = () => compJoin(c, k, r)
     .then(() => toast(r === 'org' ? 'コンペに主催者として参加しました' : 'コンペに参加しました'))
     .catch(e => toast(denied(e) ? 'このリンクは使えません（期限切れか、無効になっています）' : '接続できませんでした。電波のある所でもう一度リンクを開いてください'));
-  if (comp) ask('別のコンペに参加しますか？', `今のコンペ「${(comp.meta && comp.meta.name) || ''}」からは抜けます`, '参加する', () => { compLeave(); go(); });
-  else go();
+  const join = () => comp ? ask('別のコンペに参加しますか？', `今のコンペ「${(comp.meta && comp.meta.name) || ''}」からは抜けます`, '参加する', () => { compLeave(); go(); }) : go();
+  if (inApp) ask(`${/iPhone|iPad|iPod/.test(ua) ? 'Safari' : 'ブラウザ'}で開いてください`,
+    `ここ（${/ Line\//.test(ua) ? 'LINE' : 'アプリ'}の中の画面）で参加すると、あとでブラウザやホーム画面から開いたときに別の人になり、選んだ名前が使えません。\n右上（または右下）の「…」から「${/iPhone|iPad|iPod/.test(ua) ? 'Safari' : 'ブラウザ'}で開く」を選んでください`,
+    'このまま参加する', join, { go: true });
+  else join();
 })();
 compConnect();
