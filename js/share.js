@@ -42,40 +42,11 @@ const rid = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => B62[
 const hk = i => 'h' + String(i + 1).padStart(2, '0');  // hole index 0..17 → 'h01'..'h18' (plain 1..18 keys would become an array)
 const withTimeout = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), ms))]);
 let fbP = null;
-/* Moving this phone's sign-in into the home-screen app. iPhone gives an app added to the home screen its own storage,
-   apart from Safari's, so it started as a stranger (no competition, a new uid, the chosen name taken). In Safari a
-   player's address carries the link plus u (uid), ca (created) and mv (refresh token) — see keepHomeLink() in
-   js/roster.js; the manifest has no start_url, so the home-screen app opens at that address, and here the same
-   sign-in is put where Firebase looks for it before it starts. Used once per link in the home-screen app
-   (golf3d.linkUsed), so leaving the competition there is not undone at the next launch. */
-const AUTH_DB = 'firebaseLocalStorageDb', AUTH_ST = 'firebaseLocalStorage', AUTH_KEY = `firebase:authUser:${FB_CONFIG.apiKey}:[DEFAULT]`;
+// the home-screen app opens at the address it was added from every time, so a link there counts once (js/roster.js);
+// leaving the competition in that app is not undone at the next launch
 const linkUsed = () => { const a = loadJSON('golf3d.linkUsed'); return Array.isArray(a) ? a : []; };
-const LINK_MOVE = (() => {
-  const q = new URLSearchParams(location.search), m = { c: q.get('c'), k: q.get('k'), u: q.get('u'), ca: q.get('ca'), t: q.get('mv') };
-  return m.c && m.k && m.t && /^[A-Za-z0-9]{10,64}$/.test(m.u || '') && /^\d{1,15}$/.test(m.ca || '') && m.t.length < 2000 ? m : null;
-})();
-function authStore(fn) {
-  return new Promise((ok, no) => {
-    const r = indexedDB.open(AUTH_DB, 1);
-    r.onupgradeneeded = () => { if (!r.result.objectStoreNames.contains(AUTH_ST)) r.result.createObjectStore(AUTH_ST, { keyPath: 'fbase_key' }); };
-    r.onerror = () => no(r.error);
-    r.onsuccess = () => { const db = r.result; Promise.resolve(fn(db)).then(v => { db.close(); ok(v); }, e => { db.close(); no(e); }); };
-  });
-}
-const idbReq = q => new Promise((ok, no) => { q.onsuccess = () => ok(q.result); q.onerror = () => no(q.error); });
-// this phone's sign-in as Firebase keeps it ({ uid, createdAt, stsTokenManager: { refreshToken } }), or null
-const readSignIn = () => authStore(db => idbReq(db.transaction(AUTH_ST).objectStore(AUTH_ST).get(AUTH_KEY))).then(r => r && r.value || null).catch(() => null);
-async function moveSignIn() {
-  const m = LINK_MOVE;
-  if (!m || !isHomeApp() || linkUsed().includes(m.k) || (comp && comp.cid !== m.c)) return;
-  const cur = await readSignIn(); if (cur && cur.uid === m.u) return;
-  await authStore(db => idbReq(db.transaction(AUTH_ST, 'readwrite').objectStore(AUTH_ST).put({ fbase_key: AUTH_KEY, value: {
-    uid: m.u, emailVerified: false, isAnonymous: true, providerData: [], createdAt: m.ca, lastLoginAt: m.ca,
-    stsTokenManager: { refreshToken: m.t, accessToken: '', expirationTime: 0 }, apiKey: FB_CONFIG.apiKey, appName: '[DEFAULT]' } })));
-}
 function fb() {
   return fbP || (fbP = (async () => {
-    try { await moveSignIn(); } catch (e) {}  // a failed move only means a new sign-in, as before
     const [A, Au, D] = await Promise.all(['app', 'auth', 'database'].map(m => import(`${FB_SDK}firebase-${m}.js`)));
     const app = A.initializeApp(FB_CONFIG), auth = Au.getAuth(app);
     await auth.authStateReady();  // anonymous sign-in is kept on the phone, so the same uid comes back

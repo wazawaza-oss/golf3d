@@ -76,7 +76,8 @@ async function run() {
   [A, Au, D] = await Promise.all(['app', 'auth', 'database'].map(m => import(`${SDK}firebase-${m}.js`)));
   $('sum').textContent = 'テスト用の利用者を準備中…';
   // p1 = 青木 (1組), p2 = 馬場 (1組), p3 = 千葉 (2組); everyone may enter the scores of their own team (cart)
-  const [org, org2, p1, p2, p3, out] = await Promise.all(['主催者', '主催者2', '青木', '馬場', '千葉', '部外者'].map(user));
+  // p1h = 青木さんのホーム画面のアプリ (iPhone gives it storage of its own, so it is another sign-in)
+  const [org, org2, p1, p2, p3, out, p1h] = await Promise.all(['主催者', '主催者2', '青木', '馬場', '千葉', '部外者', '青木（ホーム画面）'].map(user));
   const cid = rid(10), now = Date.now(), exp = now + LIFE, C = `comps/${cid}`;
   const pa = 'pTeam1Aaa', pb = 'pTeam1Bbb', pc = 'pTeam2Ccc';
   const kP = rid(22), kO = rid(22);
@@ -161,6 +162,22 @@ async function run() {
   await allow('主催者が馬場さんを1組に戻す', () => D.set(ref(org, `${C}/roster/${pb}/team`), 1));
   await allow('戻った馬場さんは、また青木さんのスコアを書ける', () => sc(p2, pa, 'h07', pb));
   await deny('戻った馬場さんは、もう千葉さんのスコアを書けない', () => sc(p2, pc, 'h07', pb));
+
+  section('ホーム画面のアプリで同じ名前を選び直す（引き継ぎの印）');
+  const mv = rid(22), take = (u, pid, code) => D.update(ref(u, C), Object.assign({ [`taken/${pid}`]: u.uid, [`members/${u.uid}/player`]: pid }, code ? { [`members/${u.uid}/move`]: code } : {}));
+  await allow('ホーム画面のアプリが参加者用リンクで参加する', () => join(p1h, kP, 'player'));
+  await deny('印なしで「青木」を選ぶ', () => take(p1h, pa));
+  await allow('Safariの青木さんが引き継ぎの印を置く', () => D.update(ref(p1, `${C}/members/${p1.uid}`), { move: mv }));
+  await deny('短すぎる印を置く', () => D.update(ref(p2, `${C}/members/${p2.uid}`), { move: 'abc' }));
+  await deny('違う印で「青木」を選ぶ', () => take(p1h, pa, rid(22)));
+  await deny('青木さんの印で「馬場」を選ぶ', () => take(p1h, pb, mv));
+  await deny('参加していない人が青木さんの印で「青木」を選ぶ', () => take(out, pa, mv));
+  await allow('同じ印で「青木」を選び直す', () => take(p1h, pa, mv));
+  await allow('ホーム画面のアプリで青木さんのスコアを書く', () => sc(p1h, pa, 'h05', pa));
+  await deny('Safariの青木さんは、もう書けない', () => sc(p1, pa, 'h05', pa));
+  await deny('ホーム画面のアプリが「馬場」に乗りかえる', () => take(p1h, pb, mv));
+  await allow('Safariの青木さんが同じ印で取り戻す（印を持つ本人どうし）', () => D.update(ref(p1, C), { [`taken/${pa}`]: p1.uid, [`members/${p1.uid}/move`]: mv }));
+  await allow('取り戻した青木さんは、また書ける', () => sc(p1, pa, 'h05', pa));
 
   section('主催者');
   await allow('誰のスコアでも書ける', () => sc(org, pc, 'h08', 'org', 6));

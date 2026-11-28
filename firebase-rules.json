@@ -87,6 +87,7 @@
             "role": { ".validate": "newData.val() === 'org' || newData.val() === 'player'" },
             "key": { ".validate": "newData.isString() && newData.val().length <= 22" },
             "t": { ".validate": "newData.isNumber()" },
+            "move": { ".validate": "newData.isString() && newData.val().length >= 16 && newData.val().length <= 40" },
             "player": { ".validate": "newData.isString() && (!data.exists() || data.val() === newData.val()) && newData.parent().parent().parent().child('taken/' + newData.val()).val() === $uid" },
             "$other": { ".validate": false }
           }
@@ -94,7 +95,7 @@
         "taken": {
           ".read": "auth != null && root.child('comps/' + $cid + '/members/' + auth.uid).exists()",
           "$pid": {
-            ".write": "auth != null && (root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'org' || (newData.val() === auth.uid && (!data.exists() || data.val() === auth.uid) && root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'player' && newData.parent().parent().child('members/' + auth.uid + '/player').val() === $pid && root.child('comps/' + $cid + '/roster/' + $pid).exists() && root.child('comps/' + $cid + '/meta/expires').val() > now))",
+            ".write": "auth != null && (root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'org' || (newData.val() === auth.uid && (!data.exists() || data.val() === auth.uid) && root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'player' && newData.parent().parent().child('members/' + auth.uid + '/player').val() === $pid && root.child('comps/' + $cid + '/roster/' + $pid).exists() && root.child('comps/' + $cid + '/meta/expires').val() > now) || (newData.val() === auth.uid && data.exists() && root.child('comps/' + $cid + '/members/' + auth.uid + '/role').val() === 'player' && newData.parent().parent().child('members/' + auth.uid + '/player').val() === $pid && newData.parent().parent().child('members/' + auth.uid + '/move').isString() && newData.parent().parent().child('members/' + auth.uid + '/move').val() === root.child('comps/' + $cid + '/members/' + data.val() + '/move').val() && root.child('comps/' + $cid + '/roster/' + $pid).exists() && root.child('comps/' + $cid + '/meta/expires').val() > now))",
             ".validate": "newData.isString()"
           }
         },

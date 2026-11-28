@@ -215,11 +215,12 @@ function renderPick() {
     const g = el('div', 'grp');
     rosterList().filter(r => r.team === t).forEach(r => {
       const mine = r.id === comp.player, other = taken[r.id] && taken[r.id] !== comp.uid;
-      const b = el('button', 'mrow'); b.disabled = other || !!comp.player;
-      b.append(el('span', 'mtx', r.name), el('span', 'mval', mine ? 'あなた' : other ? '選択済み' : ''));
+      const moved = other && comp.moveFrom && taken[r.id] === comp.moveFrom.u;  // chosen in Safari on this iPhone (js/roster.js)
+      const b = el('button', 'mrow'); b.disabled = (other && !moved) || !!comp.player;
+      b.append(el('span', 'mtx', r.name), el('span', 'mval', mine ? 'あなた' : moved ? 'Safariで選んだ名前' : other ? '選択済み' : ''));
       b.onclick = async () => {
         try {
-          await compPick(r.id); refresh();
+          await compPick(r.id, moved ? comp.moveFrom.code : undefined); delete comp.moveFrom; saveComp(); refresh();
           toast(`「${r.name}」で参加しました（同じ${+r.team || 1}組の人のスコアも入力できます）`);
           if (comp.role === 'org') $('mBack').click(); else $('menu').hidden = true;  // the organizer came from the competition screen
         }

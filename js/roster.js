@@ -3,9 +3,11 @@
 "use strict";
 
 /* ---------- names, roster, invites ---------- */
-async function compPick(pid) {
-  const f = await withTimeout(fb(), 15000);
-  await withTimeout(f.D.update(f.D.ref(f.db, `comps/${comp.cid}`), { [`taken/${pid}`]: comp.uid, [`members/${comp.uid}/player`]: pid }), 15000);
+// code: the carry-over code from Safari (comp.moveFrom), to take back the name chosen there (the rules check it)
+async function compPick(pid, code) {
+  const f = await withTimeout(fb(), 15000), u = { [`taken/${pid}`]: comp.uid, [`members/${comp.uid}/player`]: pid };
+  if (code) u[`members/${comp.uid}/move`] = code;
+  await withTimeout(f.D.update(f.D.ref(f.db, `comps/${comp.cid}`), u), 15000);
   comp.player = pid; (comp.taken = comp.taken || {})[pid] = comp.uid; saveComp();
 }
 // the organizer undoes a wrong choice: the name is free again and that phone is asked to choose
@@ -76,9 +78,14 @@ function roleNotice() {
   // the home-screen app opens at the address it was added from every time: that link counts once (js/share.js)
   const home = isHomeApp(), used = () => { if (home && !linkUsed().includes(k)) saveJSON('golf3d.linkUsed', linkUsed().concat(k).slice(-20)); };
   if (home && linkUsed().includes(k)) return;
-  if (comp && comp.cid === c && comp.key === k) { used(); return; }  // already in with this link
+  // added to the home screen from Safari (keepHomeLink): u = Safari's sign-in, mv = its carry-over code, so the name
+  // chosen there can be chosen again here
+  const u = q.get('u'), mv = q.get('mv');
+  const from = home && r === 'player' && /^[A-Za-z0-9]{10,64}$/.test(u || '') && /^[A-Za-z0-9]{22}$/.test(mv || '') ? { u, code: mv } : null;
+  const carry = () => { if (from && comp && comp.cid === c && !comp.player) { comp.moveFrom = from; saveComp(); } };
+  if (comp && comp.cid === c && comp.key === k) { carry(); used(); return; }  // already in with this link
   const go = () => compJoin(c, k, r)
-    .then(() => { used(); toast(r === 'org' ? 'コンペに主催者として参加しました' : 'コンペに参加しました'); keepHomeLink(); })
+    .then(() => { carry(); used(); toast(r === 'org' ? 'コンペに主催者として参加しました' : from ? 'コンペに参加しました。Safariで選んだ名前を選び直してください' : 'コンペに参加しました'); keepHomeLink(); })
     .catch(e => { if (denied(e)) used(); toast(denied(e) ? 'このリンクは使えません（期限切れか、無効になっています）' : '接続できませんでした。電波のある所でもう一度リンクを開いてください'); });
   const join = () => comp ? ask('別のコンペに参加しますか？', `今のコンペ「${(comp.meta && comp.meta.name) || ''}」からは抜けます`, '参加する', () => { compLeave(); go(); }) : go();
   if (inApp) ask(`${/iPhone|iPad|iPod/.test(ua) ? 'Safari' : 'ブラウザ'}で開いてください`,
@@ -86,18 +93,20 @@ function roleNotice() {
     'このまま参加する', join, { go: true });
   else join();
 })();
-// iPhone Safari, in a competition as a player: the address carries the players' link and this phone's sign-in, so an
-// app added to the home screen from here opens already in, under the same name (iPhone gives that app storage of its
-// own; the manifest has no start_url, so it opens at this address; read in js/share.js). Not for the organizer, whose
-// address might be copied and sent to players; the organizer's link moves that role to another phone or app.
+// iPhone Safari, in a competition as a player: the address carries the players' link, this phone's uid and a
+// carry-over code (comp.move, also kept in the database at members/<uid>/move). An app added to the home screen from
+// here opens at that address (the manifest has no start_url) — iPhone gives that app storage of its own, so it is a
+// new sign-in — joins with the link and may choose again the name taken by this uid, showing the same code (the
+// rules check it). No sign-in in the address. Not for the organizer, whose address might be copied to players; the
+// organizer's link moves that role to another phone or app.
 async function keepHomeLink() {
   const ua = navigator.userAgent;
   if (!comp || comp.role !== 'player' || isHomeApp() || / Line\/|FBAN|FBAV|Instagram/.test(ua)) return;
   if (!(/iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))) return;
-  const s = await readSignIn(), t = s && s.stsTokenManager && s.stsTokenManager.refreshToken;
-  if (!t || s.uid !== comp.uid || !comp) return;
-  const q = new URLSearchParams({ c: comp.cid, k: comp.key, r: 'player', u: s.uid, ca: String(s.createdAt || Date.now()), mv: t });
+  if (!comp.move) { comp.move = rid(22); saveComp(); }
+  const q = new URLSearchParams({ c: comp.cid, k: comp.key, r: 'player', u: comp.uid, mv: comp.move });
   history.replaceState(null, '', `${location.pathname}?${q}${location.hash}`);
+  try { const f = await withTimeout(fb(), 15000); await f.D.update(f.D.ref(f.db, cp(`members/${comp.uid}`)), { move: comp.move }); } catch (e) {}
 }
 compConnect();
 keepHomeLink();
