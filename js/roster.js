@@ -73,14 +73,31 @@ function roleNotice() {
   const inApp = / Line\/|FBAN|FBAV|Instagram/.test(ua);
   if (!inApp) history.replaceState(null, '', location.pathname + location.hash);
   if (!/^[A-Za-z0-9]{10}$/.test(c) || !/^[A-Za-z0-9]{22}$/.test(k) || !ROLE_NAME[r]) { toast('このリンクは正しくありません'); return; }
-  if (comp && comp.cid === c && comp.key === k) return;  // already in with this link
+  // the home-screen app opens at the address it was added from every time: that link counts once (js/share.js)
+  const home = isHomeApp(), used = () => { if (home && !linkUsed().includes(k)) saveJSON('golf3d.linkUsed', linkUsed().concat(k).slice(-20)); };
+  if (home && linkUsed().includes(k)) return;
+  if (comp && comp.cid === c && comp.key === k) { used(); return; }  // already in with this link
   const go = () => compJoin(c, k, r)
-    .then(() => toast(r === 'org' ? 'コンペに主催者として参加しました' : 'コンペに参加しました'))
-    .catch(e => toast(denied(e) ? 'このリンクは使えません（期限切れか、無効になっています）' : '接続できませんでした。電波のある所でもう一度リンクを開いてください'));
+    .then(() => { used(); toast(r === 'org' ? 'コンペに主催者として参加しました' : 'コンペに参加しました'); keepHomeLink(); })
+    .catch(e => { if (denied(e)) used(); toast(denied(e) ? 'このリンクは使えません（期限切れか、無効になっています）' : '接続できませんでした。電波のある所でもう一度リンクを開いてください'); });
   const join = () => comp ? ask('別のコンペに参加しますか？', `今のコンペ「${(comp.meta && comp.meta.name) || ''}」からは抜けます`, '参加する', () => { compLeave(); go(); }) : go();
   if (inApp) ask(`${/iPhone|iPad|iPod/.test(ua) ? 'Safari' : 'ブラウザ'}で開いてください`,
     `ここ（${/ Line\//.test(ua) ? 'LINE' : 'アプリ'}の中の画面）で参加すると、あとでブラウザやホーム画面から開いたときに別の人になり、選んだ名前が使えません。\n右上（または右下）の「…」から「${/iPhone|iPad|iPod/.test(ua) ? 'Safari' : 'ブラウザ'}で開く」を選んでください`,
     'このまま参加する', join, { go: true });
   else join();
 })();
+// iPhone Safari, in a competition as a player: the address carries the players' link and this phone's sign-in, so an
+// app added to the home screen from here opens already in, under the same name (iPhone gives that app storage of its
+// own; the manifest has no start_url, so it opens at this address; read in js/share.js). Not for the organizer, whose
+// address might be copied and sent to players; the organizer's link moves that role to another phone or app.
+async function keepHomeLink() {
+  const ua = navigator.userAgent;
+  if (!comp || comp.role !== 'player' || isHomeApp() || / Line\/|FBAN|FBAV|Instagram/.test(ua)) return;
+  if (!(/iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))) return;
+  const s = await readSignIn(), t = s && s.stsTokenManager && s.stsTokenManager.refreshToken;
+  if (!t || s.uid !== comp.uid || !comp) return;
+  const q = new URLSearchParams({ c: comp.cid, k: comp.key, r: 'player', u: s.uid, ca: String(s.createdAt || Date.now()), mv: t });
+  history.replaceState(null, '', `${location.pathname}?${q}${location.hash}`);
+}
 compConnect();
+keepHomeLink();

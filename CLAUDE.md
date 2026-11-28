@@ -42,7 +42,7 @@ The user is a Japanese speaker new to Git: answer in plain Japanese, say what wa
 | `js/score.js` | score page, −/＋ stepper, bottom dock, solo participants sheet; `scoreMark` = ◯ birdie / □ bogey marks on score cells | score entry, dock |
 | `js/rank.js` | ranking page, everyone's scoreboard (editable cells), JPEG scorecard | ranking, scoreboard, image |
 | `js/pages.js` | swipe ranking ← map → score, `goPage` | page swipe |
-| `js/share.js` | Firebase: config, `fb()`, competition copy `comp`, score outbox/sync, create/join/connect | sync, offline sending |
+| `js/share.js` | Firebase: config, `fb()`, competition copy `comp`, score outbox/sync, create/join/connect, moving the sign-in into the iPhone home-screen app (`u`/`ca`/`mv` in the address; `keepHomeLink` in roster.js; manifest has no `start_url` on purpose) | sync, offline sending |
 | `js/roster.js` | roster/teams, invites + links (player/org links carry `openExternalBrowser=1` so LINE opens Safari/Chrome; inside an in-app browser the link stays in the address and a notice asks to open the browser), `roleKind`/`roleLabel` (org / player; the team lead role was dropped 2026-11), role notice, opening a link | teams, links, roles |
 | `js/roles.js` | `canEdit` (organizer: all; a player with a chosen name: everyone in the same team = cart), `me()`, dock switching (`dockMany`), `applyRoles` (`data-show`), online/offline notice `netNotice` (competitions; the role badge was dropped 2026-11-27) | who may edit what (screen side) |
 | `js/compui.js` | competition screens: create, overview, roster editor, links (LINE/copy/QR), name pick | competition screens |
@@ -67,6 +67,7 @@ localStorage (per browser; Safari and the home-screen app are separate):
 | `golf3d.score` | solo: `{players:[{id,name}], strokes:{id:[18]}}` |
 | `golf3d.offline` | `{sig, at}` of the course whose tiles were saved |
 | `golf3d.comp` | this phone's copy of the competition (+ `outbox` of unsent scores) |
+| `golf3d.linkUsed` | link keys already used by the home-screen app (it reopens at the address it was added from) |
 | `golf3d.a2hsClosed` | time the add-to-home card was closed (shown again after 20 h; older versions saved `true`) |
 | `golf3d.courses` | courses used on this phone, last used first: `[{name, at, course}]` (one per name, max 30; only courses with a placed hole). Updated by every `saveCourse()`; shown on 別のコースに切り替え |
 

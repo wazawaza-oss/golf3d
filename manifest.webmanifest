@@ -2,7 +2,6 @@
   "name": "ゴルフ3Dマップ",
   "short_name": "ゴルフ3D",
   "lang": "ja",
-  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
